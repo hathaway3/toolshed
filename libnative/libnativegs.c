@@ -84,7 +84,7 @@ error_code _native_gs_fd(native_path_id path, struct stat *statbuf)
     error_code	ec = 0;
 		
 
-#if defined(__APPLE__) || defined(WIN32) || defined(sun)
+#if defined(__APPLE__) || defined(WIN32) || defined(sun) || defined(__CYGWIN__)
 	if (fstat(path->fd->_file, statbuf) < 0)
 #else
 	if (fstat(path->fd->_fileno, statbuf) < 0)
@@ -135,7 +135,7 @@ error_code _native_gs_size(native_path_id path, u_int *size)
 	struct stat statbuf;
 
         
-#if defined(__APPLE__) || defined(WIN32) || defined(sun)
+#if defined(__APPLE__) || defined(WIN32) || defined(sun) || defined(__CYGWIN__)
 	if (fstat(path->fd->_file, &statbuf) < 0)
 #else
 	if (fstat(path->fd->_fileno, &statbuf) < 0)

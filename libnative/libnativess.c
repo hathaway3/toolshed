@@ -74,7 +74,7 @@ error_code _native_ss_size(native_path_id path, int size)
 {
     error_code	ec = 0;
 
-#if defined(__APPLE__) || defined(WIN32) || defined(sun)
+#if defined(__APPLE__) || defined(WIN32) || defined(sun) || defined(__CYGWIN__)
    ftruncate(path->fd->_file, size);
 #else
    ftruncate(path->fd->_fileno, size);
