@@ -164,6 +164,9 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 
     src_path_seperator = "/";
 	
+	if (source[strlen(source) - 1] == ',')
+		src_path_seperator = "";
+
 	_coco_identify_image(target, &type);
 	
 	if( (type == OS9) || (type == NATIVE) )
@@ -171,6 +174,9 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 	else
 		dst_path_seperator = "";
 	
+	if (target[strlen(target) - 1] == ',')
+		dst_path_seperator = "";
+
 	while (_coco_readdir(sourcePath, &dirent) == 0)
 	{
 		u_char direntry_name_buffer[255];
