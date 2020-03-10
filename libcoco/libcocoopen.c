@@ -5,6 +5,7 @@
  ********************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "cococonv.h"
 #include "cocosys.h"
@@ -196,7 +197,7 @@ error_code _coco_close(coco_path_id path)
 error_code _coco_identify_image(char *pathlist, _path_type *type)
 {
 	error_code		ec = 0;
-    char *p;
+	char *p, *colon;
     char *tmppathlist;
 	FILE *fp;
 
@@ -217,23 +218,32 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
 
     p = strtok(tmppathlist, ",");
 
-    if (p == NULL)
+    if (p == NULL) /* if only comma */
     {
         free(tmppathlist);
 
         return EOS_BPNAM;
     }
 
-	/* 2a. Check for a colon. */
+	/* 2a. Check for a colon followed by number ending image name part */
 
-	if (strchr(pathlist, ':') != NULL)
+	/* Note this /might/ also match an MSDOS path with drive and all-numeric filename */
+
+	colon = strchr(p, ':');
+	if (colon && colon[1]) /* there is a colon and something after it */
 	{
-		/* 2a. There is a colon; it is a DECB image */
+		char *num = colon + 1;
+		while(isdigit(*num))
+		{
+			num++;
+		};
+		if (!num[0]) /* If ending number it is a DECB image */
+		{
+			*type = DECB;
 
-		*type = DECB;
-
-		free(tmppathlist);
-		return ec;
+			free(tmppathlist);
+			return ec;
+		}
 	}
 
 	/* 2b. Check for .cas file extension. */
