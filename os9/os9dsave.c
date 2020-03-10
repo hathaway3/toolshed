@@ -16,7 +16,7 @@
 u_int buffer_size = 32768;
 
 error_code do_dsave(char *pgmname, char *source, char *target, int execute, int buffsize, int rewrite, int eoltranslate);
-static char *ShellEscapePath(char *source, char *src_path_seperator, u_char *direntry_name_buffer);
+static char *ShellEscapePath(char *source, char *src_path_separator, u_char *direntry_name_buffer);
 static char *EscapePart( char *dest, char *src );
 
 /* Help message */
@@ -27,7 +27,7 @@ static char const * const helpMessage[] =
 	"Options:\n",
 	"     -b=size    size of copy buffer in bytes or K-bytes\n",
 	"     -e         actually execute commands\n",
-    "     -l         perform end of line translation on copy\n",
+	"     -l         perform end of line translation on copy\n",
 	"     -r         force rewrite on copy\n",
 	NULL
 };
@@ -153,7 +153,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 	char		command[1024];
 	char		sourcePathList[1024];
 	coco_path_id	sourcePath;
-	char	*src_path_seperator, *dst_path_seperator;
+	char	*src_path_separator, *dst_path_separator;
 	_path_type type;
 	
 	ec = _coco_open(&sourcePath, source, FAM_DIR | FAM_READ);
@@ -162,34 +162,34 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 		return(ec);
 	}
 
-    src_path_seperator = "/";
+	src_path_separator = "/";
 	
 	if (source[strlen(source) - 1] == ',')
-		src_path_seperator = "";
+		src_path_separator = "";
 
 	_coco_identify_image(target, &type);
 	
-	if( (type == OS9) || (type == NATIVE) )
-		dst_path_seperator = "/";
+	if ( (type == OS9) || (type == NATIVE) )
+		dst_path_separator = "/";
 	else
-		dst_path_seperator = "";
+		dst_path_separator = "";
 	
 	if (target[strlen(target) - 1] == ',')
-		dst_path_seperator = "";
+		dst_path_separator = "";
 
 	while (_coco_readdir(sourcePath, &dirent) == 0)
 	{
 		u_char direntry_name_buffer[255];
 		_coco_ncpy_name( &dirent, direntry_name_buffer, 255 );
 		
-       if ( (direntry_name_buffer[0] != '\0') && (direntry_name_buffer[0] != 255) &&
-            (strncmp((const char *) direntry_name_buffer, ".", 2) != 0) &&
-            (strncmp((const char *) direntry_name_buffer, "..", 3) != 0) )
+		if ( (direntry_name_buffer[0] != '\0') && (direntry_name_buffer[0] != 255) &&
+		     (strncmp((const char *) direntry_name_buffer, ".", 2) != 0) &&
+		     (strncmp((const char *) direntry_name_buffer, "..", 3) != 0) )
 		{
 			coco_path_id	filePath;
 			int		isdir = 1;
 
-			sprintf(sourcePathList, "%s%s%s", source, src_path_seperator, direntry_name_buffer);
+			sprintf(sourcePathList, "%s%s%s", source, src_path_separator, direntry_name_buffer);
 
 			ec = _coco_open(&filePath, sourcePathList, FAM_DIR | FAM_READ);
 			if (ec != 0)
@@ -218,22 +218,18 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 				level++;
 
 				/* 2. make directory on target IF target path is relative */
-				if (*target != '/')
-				{
-	//				strcpy(newTarget, "../");
-				}
-
 				if (strcmp(target, "/") == 0)
 				{
-					sprintf(newTarget, "%s%s", dst_path_seperator, direntry_name_buffer);
+					sprintf(newTarget, "%s%s", dst_path_separator, direntry_name_buffer);
 				}
 				else
 				{
-					sprintf(newTarget, "%s%s%s", target, dst_path_seperator, direntry_name_buffer);
+					sprintf(newTarget, "%s%s%s", target, dst_path_separator, direntry_name_buffer);
 				}
 
 				/* 3. make directory on target */
 				snprintf(command, sizeof(command), "os9 makdir '%s'", newTarget);
+
 				puts(command);
 				if (execute) 
 				{
@@ -275,8 +271,8 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 					strcat(ropt, "-l");
 				}
 				
-				escaped_source = ShellEscapePath(source, src_path_seperator, direntry_name_buffer);
-				escaped_dest = ShellEscapePath(target, dst_path_seperator, direntry_name_buffer);
+				escaped_source = ShellEscapePath(source, src_path_separator, direntry_name_buffer);
+				escaped_dest = ShellEscapePath(target, dst_path_separator, direntry_name_buffer);
 				
 				snprintf(command, sizeof(command), "%s copy '%s' '%s' %s %s", pgmname, escaped_source, escaped_dest, ropt, bopt);
 				puts(command);
@@ -309,16 +305,16 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 	return(ec);
 }
 
-static char *ShellEscapePath(char *source, char *src_path_seperator, u_char *direntry_name_buffer)
+static char *ShellEscapePath(char *source, char *src_path_separator, u_char *direntry_name_buffer)
 {
-	char *buffer = malloc((strlen(source)+strlen(src_path_seperator)+strlen((const char *)direntry_name_buffer) * 4 ) + 1 );
+	char *buffer = malloc((strlen(source)+strlen(src_path_separator)+strlen((const char *)direntry_name_buffer) * 4 ) + 1 );
 	
 	if (buffer != NULL)
 	{
 		char *p;
 		
 		p = EscapePart( buffer, source );
-		p = EscapePart( p, src_path_seperator );
+		p = EscapePart( p, src_path_separator );
 		p = EscapePart( p, (char *)direntry_name_buffer );
 	}
 	
