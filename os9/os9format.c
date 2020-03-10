@@ -447,14 +447,14 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 
 	/***** Write LSN0 *****/
 	{
-		u_int size = sizeof(s0);
-		u_int size2 = sectorSize - size;
+		u_int s0size = sizeof(s0);
+		u_int padding = sectorSize - s0size;
 
 		/* write LSN0 structure */
-		_native_write(path, &s0, &size);
+		_native_write(path, &s0, &s0size);
 
 		/* fill in rest of sector with zeros */
-		while (size2--)
+		while (padding--)
 		{
 			u_int size = 1;
 			char nil = '\0';
@@ -466,23 +466,23 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	/***** Write Bitmap Sector(s) *****/
 	{
 		u_char *bitmap;
-		u_int size;
+		u_int bitmapSize;
 
-		size = bitmapSectors * sectorSize;
-		bitmap = (u_char *)malloc(size);
+		bitmapSize = bitmapSectors * sectorSize;
+		bitmap = (u_char *)malloc(bitmapSize);
 		if (bitmap == NULL)
 		{
 			return(1);
 		}
 
 		/* Clear out bitmap sectors (assume all space available) */
-		memset(bitmap, 0, size);
+		memset(bitmap, 0, bitmapSize);
 
 		/* Allocate bits after s0.dd_dot sectors to end of bitmap */
 		{
 			int extraBitStart = int3(s0.dd_tot) / clusterSize;
 
-			_os9_allbit(bitmap, extraBitStart, (size * 8) - extraBitStart);
+			_os9_allbit(bitmap, extraBitStart, (bitmapSize * 8) - extraBitStart);
 		}
 
 		/* Allocate LSN0, Bitmap Sectors, Root FD and Root Dir */
@@ -520,7 +520,7 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 			sectorsLeft -= sectorsToAlloc;
 		}
 
-		_native_write(path, bitmap, &size);
+		_native_write(path, bitmap, &bitmapSize);
 
 		free(bitmap);
 	}
