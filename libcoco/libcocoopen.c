@@ -19,8 +19,7 @@
  */
 error_code _coco_create(coco_path_id *path, char *pathlist, int mode, coco_file_stat *fstat)
 {
-    error_code	ec = 0;
-
+	error_code ec = 0;
 
 	/* 1. Allocate memory for the path id. */
 
@@ -31,20 +30,18 @@ error_code _coco_create(coco_path_id *path, char *pathlist, int mode, coco_file_
 		return EOS_BPNAM;
 	}
 
+	/* 2. Determine the pathlist type. */
 
-    /* 2. Determine the pathlist type. */
+	ec = _coco_identify_image(pathlist, &(*path)->type);
 
-    ec = _coco_identify_image(pathlist, &(*path)->type);
+	if (ec != 0)
+	{
+		free(*path);
+		*path=NULL;
+		return ec;
+	}
 
-    if (ec != 0)
-    {
-	free(*path);
-	*path=NULL;
-        return ec;
-    }
-
-
-    /* 3. Call appropriate create function. */
+	/* 3. Call appropriate create function. */
 
 	switch ((*path)->type)
 	{
@@ -76,7 +73,6 @@ error_code _coco_create(coco_path_id *path, char *pathlist, int mode, coco_file_
 }
 
 
-
 /*
  * _coco_open()
  *
@@ -94,8 +90,7 @@ error_code _coco_create(coco_path_id *path, char *pathlist, int mode, coco_file_
  */
 error_code _coco_open(coco_path_id *path, char *pathlist, int mode)
 {
-    error_code	ec = 0;
-
+	error_code ec = 0;
 
 	/* 1. Allocate memory for the path id. */
 
@@ -106,20 +101,18 @@ error_code _coco_open(coco_path_id *path, char *pathlist, int mode)
 		return EOS_BPNAM;
 	}
 
+	/* 2. Determine the pathlist type. */
 
-    /* 2. Determine the pathlist type. */
+	ec = _coco_identify_image(pathlist, &(*path)->type);
 
-    ec = _coco_identify_image(pathlist, &(*path)->type);
+	if (ec != 0)
+	{
+		free(*path);
+		*path=NULL;
+		return ec;
+	}
 
-    if (ec != 0)
-    {
-	free(*path);
-	*path=NULL;
-        return ec;
-    }
-
-
-    /* 3. Call appropriate open function. */
+	/* 3. Call appropriate open function. */
 
 	switch ((*path)->type)
 	{
@@ -150,7 +143,6 @@ error_code _coco_open(coco_path_id *path, char *pathlist, int mode)
 }
 
 
-
 /*
  * _coco_close()
  *
@@ -158,10 +150,9 @@ error_code _coco_open(coco_path_id *path, char *pathlist, int mode)
  */
 error_code _coco_close(coco_path_id path)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
-
-    /* 1. Call appropriate close function. */
+	/* 1. Call appropriate close function. */
 
 	switch (path->type)
 	{
@@ -181,9 +172,7 @@ error_code _coco_close(coco_path_id path)
 			ec = _cecb_close(path->path.cecb);
 	}
 
-
 	free(path);
-
 
 	return ec;
 }
@@ -196,34 +185,32 @@ error_code _coco_close(coco_path_id path)
  */
 error_code _coco_identify_image(char *pathlist, _path_type *type)
 {
-	error_code		ec = 0;
+	error_code ec = 0;
 	char *p, *path, *colon;
-    char *tmppathlist;
+	char *tmppathlist;
 	FILE *fp;
 
-
-    if (strchr(pathlist, ',') == NULL)
-    {
-        /* 1. No native/coco delimiter in pathlist, it's native. */
+	if (strchr(pathlist, ',') == NULL)
+	{
+		/* 1. No native/coco delimiter in pathlist, it's native. */
 
 		*type = NATIVE;
 
 		return ec;
-    }
+	}
 
+	/* 2. Check validity of pathlist. */
 
-    /* 2. Check validity of pathlist. */
+	tmppathlist = strdup(pathlist);
 
-    tmppathlist = strdup(pathlist);
+	p = strtok(tmppathlist, ",");
 
-    p = strtok(tmppathlist, ",");
+	if (p == NULL) /* if only comma */
+	{
+		free(tmppathlist);
 
-    if (p == NULL) /* if only comma */
-    {
-        free(tmppathlist);
-
-        return EOS_BPNAM;
-    }
+		return EOS_BPNAM;
+	}
 
 	/* 2a. Check for a colon followed by number in path part */
 
@@ -237,7 +224,8 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
 	}
 
 	/* 2b. Check for .cas file extension. */
-	if( strendcasecmp( p, CAS_FILE_EXTENSION ) == 0 )
+
+	if ( strendcasecmp( p, CAS_FILE_EXTENSION ) == 0 )
 	{
 		*type = CECB;
 
@@ -245,7 +233,7 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
 		return ec;
 	}
 
-    /* 3. Determine if this is an OS-9, DECB or CECB image. */
+	/* 3. Determine if this is an OS-9, DECB or CECB image. */
 
 	fp = fopen(tmppathlist, "rb");
 
@@ -262,7 +250,7 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
 		}
 		else
 		{
-			Lsn0_sect   os9_sector = (Lsn0_sect)sector_buffer;
+			Lsn0_sect os9_sector = (Lsn0_sect)sector_buffer;
 			int dir_sector_offset;
 			int bps = 256;
 
@@ -317,11 +305,9 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
 		ec = EOS_BPNAM;
 	}
 
+	free(tmppathlist);
 
-    free(tmppathlist);
-
-
-    return ec;
+	return ec;
 }
 
 #define BLOCKSIZE 256
