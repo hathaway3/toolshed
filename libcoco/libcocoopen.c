@@ -197,7 +197,7 @@ error_code _coco_close(coco_path_id path)
 error_code _coco_identify_image(char *pathlist, _path_type *type)
 {
 	error_code		ec = 0;
-	char *p, *colon;
+	char *p, *path, *colon;
     char *tmppathlist;
 	FILE *fp;
 
@@ -225,25 +225,15 @@ error_code _coco_identify_image(char *pathlist, _path_type *type)
         return EOS_BPNAM;
     }
 
-	/* 2a. Check for a colon followed by number ending image name part */
+	/* 2a. Check for a colon followed by number in path part */
 
-	/* Note this /might/ also match an MSDOS path with drive and all-numeric filename */
-
-	colon = strchr(p, ':');
-	if (colon && colon[1]) /* there is a colon and something after it */
+	path = strtok(NULL, "");
+	if (path && (colon = strchr(path, ':')) && isdigit(colon[1]))
 	{
-		char *num = colon + 1;
-		while(isdigit(*num))
-		{
-			num++;
-		};
-		if (!num[0]) /* If ending number it is a DECB image */
-		{
-			*type = DECB;
+		*type = DECB;
 
-			free(tmppathlist);
-			return ec;
-		}
+		free(tmppathlist);
+		return ec;
 	}
 
 	/* 2b. Check for .cas file extension. */
