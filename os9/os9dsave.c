@@ -268,7 +268,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 				
 				if (eoltranslate > 0)
 				{
-					strcat(ropt, "-l");
+					strcat(ropt, " -l");
 				}
 				
 				escaped_source = ShellEscapePath(source, src_path_separator, direntry_name_buffer);
