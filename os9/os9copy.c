@@ -283,7 +283,7 @@ int os9copy(int argc, char *argv[])
 	    char errorstr[TS_MAXSTR];
 
 	    TSReportError(ec, errorstr);
-            fprintf(stderr, "%s: error %d on file '%s': %s\n", argv[0], ec, argv[j], errorstr);
+            fprintf(stderr, "%s: error %d on file '%s' to '%s': %s\n", argv[0], ec, argv[j], df, errorstr);
         }
     }
 
