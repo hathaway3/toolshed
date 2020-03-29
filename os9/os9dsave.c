@@ -251,7 +251,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 			else
 			{
 				/* We've encountered a file -- just copy */
-				char ropt[4], bopt[32], *escaped_source, *escaped_dest;
+				char ropt[6], bopt[32], *escaped_source, *escaped_dest;
 
 				ropt[0] = 0;
 				bopt[0] = 0;
