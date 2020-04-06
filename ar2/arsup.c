@@ -197,9 +197,11 @@ void set_fstat(char *pn, FILDES *fs)
 #if !defined(WIN32)
 	struct passwd	*getpwuid();
 #endif
+/*
 	struct  {
 		long	a, m;
 		} ubuf;
+*/
 
 	s = (*p++&0xff);
 	s <<= 8;
@@ -212,8 +214,9 @@ void set_fstat(char *pn, FILDES *fs)
 	chown(pn, s, pwdbuf ? pwdbuf->pw_gid : s);
 #endif
 
-	ubuf.a = time((long *) 0);
-	ubuf.m = o2uDate(fs->fd_date);
+	struct utimbuf ubuf;
+	ubuf.actime = time((long *) 0);
+	ubuf.modtime = o2uDate(fs->fd_date);
 	utime(pn, &ubuf);
 #else
 # ifdef OSK
