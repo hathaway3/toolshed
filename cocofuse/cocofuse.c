@@ -8,13 +8,14 @@
 #include <fcntl.h>
 #include <string.h>
 #include <cocopath.h>
+#include <syslog.h>
 
 #define _FILE_OFFSET_BITS 64
 #define FUSE_USE_VERSION  26
 
 #include <toolshed.h>
 
-/* #define DEBUG */
+#define DEBUG
 
 #ifdef __linux__
 #include <unistd.h>
@@ -87,11 +88,7 @@ static int coco_statfs(const char *path, struct statvfs *stbuf)
 	}
 	
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_statfs(%s) = %d", path, type);
-# else
 	syslog(LOG_DEBUG,"coco_statfs(%s) = %d", path, type);
-# endif
 #endif
 	return 0;
 }
@@ -144,11 +141,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
     }
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_fgetattr(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_fgetattr(%s) = %d", path, ec);
-# endif
 #endif
 
     return ec;
@@ -194,11 +187,7 @@ static int coco_getattr(const char *path, struct stat *stbuf)
     }
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_getattr(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_getattr(%s) = %d", path, ec);
-# endif
 #endif
 
     return ec;
@@ -217,11 +206,7 @@ static int coco_mkdir(const char *path, mode_t mode)
 	ec = -CoCoToUnixError(_coco_makdir(buff));
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_makdir(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_makdir(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -240,11 +225,7 @@ static int coco_unlink(const char *path)
 	ec = -CoCoToUnixError(_coco_delete(buff));
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_unlink(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_unlink(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -262,11 +243,7 @@ static int coco_rmdir(const char *path)
 	sprintf(buff, "%s,%s", dsk, path);
 //	ec = -CoCoToUnixError(_coco_deldir(buff)); //, CoCoToUnixPerm(mode));
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_rmdir(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_rmdir(%s) = %d", path, ec);
-# endif
 #endif
 	
 	return ec;
@@ -313,11 +290,7 @@ static int coco_rename(const char *path, const char *newname)
 	ec = -CoCoToUnixError(_coco_rename(buff1, p2 + 1));
 #endif
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_rename(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_rename(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -341,11 +314,7 @@ static int coco_chmod(const char *path, mode_t mode)
 	}
 	
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_chmod(%s, $%X) = %d", path, mode, ec);
-# else
 	syslog(LOG_DEBUG,"coco_chmod(%s, $%X) = %d", path, mode, ec);
-# endif
 #endif
 
 	return ec;
@@ -370,11 +339,7 @@ static int coco_truncate(const char *path, off_t size)
 	}
 	
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_truncate(%s, %d) = %d", path, size, ec);
-# else
-	syslog(LOG_DEBUG,"coco_truncate(%s, %ld) = %d", path, size, ec);
-# endif
+	syslog(LOG_DEBUG,"coco_truncate(%s, %lld) = %d", path, size, ec);
 #endif
 
 	return ec;
@@ -396,15 +361,11 @@ static int coco_open(const char *path, struct fuse_file_info *fi)
 	}
 	if ((ec =  -CoCoToUnixError(_coco_open(&p, buff, mflags))) == 0)
 	{
-		fi->fh = (uint32_t)p;
+		fi->fh = (uint64_t)p;
 	}
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_open(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_open(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -416,7 +377,7 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	error_code ec;
 	uint32_t _size = size;
 
-	coco_path_id p = (coco_path_id)(uint32_t)fi->fh;
+	coco_path_id p = (coco_path_id)fi->fh;
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec = -CoCoToUnixError(_coco_read(p, buf, &_size))) != 0)
 	{
@@ -424,11 +385,7 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	}
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_read(%s, $%X, %d) = %d", path, buf, size, ec);
-# else
 	syslog(LOG_DEBUG,"coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
-# endif
 #endif
 
 	return size;
@@ -440,7 +397,7 @@ static int coco_write(const char *path, const char *buf, size_t size, off_t offs
 	error_code ec;
 	uint32_t _size = size;
 
-	coco_path_id p = (coco_path_id)(uint32_t)fi->fh;
+	coco_path_id p = (coco_path_id)fi->fh;
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec = -CoCoToUnixError(_coco_write(p, (char *)buf, &_size))) != 0)
 	{
@@ -448,11 +405,7 @@ static int coco_write(const char *path, const char *buf, size_t size, off_t offs
 	}
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_write(%s, $%X, %d) = %d", path, buf, size, ec);
-# else
 	syslog(LOG_DEBUG,"coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
-# endif
 #endif
 
 	return size;
@@ -469,14 +422,10 @@ static int coco_release(const char *path, struct fuse_file_info *fi)
 {
 	error_code ec;
 	
-	ec = -CoCoToUnixError(_coco_close((coco_path_id)(int32_t)fi->fh));
+	ec = 0;// -CoCoToUnixError(_coco_close((coco_path_id)fi->fh));
 	
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_release(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_release(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -508,11 +457,7 @@ static int coco_create(const char *path, mode_t perms, struct fuse_file_info * f
 	fi->fh = (uint32_t)p;
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_create(%s, $%X) = %d", path, perms, ec);
-# else
 	syslog(LOG_DEBUG,"coco_create(%s, $%X) = %d", path, perms, ec);
-# endif
 #endif
 
 	return ec;
@@ -540,11 +485,7 @@ static int coco_opendir(const char *path, struct fuse_file_info *fi)
 	}
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_opendir(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_opendir(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -558,7 +499,7 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
 	coco_dir_entry e;
 	char buff[1024];
 
-#if !0
+#ifndef USE_PATH
 	sprintf(buff, "%s,%s", dsk, path);
 	if (_coco_open(&p, buff, FAM_READ | FAM_DIR) != 0)
 	{
@@ -599,16 +540,12 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
 		}
 	}	
 
-#if !0
+#if USE_PATH
 	_coco_close(p);
 #endif
 
 #ifdef DEBUG
-# if defined(__APPLE__)
-	NSLog(@"coco_readdir(%s) = %d", path, ec);
-# else
 	syslog(LOG_DEBUG,"coco_readdir(%s) = %d", path, ec);
-# endif
 #endif
 
 	return ec;
@@ -694,4 +631,5 @@ int main(int argc, char **argv)
         }
         return rc;
 }
+
 #endif  /* COCOFUSE_MAC */
