@@ -138,6 +138,9 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 		/* if failure, open as directory */
 		if ((ec = -CoCoToUnixError(_coco_open(&p, buff, FAM_READ | FAM_DIR))) != 0)
 		{
+#ifdef DEBUG
+	syslog(LOG_LEVEL, "coco_fgetattr(%s) = %d", path, ec);
+#endif
 			return ec;
 		}
 
@@ -419,6 +422,9 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec = -CoCoToUnixError(_coco_read(p, buf, &_size))) != 0)
 	{
+#ifdef DEBUG
+	syslog(LOG_LEVEL, "coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+#endif
 		return ec;
 	}
 
@@ -439,6 +445,9 @@ static int coco_write(const char *path, const char *buf, size_t size, off_t offs
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec = -CoCoToUnixError(_coco_write(p, (char *)buf, &_size))) != 0)
 	{
+#ifdef DEBUG
+	syslog(LOG_LEVEL, "coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+#endif
 		return ec;
 	}
 
@@ -460,7 +469,7 @@ static int coco_release(const char *path, struct fuse_file_info *fi)
 {
 	error_code ec;
 	
-	ec = 0; //-CoCoToUnixError(_coco_close((coco_path_id)fi->fh));
+	ec = -CoCoToUnixError(_coco_close((coco_path_id)fi->fh));
 	
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_release(%s) = %d", path, ec);
@@ -489,6 +498,9 @@ static int coco_create(const char *path, mode_t perms, struct fuse_file_info * f
 
 	if ((ec = -CoCoToUnixError(_coco_create(&p, buff, mflags, &fstat))) != 0)
 	{
+#ifdef DEBUG
+		syslog(LOG_LEVEL, "coco_create(%s, $%X) = %d", path, perms, ec);
+#endif
 		return ec;
 	}
 
