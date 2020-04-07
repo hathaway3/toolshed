@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <errno.h>
 #include "cocotypes.h"
 #include "os9path.h"
 #include "cococonv.h"
@@ -48,9 +49,9 @@ error_code _os9_ss_fd(os9_path_id path, int count, fd_stats *fdbuf)
         {
             size = count;
         }
+
         fwrite(fdbuf, 1, size, path->fd);
     }
-
 
     return(ec);
 }

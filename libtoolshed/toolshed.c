@@ -207,7 +207,11 @@ error_code TSRBFAttrGet(char *p, char *attr, char *strattr)
 
     if (ec != 0)
     {
-        return(ec);
+    	ec = _os9_open(&path, p, FAM_READ | FAM_DIR);
+    	if (ec != 0)
+	{
+       		return(ec);
+	}
     }
 
     {
@@ -241,7 +245,11 @@ error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask, char *at
 
     if (ec != 0)
     {
-        return(ec);
+    	ec = _os9_open(&path, file, FAM_WRITE | FAM_DIR);
+	if (ec != 0)
+	{
+        	return(ec);
+	}
     }
 
     {

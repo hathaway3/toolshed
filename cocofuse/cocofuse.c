@@ -34,6 +34,8 @@ static int coco_access(const char *path, int mode);
 static int coco_statfs(const char *path, struct statvfs *stbuf);
 static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
 static int coco_getattr(const char *path, struct stat *stbuf);
+static int coco_chmod(const char *path, mode_t mode);
+static int coco_truncate(const char *path, off_t size);
 static int coco_open(const char *path, struct fuse_file_info *fi);
 
 /* DSK image filename pointer */
