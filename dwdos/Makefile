@@ -14,7 +14,7 @@ ROMS		= dw3dos_mb_cc3.rom dw3dos_mb_cc2.rom dw3dos_mb_cc1.rom dw3dos_mb_rs232_pa
 		dw3dos_dsk_bck.rom dw3dos_dsk_directmodem_pak.rom dw3dos_dsk_cocolink.rom \
 		dw3dos_dsk_bckwifi.rom \
 		dw3doscc3.bin dw3doscc2.bin dw3doscc1.bin dw3dos_rs232_pak.bin dw3dosbck.bin \
-		dw3dos_directmodem_pak.bin dw3dos_cocolink.bin dw3dos_bckwifi.bin
+		dw3dos_directmodem_pak.bin dw3dos_cocolink.bin dw3dos_bckwifi.bin mdrp.bin
 
 HSROMS		= dw4dos_mb_cc3.rom dw4dos_mb_cc2.rom \
 		dw4dos_dsk_cc3.rom dw4dos_dsk_cc2.rom \

@@ -30,8 +30,10 @@
 
 #include <fuse.h>
 
-static int coco_getattr(const char *path, struct stat *stbuf);
+static int coco_access(const char *path, int mode);
+static int coco_statfs(const char *path, struct statvfs *stbuf);
 static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
+static int coco_getattr(const char *path, struct stat *stbuf);
 static int coco_open(const char *path, struct fuse_file_info *fi);
 
 /* DSK image filename pointer */
@@ -42,20 +44,19 @@ static char dsk[1024];
 /*
  *
  */
-static int coco_access(const char *path, int perms)
+static int coco_access(const char *path, int mode)
 {
 	error_code ec = 0;
 
 	struct stat stbuf;
 	struct fuse_file_info fi;
 
-	ec = coco_fgetattr(path, &stbuf, &fi);
-	if (ec == 0)
+	if ((ec = -CoCoToUnixError(coco_fgetattr(path, &stbuf, &fi))) == 0)
 	{
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_access(%s, %d) = %d", path, perms, ec);
+	syslog(LOG_LEVEL, "coco_access(%s, %d) = %d", path, mode, ec);
 #endif
 	return ec;
 }
@@ -110,7 +111,7 @@ static int coco_statfs(const char *path, struct statvfs *stbuf)
 	}
 	
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_statfs(%s) = %d", path, type);
+	syslog(LOG_LEVEL, "coco_statfs(%s) = %d", path, type);
 #endif
 	return 0;
 }
@@ -128,9 +129,8 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 	coco_path_id p;
 
 	sprintf(buff, "%s,%s", dsk, path);
-	syslog(LOG_LEVEL, "coco_DROOr(%s) = %s", path, buff);
 
-	/* open as file first (/
+	/* open as file first */
 	if ((ec = -CoCoToUnixError(_coco_open(&p, buff, FAM_READ))) != 0)
 	{
 		/* if failure, open as directory */
@@ -178,7 +178,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_fgetattr(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_fgetattr(%s) = %d", path, ec);
 #endif
 
     return ec;
@@ -223,7 +223,7 @@ static int coco_getattr(const char *path, struct stat *stbuf)
     }
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_getattr(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_getattr(%s) = %d", path, ec);
 #endif
 
     return ec;
@@ -242,7 +242,7 @@ static int coco_mkdir(const char *path, mode_t mode)
 	ec = -CoCoToUnixError(_coco_makdir(buff));
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_makdir(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_makdir(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -261,7 +261,7 @@ static int coco_unlink(const char *path)
 	ec = -CoCoToUnixError(_coco_delete(buff));
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_unlink(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_unlink(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -277,9 +277,9 @@ static int coco_rmdir(const char *path)
 	char buff[1024];
 
 	sprintf(buff, "%s,%s", dsk, path);
-//	ec = -CoCoToUnixError(_coco_deldir(buff)); //, CoCoToUnixPerm(mode));
+	ec = -CoCoToUnixError(_coco_delete_directory(buff)); //, CoCoToUnixPerm(mode));
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_rmdir(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_rmdir(%s) = %d", path, ec);
 #endif
 	
 	return ec;
@@ -326,7 +326,7 @@ static int coco_rename(const char *path, const char *newname)
 	ec = -CoCoToUnixError(_coco_rename(buff1, p2 + 1));
 #endif
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_rename(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_rename(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -350,7 +350,7 @@ static int coco_chmod(const char *path, mode_t mode)
 	}
 	
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_chmod(%s, $%X) = %d", path, mode, ec);
+	syslog(LOG_LEVEL, "coco_chmod(%s, $%X) = %d", path, mode, ec);
 #endif
 
 	return ec;
@@ -375,7 +375,7 @@ static int coco_truncate(const char *path, off_t size)
 	}
 	
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_truncate(%s, %lld) = %d", path, size, ec);
+	syslog(LOG_LEVEL, "coco_truncate(%s, %lld) = %d", path, size, ec);
 #endif
 
 	return ec;
@@ -401,7 +401,7 @@ static int coco_open(const char *path, struct fuse_file_info *fi)
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_open(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_open(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -421,7 +421,7 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
 #endif
 
 	return size;
@@ -441,7 +441,7 @@ static int coco_write(const char *path, const char *buf, size_t size, off_t offs
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
 #endif
 
 	return size;
@@ -461,7 +461,7 @@ static int coco_release(const char *path, struct fuse_file_info *fi)
 	ec = 0; //-CoCoToUnixError(_coco_close((coco_path_id)fi->fh));
 	
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_release(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_release(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -493,7 +493,7 @@ static int coco_create(const char *path, mode_t perms, struct fuse_file_info * f
 	fi->fh = (uint64_t)p;
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_create(%s, $%X) = %d", path, perms, ec);
+	syslog(LOG_LEVEL, "coco_create(%s, $%X) = %d", path, perms, ec);
 #endif
 
 	return ec;
@@ -521,7 +521,7 @@ static int coco_opendir(const char *path, struct fuse_file_info *fi)
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_opendir(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_opendir(%s) = %d", path, ec);
 #endif
 
 	return ec;
@@ -581,7 +581,7 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
 #endif
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL,"coco_readdir(%s) = %d", path, ec);
+	syslog(LOG_LEVEL, "coco_readdir(%s) = %d", path, ec);
 #endif
 
 	return ec;

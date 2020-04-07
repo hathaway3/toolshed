@@ -37,7 +37,6 @@
          nam   DW3DOS
          ttl   DriveWire 3 DOS Command
 
-         ifp1  
 IntMasks equ   $50
 Carry    equ   1
 PIA0Base equ   $FF00
@@ -47,7 +46,6 @@ E$NotRdy equ   246
 Vi.PkSz  equ   0
 V.SCF    equ   0
          use   ../hdbdos/dwdefs.d
-         endc  
 
 * Set up Level definition for low level read/write routines
          IFEQ  CoCo-3
