@@ -187,7 +187,7 @@ error_code _cecb_parse_riff( cecb_path_id path )
 	fseek( path->fd, path->play_at * WAV_SAMPLE_MUL, SEEK_CUR );
 	path->wav_current_sample = path->play_at;
 	
-	if( (path->wav_frequency_limit == 0) || (path->wav_parity == NONE) )
+	if( (path->wav_frequency_limit == 0) || (path->wav_parity == AUTO) )
 		ec = analyze_wav_leader( path );
 	
 	return ec;
@@ -204,8 +204,8 @@ static error_code analyze_wav_leader( cecb_path_id path )
 {
 	error_code ec = 0;
 	int i, j, fail = 0;
-	int diff1, diff2, diff3, diff4, diff5;
-	double ma1, ma2, ma3, ma4, mah, mal, ratio;
+	int diff1 = 0, diff2 = 0, diff3 = 0, diff4 = 0, diff5 = 0;
+	double ma1, ma2, ma3, ma4, mah = 1, mal = 1, ratio;
 
 	ratio = movingavg( 4, 1.0 ); /* Seed ratio with out of range number */
 

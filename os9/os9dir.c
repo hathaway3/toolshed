@@ -180,13 +180,10 @@ retry:
 
 	while (_os9_gs_eof(path) == 0)
 	{
-		int size;
 		os9_dir_entry dentry;
 		os9_path_id path2;
 		fd_stats fdbuf;
 		char *filename;
-
-		size = sizeof(dentry);
 
 		ec = _os9_readdir(path, &dentry);
 

@@ -105,31 +105,32 @@ static int do_deldir(char **argv, char *path, int interaction)
 			printf("\nDeleting directory: %s\n", path );
 			printf("List directory, delete directory, or quit? (l/d/q) ");
 
-			scanf("%s", c);
-
-			switch( c[0] )
+			if (scanf("%s", c) > 0)
 			{
-				case 'l':
-					{
-						 char *argv[3];
-						 argv[0] = "dir";
-						 argv[1] = path;
-						 argv[2] = NULL;
-
-						 os9dir(2, argv);
-					}
-					break;
-
-				case 'd':
-					break;
-
-				case 'q':
+				switch( c[0] )
+				{
+					case 'l':
+						{
+							 char *argv[3];
+							 argv[0] = "dir";
+							 argv[1] = path;
+							 argv[2] = NULL;
+	
+							 os9dir(2, argv);
+						}
+						break;
+	
+					case 'd':
+						break;
+	
+					case 'q':
 					return 1;
 
-				default:
-                    c[0] = 'l'; /* Force the user to type l, d, or q */
-                    break;
-            }
+					default:
+       				             c[0] = 'l'; /* Force the user to type l, d, or q */
+       				             break;
+       				     }
+				}
         } while (c[0] == 'l');
     }
 

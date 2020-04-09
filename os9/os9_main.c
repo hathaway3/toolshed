@@ -129,11 +129,6 @@ static void show_os9_help(char const * const *helpMessage)
 {
     char const * const *p = helpMessage;
     struct cmdtbl *ptr = table;
-    char *argv[3];
-
-    argv[0] = "os9";
-    argv[1] = "-?";
-    argv[2] = NULL;
 
     while (*p)
     {
