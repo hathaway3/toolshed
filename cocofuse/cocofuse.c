@@ -380,7 +380,7 @@ static int coco_truncate(const char *path, off_t size)
 	}
 	
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_truncate(%s, %lld) = %d", path, size, ec);
+	syslog(LOG_LEVEL, "coco_truncate(%s, %ld) = %d", path, size, ec);
 #endif
 
 	return ec;
@@ -423,13 +423,13 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	if ((ec = -CoCoToUnixError(_coco_read(p, buf, &_size))) != 0)
 	{
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_read(%s, %p, %ld) = %d", path, buf, size, ec);
 #endif
 		return ec;
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_read(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_read(%s, %p, %ld) = %d", path, buf, size, ec);
 #endif
 
 	return size;
@@ -446,13 +446,13 @@ static int coco_write(const char *path, const char *buf, size_t size, off_t offs
 	if ((ec = -CoCoToUnixError(_coco_write(p, (char *)buf, &_size))) != 0)
 	{
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_write(%s, %p, %ld) = %d", path, buf, size, ec);
 #endif
 		return ec;
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_write(%s, $%X, %ld) = %d", path, (unsigned)buf, size, ec);
+	syslog(LOG_LEVEL, "coco_write(%s, %p, %ld) = %d", path, buf, size, ec);
 #endif
 
 	return size;
