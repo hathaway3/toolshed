@@ -13,7 +13,7 @@ INSTALLDIR	= /usr/local/bin
 DOCDIR		= /usr/local/share/toolshed
 endif
 DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys \
-		ar2 os9 mamou decb tocgen cocofuse makewav libcecb cecb doc
+		ar2 os9 mamou decb tocgen makewav libcecb cecb doc #cocofuse
 
 all:
 	$(foreach dir, $(DIRS), (cd $(dir); $(MAKE));)
