@@ -380,7 +380,11 @@ static int coco_truncate(const char *path, off_t size)
 	}
 	
 #ifdef DEBUG
+#ifdef __APPLE__
+	syslog(LOG_LEVEL, "coco_truncate(%s, %lld) = %d", path, size, ec);
+#else
 	syslog(LOG_LEVEL, "coco_truncate(%s, %ld) = %d", path, size, ec);
+#endif
 #endif
 
 	return ec;
