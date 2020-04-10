@@ -483,26 +483,26 @@ error_code _os9_open(os9_path_id *path, char *pathlist, int mode)
  */
 error_code _os9_open_parent_directory(os9_path_id *path, char *pathlist, int mode, char *filename)
 {
-    char	pathcopy[255], *a, *b;
+#define MAX_OPEN_BUFF 256
+    char	pathcopy[MAX_OPEN_BUFF], *lastPathComponent, *lastPathSeperator;
 	
-
     /* 1. Generate path to parent. */
 
-    strcpy( pathcopy, pathlist );
+    strncpy(pathcopy, pathlist, MAX_OPEN_BUFF - 1);
 	
-    a = strchr( pathcopy, ',' ) + 1;
-    b = strrchr( a, '/' );
+    lastPathComponent = strchr(pathcopy, ',') + 1;
+    lastPathSeperator = strrchr(lastPathComponent, '/');
 	
-    if (b != 0)
+    if (lastPathSeperator != NULL)
 	{
-        a = b + 1;
+        lastPathComponent = lastPathSeperator + 1;
 	}
 
-    strcpy( filename, a );
-    pathcopy[ a-pathcopy ] = '.';
-    pathcopy[ a-pathcopy+1 ] = '\0';
+    strcpy(filename, lastPathComponent);
+    pathcopy[lastPathComponent - pathcopy] = '.';
+    pathcopy[lastPathComponent - pathcopy + 1] = '\0';
 
-    return(_os9_open( path, pathcopy, mode));
+    return(_os9_open(path, pathcopy, mode));
 }
 
 

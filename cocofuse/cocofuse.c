@@ -75,41 +75,46 @@ static int coco_statfs(const char *path, struct statvfs *stbuf)
 	
 	sprintf(buff, "%s,%s", dsk, path);
 	_coco_identify_image(buff, &type);
+    
 	/* Here we revert to RBF or Disk BASIC to get details about the disk */
 	switch (type)
 	{
 		case OS9:
 			if (TSRBFFree(buff, dname, &month, &day, &year, &bps, &total_sectors, &bytes_free, &free_sectors, &largest_free_block, &sectors_per_cluster, &largest_count, &sector_count) == 0)
 			{
-				stbuf->f_bsize = stbuf->f_frsize = bps;
-				stbuf->f_blocks = total_sectors;
-				stbuf->f_bfree = free_sectors;
-				stbuf->f_bavail = free_sectors;
-				stbuf->f_files = 1000;
-				stbuf->f_ffree = 1000;
-				stbuf->f_favail = 1000;
-				stbuf->f_fsid = 6809;
-				stbuf->f_namemax = 29;
-			}
-			break;
-			
-		case DECB:
-			{
-				/* TODO: Put values here that make sense */
-				stbuf->f_bsize = stbuf->f_frsize = 256;
-				stbuf->f_blocks = 68;
-				stbuf->f_bfree = 68;
-				stbuf->f_bavail = 68;
-				stbuf->f_files = 1000;
-				stbuf->f_ffree = 1000;
-				stbuf->f_favail = 1000;
-				stbuf->f_fsid = 6809;
-				stbuf->f_namemax = 11;
+				stbuf->f_bsize = bps;               /* file system block size */
+                stbuf->f_frsize = stbuf->f_bsize;   /* fragment size */
+				stbuf->f_blocks = total_sectors;    /* size of fs in f_frsize units */
+				stbuf->f_bfree = free_sectors;      /* # free blocks */
+				stbuf->f_bavail = free_sectors;     /* # free blocks for unprivileged users */
+				stbuf->f_files = 1000;              /* # inodes */
+				stbuf->f_ffree = 1000;              /* # free inodes */
+				stbuf->f_favail = 1000;             /* # free inodes for unprivileged users */
+				stbuf->f_fsid = 6809;               /* file system ID */
+                stbuf->f_flag = 0;                  /* mount flags */
+				stbuf->f_namemax = 28;              /* maximum filename length */
 			}
 			break;
 
-               default:
-                        break;
+        case DECB:
+			{
+				/* TODO: Put values here that make sense */
+				stbuf->f_bsize = 256;               /* file system block size */
+                stbuf->f_frsize = stbuf->f_bsize;   /* fragment size */
+                stbuf->f_blocks = 612;              /* size of fs in f_frsize units */
+				stbuf->f_bfree = 612;               /* # free blocks */
+				stbuf->f_bavail = 612;              /* # free blocks for unprivileged users */
+				stbuf->f_files = 1000;              /* # inodes */
+				stbuf->f_ffree = 1000;              /* # free inodes */
+				stbuf->f_favail = 1000;             /* # free inodes for unprivileged users */
+				stbuf->f_fsid = 6809;               /* file system ID */
+                stbuf->f_flag = 0;                  /* mount flags */
+				stbuf->f_namemax = 11;              /* maximum filename length */
+			}
+			break;
+
+        default:
+            break;
 	}
 	
 #ifdef DEBUG
@@ -144,7 +149,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 			return ec;
 		}
 
-        	memset(stbuf, 0, sizeof(struct stat));
+        memset(stbuf, 0, sizeof(struct stat));
 
 		coco_file_stat fdbuf;
 
@@ -161,7 +166,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 
 			stbuf->st_mode |= CoCoToUnixPerms(fdbuf.attributes);
 
-       		         stbuf->st_nlink = 1;
+            stbuf->st_nlink = 1;
 
 			if (_coco_gs_size(p, &filesize) != 0)
 			{
@@ -177,7 +182,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 #endif
 			stbuf->st_uid = getuid();
 			stbuf->st_gid = getgid();
-    		}
+        }
 
 		_coco_close(p);	
 	}
@@ -201,7 +206,7 @@ static int coco_getattr(const char *path, struct stat *stbuf)
 	coco_file_stat fdbuf;
 	char buff[1024];
 	
-        memset(stbuf, 0, sizeof(struct stat));
+    memset(stbuf, 0, sizeof(struct stat));
 	sprintf(buff, "%s,%s", dsk, path);
 	if ((ec = -CoCoToUnixError(_coco_gs_fd_pathlist(buff, &fdbuf))) == 0)
 	{
@@ -301,7 +306,6 @@ static int coco_rmdir(const char *path)
 static int coco_rename(const char *path, const char *newname)
 {
 	error_code ec = 0;
-#if 0
 	char *p1, *p2;
 	char buff1[1024];
 	int renameonly = 0;
@@ -315,7 +319,11 @@ static int coco_rename(const char *path, const char *newname)
 	
 	if (p1 == NULL || p2 == NULL)
 	{
-		return -1;
+        ec = -1;
+#ifdef DEBUG
+            syslog(LOG_LEVEL, "coco_rename(%s) = %d", path, ec);
+#endif
+		return ec;
 	}
 	
 	*p1 = '\0'; *p2 = '\0';
@@ -325,11 +333,19 @@ static int coco_rename(const char *path, const char *newname)
 		renameonly = 1;
 	}
 	
-	*p1 = '/'; *p2 = '/';
-	
-	sprintf(buff1, "%s,%s", dsk, path);
-	ec = -CoCoToUnixError(_coco_rename(buff1, p2 + 1));
-#endif
+    if (renameonly == 1)
+    {
+        /* RENAME IN SAME FOLDER! */
+        *p1 = '/'; *p2 = '/';
+        
+        sprintf(buff1, "%s,%s", dsk, path);
+        ec = -CoCoToUnixError(_coco_rename(buff1, p2 + 1));
+    }
+    else
+    {
+        /* TODO: MOVE THEN DELETE! */
+    }
+    
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_rename(%s) = %d", path, ec);
 #endif
@@ -614,9 +630,9 @@ static int coco_utimens(const char *path, const struct timespec *tv)
 #ifndef COCOFUSE_MAC
 static struct fuse_operations coco_filesystem_operations =
 {
-        .statfs = coco_statfs,
-        .access = coco_access,
-        .truncate = coco_truncate,
+    .statfs = coco_statfs,
+    .access = coco_access,
+    .truncate = coco_truncate,
 	.getattr = coco_getattr,
 	.mkdir = coco_mkdir,
 	.unlink = coco_unlink,
@@ -644,47 +660,50 @@ void usage(char* name)
 
 int make_absolute( const char *path )
 {
-        if(path[0] == '/') 
-        {
-                /* absolute path - use as-is */
-                strcpy(dsk, path);
-        }
-        else 
-        {
-                /* relative path */
-                if (getcwd(dsk, 1024)==NULL) return -1;
-                /* Allow one for terminating null and 1 for separator
-                   slash */
-                if((1024 - strlen(dsk)) < (strlen(path)+2)) return -1;
-                strcat(dsk, "/");
-                strcat(dsk, path);
-        }
-        return 0;
+    if(path[0] == '/')
+    {
+            /* absolute path - use as-is */
+            strcpy(dsk, path);
+    }
+    else
+    {
+            /* relative path */
+            if (getcwd(dsk, 1024)==NULL) return -1;
+            /* Allow one for terminating null and 1 for separator
+               slash */
+            if((1024 - strlen(dsk)) < (strlen(path)+2)) return -1;
+            strcat(dsk, "/");
+            strcat(dsk, path);
+    }
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
-	if(argc < 3)
+	if (argc < 3)
+    {
 		usage(argv[0]);
+    }
 
-        int rc;
-        if(make_absolute(argv[1])<0)
-        {
-                fprintf(stderr, "Disk image path too long\n");
-                rc = 1;
-        }
-        else 
-        {
+    int rc;
+    if(make_absolute(argv[1]) < 0)
+    {
+            fprintf(stderr, "Disk image path too long\n");
+            rc = 1;
+    }
+    else
+    {
 #ifdef DEBUG
-                openlog("cocofuse", LOG_PID, LOG_DAEMON);
+            openlog("cocofuse", LOG_PID, LOG_DAEMON);
 #endif        
-                argv[1] = argv[0];
-                rc = fuse_main(argc - 1, &argv[1], &coco_filesystem_operations, NULL);
+            argv[1] = argv[0];
+            rc = fuse_main(argc - 1, &argv[1], &coco_filesystem_operations, NULL);
 #ifdef DEBUG
-                closelog();
+            closelog();
 #endif
-        }
-        return rc;
+    }
+    
+    return rc;
 }
 
 #endif  /* COCOFUSE_MAC */
