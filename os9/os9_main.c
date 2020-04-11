@@ -105,21 +105,17 @@ int main(int argc, char *argv[])
 
 static int do_command(int argc, char **argv)
 {
-    struct cmdtbl *x = table;
+    struct cmdtbl *x;
 
-    while (x->func != NULL)
+    for (x = table; x->func != NULL; x++)
     {
         if (strcmp(argv[0], x->keyword) == 0)
         {
             return(x->func(argc, argv));
         }
-        x++;
     }
 
-    if (x->func == NULL)
-    {
-        fprintf(stderr, "os9: unknown command '%s'\n", argv[0]);
-    }
+    fprintf(stderr, "os9: unknown command '%s'\n", argv[0]);
 
     return(1);
 }
@@ -127,20 +123,20 @@ static int do_command(int argc, char **argv)
 
 static void show_os9_help(char const * const *helpMessage)
 {
-    char const * const *p = helpMessage;
-    struct cmdtbl *ptr = table;
+    char const * const *p;
+    struct cmdtbl *ptr;
 
-    while (*p)
+    for (p = helpMessage; *p; p++)
     {
-        fputs(*(p++), stderr);
+        fputs(*p, stderr);
     }
 
     printf("\nCommands:\n");
 	
     while (ptr->keyword != NULL)
+    for (ptr = table; ptr->keyword != NULL; ptr++)
     {
         printf("     %s\n", ptr->keyword);
-        ptr++;
     }
 
     return;
