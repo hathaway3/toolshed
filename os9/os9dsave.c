@@ -14,6 +14,7 @@
 
 /* globals */
 u_int buffer_size = 32768;
+int singlequotes;
 
 error_code do_dsave(char *pgmname, char *source, char *target, int execute, int buffsize, int rewrite, int eoltranslate);
 static char *ShellEscapePath(char *source, char *src_path_separator, u_char *direntry_name_buffer);
@@ -44,7 +45,13 @@ int os9dsave(int argc, char *argv[])
 	int		eoltranslate = 0;
 	char		*target = NULL;
 	char		*source = NULL;
-	
+
+#ifdef WIN32
+	/* Use single quotes only if a Posix-like shell seems to be in use */
+	singlequotes = getenv("SHELL") != NULL;
+#else
+	singlequotes = 1;
+#endif
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
 	{
@@ -239,7 +246,14 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 				}
 
 				/* 3. make directory on target */
-				snprintf(command, sizeof(command), "os9 makdir '%s'", newTarget);
+				if (singlequotes)
+				{
+					snprintf(command, sizeof(command), "%s makdir '%s'", pgmname, newTarget);
+				}
+				else
+				{
+					snprintf(command, sizeof(command), "%s makdir \"%s\"", pgmname, newTarget);
+				}
 
 				puts(command);
 				if (execute) 
@@ -288,7 +302,14 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 				escaped_source = ShellEscapePath(source, src_path_separator, direntry_name_buffer);
 				escaped_dest = ShellEscapePath(target, dst_path_separator, direntry_name_buffer);
 				
-				snprintf(command, sizeof(command), "%s copy '%s' '%s' %s %s", pgmname, escaped_source, escaped_dest, ropt, bopt);
+				if (singlequotes)
+				{
+					snprintf(command, sizeof(command), "%s copy '%s' '%s' %s %s", pgmname, escaped_source, escaped_dest, ropt, bopt);
+				}
+				else
+				{
+					snprintf(command, sizeof(command), "%s copy \"%s\" \"%s\" %s %s", pgmname, escaped_source, escaped_dest, ropt, bopt);
+				}
 				puts(command);
 				if (execute)
 				{
@@ -340,7 +361,7 @@ static char *EscapePart( char *dest, char *src )
 {
 	while( *src != 0 )
 	{
-		if( *src == '\'' )
+		if( *src == '\'' && singlequotes )
 		{
 			*dest++ = '\'';
 			*dest++ = '\\';
