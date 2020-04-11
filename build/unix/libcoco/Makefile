@@ -3,7 +3,7 @@ include ../rules.mak
 
 vpath %.c ../../../libcoco
 
-CFLAGS	+= -g -I../../../include -Wall
+CFLAGS	+= -I../../../include -Wall
 
 %.a:
 	$(AR) -r $@ $^

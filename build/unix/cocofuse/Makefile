@@ -6,11 +6,11 @@ vpath %.c ../../../$(BINARY)
 
 OS := $(shell uname)
 ifeq ($(OS),Darwin)
-CFLAGS	+= -g -I../../../include -Wall -I/usr/local/include/osxfuse/fuse -DDEBUG
-LDFLAGS	+= -g -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -losxfuse
+CFLAGS	+= -I../../../include -Wall -I/usr/local/include/osxfuse/fuse -DDEBUG
+LDFLAGS	+= -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -losxfuse
 else
-CFLAGS	+= -g -I../../../include -Wall -DDEBUG
-LDFLAGS	+= -g -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -lfuse
+CFLAGS	+= -I../../../include -Wall -DDEBUG
+LDFLAGS	+= -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -lfuse
 endif
 
 $(BINARY):	$(BINARY).o
