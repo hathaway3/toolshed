@@ -362,7 +362,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks, int sectorsPerTra
 
 		if (oneEmptySector != NULL)
 		{
-			memset(oneEmptySector, 0, sectorSize);
+			memset(oneEmptySector, 0xE5, sectorSize);
 
 			while (sectorsLeft--)
 			{
