@@ -164,8 +164,13 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 
 	src_path_separator = "/";
 	
+	/* avoid leading slash in path on source image */
 	if (source[strlen(source) - 1] == ',')
 		src_path_separator = "";
+
+	/* avoid double slash if source is a folder with trailing slash */
+	if (strlen(source) > 1 && source[strlen(source) - 1] == '/')
+		source[strlen(source) - 1] = '\0';
 
 	_coco_identify_image(target, &type);
 	
@@ -174,8 +179,13 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 	else
 		dst_path_separator = "";
 	
+	/* avoid leading slash in path on target image */
 	if (target[strlen(target) - 1] == ',')
 		dst_path_separator = "";
+
+	/* avoid double slash if source is a folder with trailing slash */
+	if (strlen(target) > 1 && target[strlen(target) - 1] == '/')
+		target[strlen(target) - 1] = '\0';
 
 	while (_coco_readdir(sourcePath, &dirent) == 0)
 	{
