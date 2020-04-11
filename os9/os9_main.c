@@ -121,7 +121,7 @@ static int do_command(int argc, char **argv)
         fprintf(stderr, "os9: unknown command '%s'\n", argv[0]);
     }
 
-    return(0);
+    return(1);
 }
 
 

@@ -89,7 +89,7 @@ int decbdsave(int argc, char *argv[])
 	
 					default:
 						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+						return(1);
 				}
 			}
 		}
@@ -122,7 +122,7 @@ int decbdsave(int argc, char *argv[])
 	if (count < 1 || count > 2)
 	{
 		show_help(helpMessage);
-		return(0);
+		return(1);
 	}
 
 	/* if target is NULL, then source is really . and target is source */
