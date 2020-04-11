@@ -25,7 +25,7 @@ static char const * const helpMessage[] =
 	"Options:\n",
 	"     -b=size    size of copy buffer in bytes or K-bytes\n",
 	"     -e         actually execute commands\n",
-    "     -l         perform end of line translation on copy\n",
+	"     -l         perform end of line translation on copy\n",
 	"     -r         force rewrite on copy\n",
 	NULL
 };
@@ -133,6 +133,7 @@ int decbdsave(int argc, char *argv[])
 	}
 
 	/* do dsave */
+	/* TODO: Possibly use original argv[0] here? */
 	ec = do_dsave( "decb", source, target, execute, buffer_size, rewrite, eoltranslate);
 	if (ec != 0)
 	{

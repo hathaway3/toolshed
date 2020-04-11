@@ -135,6 +135,7 @@ int os9dsave(int argc, char *argv[])
 	}
 
 	/* do dsave */
+	/* TODO: Possibly use original argv[0] here? */
 	ec = do_dsave("os9", source, target, execute, buffer_size, rewrite, eoltranslate);
 	if (ec != 0)
 	{
@@ -144,7 +145,7 @@ int os9dsave(int argc, char *argv[])
 	return(ec);
 }
 
-
+/* this function is also used by the decb utility */
 error_code do_dsave(char *pgmname, char *source, char *target, int execute, int buffer_size, int rewrite, int eoltranslate)
 {
 	error_code	ec = 0;
@@ -266,6 +267,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 				ropt[0] = 0;
 				bopt[0] = 0;
 
+				/* not applicable for decb copy. TODO: search in pgmname if taken from argv */
 				if ( strcmp(pgmname, "os9") == 0 && buffer_size > 0)
 				{
 					sprintf(bopt, "-b=%d", buffer_size);
@@ -299,12 +301,12 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute, int 
 					}
 				}
 				
-				if(escaped_source != NULL)
+				if (escaped_source != NULL)
 				{
 					free( escaped_source );
 				}
 				
-				if(escaped_dest != NULL)
+				if (escaped_dest != NULL)
 				{
 					free( escaped_dest );
 				}
