@@ -59,7 +59,7 @@ int os9dsave(int argc, char *argv[])
 						q = p + strlen(p) - 1;
 						if (toupper(*q) == 'K')
 						{
-							*q = '0';
+							*q = '\0';
 							buffer_size = atoi(p) * 1024;
 						}
 						else
