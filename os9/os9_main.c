@@ -133,7 +133,6 @@ static void show_os9_help(char const * const *helpMessage)
 
     printf("\nCommands:\n");
 	
-    while (ptr->keyword != NULL)
     for (ptr = table; ptr->keyword != NULL; ptr++)
     {
         printf("     %s\n", ptr->keyword);
