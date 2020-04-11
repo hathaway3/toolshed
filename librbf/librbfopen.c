@@ -28,7 +28,7 @@ static int term_bitmap(os9_path_id path);
 static int init_lsn0(os9_path_id path);
 static int term_lsn0(os9_path_id path);
 static void _os9_truncate_seg_list( os9_path_id path );
-error_code _os9_file_exists( os9_path_id folder_path, char *filename );
+error_code _os9_file_exists( os9_path_id folder_path, char *filename);
 int validate_pathlist(os9_path_id *path, char *pathlist);
 
 
@@ -85,7 +85,7 @@ error_code _os9_create(os9_path_id *path, char *pathlist, int mode, int perms)
         time_t		now;
 //        struct tm 	*tm;
         int		newLSN;
-        char		filename[32];
+        char		*filename;
         os9_path_id 	parent_path;
         os9_dir_entry 	newDEntry;
         
@@ -93,7 +93,7 @@ error_code _os9_create(os9_path_id *path, char *pathlist, int mode, int perms)
         term_pd(*path);
 
 aa:
-        ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, filename);
+        ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, &filename);
 
         if (ec != 0)
         {
@@ -107,6 +107,7 @@ aa:
 
         if (ec != 0)
         {
+		free(filename);
             _os9_close(parent_path);
 			
             return ec;
@@ -135,6 +136,8 @@ aa:
 
         if (ec != 0)
 		{
+            free(filename);
+
             _os9_close(parent_path);
 
             return ec;
@@ -164,6 +167,7 @@ aa:
 		
         if (newLSN < 0)
         {
+            free(filename);
             _os9_close(parent_path);
 
             return EOS_DF;
@@ -187,6 +191,7 @@ aa:
 		
         memset( &newDEntry, 0, sizeof( os9_dir_entry ) );
         strcpy( (char *)&(newDEntry.name), filename );
+        free(filename);
         CStringToOS9String( (u_char *)&(newDEntry.name) );
         _int3( newLSN, newDEntry.lsn );
 
@@ -481,14 +486,13 @@ error_code _os9_open(os9_path_id *path, char *pathlist, int mode)
  *
  * Open a path to the file's directory
  */
-error_code _os9_open_parent_directory(os9_path_id *path, char *pathlist, int mode, char *filename)
+error_code _os9_open_parent_directory(os9_path_id *path, char *pathlist, int mode, char **filename)
 {
-#define MAX_OPEN_BUFF 256
-    char	pathcopy[MAX_OPEN_BUFF], *lastPathComponent, *lastPathSeperator;
+    char	*pathcopy, *lastPathComponent, *lastPathSeperator;
 	
     /* 1. Generate path to parent. */
 
-    strncpy(pathcopy, pathlist, MAX_OPEN_BUFF - 1);
+	pathcopy = strdup(pathlist);
 	
     lastPathComponent = strchr(pathcopy, ',') + 1;
     lastPathSeperator = strrchr(lastPathComponent, '/');
@@ -498,11 +502,16 @@ error_code _os9_open_parent_directory(os9_path_id *path, char *pathlist, int mod
         lastPathComponent = lastPathSeperator + 1;
 	}
 
-    strcpy(filename, lastPathComponent);
+	*filename = strdup(lastPathComponent);
+//    strcpy(filename, lastPathComponent);
     pathcopy[lastPathComponent - pathcopy] = '.';
     pathcopy[lastPathComponent - pathcopy + 1] = '\0';
 
-    return(_os9_open(path, pathcopy, mode));
+    error_code ec = _os9_open(path, pathcopy, mode);
+
+    free(pathcopy);
+
+    return ec;
 }
 
 
@@ -711,7 +720,7 @@ int validate_pathlist(os9_path_id *path, char *pathlist)
 
     /* 3. Copy OS-9 pathlist element. */
 	
-    strcpy((*path)->imgfile, p);
+    (*path)->imgfile = strdup(p);
 
     p = strtok(NULL, ",");
 
@@ -719,7 +728,8 @@ int validate_pathlist(os9_path_id *path, char *pathlist)
     {
         /* 1. There was nothing following the native/os9 delimiter, assume root. */
 		
-        strcpy((*path)->pathlist, ".");
+	
+        (*path)->pathlist = strdup(".");
     }
     else
     {
@@ -731,7 +741,7 @@ int validate_pathlist(os9_path_id *path, char *pathlist)
 			p++;
 		}
 
-        strcpy((*path)->pathlist, p);
+        (*path)->pathlist = strdup(p);
     }
 
     free(tmppathlist);
@@ -803,6 +813,15 @@ static int init_pd(os9_path_id *path, int mode)
 static int term_pd(os9_path_id path)
 {
     /* 1. Deallocate path structure. */
+	if (path->imgfile != NULL)
+	{
+		free(path->imgfile);
+	}
+
+	if (path->pathlist != NULL)
+	{
+		free(path->pathlist);
+	}
 	
     free(path);
 

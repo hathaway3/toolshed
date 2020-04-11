@@ -26,7 +26,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 {
     error_code	ec = 0;
     os9_path_id parent_path;
-	char filename[33];
+	char *filename;
 
 	if (strcasecmp(new_name, "." ) == 0 || (new_name[0] == '.' && new_name[1] == '.'))
 	{
@@ -40,7 +40,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 		return ec;
 	}
 
-	ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, filename);
+	ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, &filename);
 
 	if (ec != 0)
 	{
@@ -51,6 +51,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 
 	if (strcasecmp(filename, ".") == 0 || strcasecmp(filename, ".." ) == 0)
 	{
+		free(filename);
 		_os9_close(parent_path);
 
         return(EOS_IA);
@@ -85,6 +86,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 
 	if (ec == EOS_FAE)
 	{
+		free(filename);
 		_os9_close(parent_path);
 
 		return ec;
@@ -127,6 +129,13 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 		}
 	}
 
+	// if we get an end-of-file error, it means that the file doesn't exist -- return the right error in that case.
+	if (ec == EOS_EOF)
+	{
+		ec = EOS_PNNF;
+	}
+
+	free(filename);
 	_os9_close(parent_path);
 
 	return(ec);

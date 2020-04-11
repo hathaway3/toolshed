@@ -140,7 +140,7 @@ error_code _os9_delete(char *pathlist)
 {
     error_code	ec = 0;
     os9_path_id parent_path;
-    char filename[33];
+    char *filename;
 	int deleted = 0;
 
 
@@ -163,7 +163,7 @@ error_code _os9_delete(char *pathlist)
 	
     /* 2. Open parent directory. */
 
-    ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, filename);
+    ec = _os9_open_parent_directory(&parent_path, pathlist, FAM_DIR | FAM_WRITE, &filename);
 
     if (ec != 0)
     {
@@ -175,6 +175,7 @@ error_code _os9_delete(char *pathlist)
 		
     if (!strcasecmp(filename, "." ))
     {
+   	free(filename);
         _os9_close(parent_path);
 
         return EOS_IA;
@@ -182,6 +183,7 @@ error_code _os9_delete(char *pathlist)
 
     if (!strcasecmp(filename, ".." ))
     {
+   	free(filename);
         _os9_close(parent_path);
 
         return EOS_IA;
@@ -249,6 +251,7 @@ error_code _os9_delete(char *pathlist)
         }
     }
 	
+   free(filename);
     _os9_close(parent_path);
     
 	if (deleted == 0)

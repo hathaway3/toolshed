@@ -96,8 +96,8 @@ typedef struct
 typedef struct _os9_path_id
 {
 	int		mode;		/* access mode */
-	char		imgfile[512];	/* pointer to image file */
-	char		pathlist[512];	/* pointer to pathlist */
+	char		*imgfile;	/* pointer to image file */
+	char		*pathlist;	/* pointer to pathlist */
 	unsigned int	pl_fd_lsn;	/* pathlist's FD LSN */
 	unsigned int	filepos;	/* file position */
 	FILE		*fd;		/* file path pointer */
@@ -118,7 +118,7 @@ typedef struct _os9_path_id
 
 error_code _os9_open(os9_path_id *, char *, int);
 error_code _os9_create(os9_path_id *, char *, int, int);
-error_code _os9_open_parent_directory( os9_path_id *path, char *pathlist, int mode, char *filename );
+error_code _os9_open_parent_directory( os9_path_id *path, char *pathlist, int mode, char **filename );
 error_code _os9_read(os9_path_id, void *, u_int *);
 error_code _os9_readdir(os9_path_id, os9_dir_entry *);
 error_code _os9_ncpy_name( os9_dir_entry e, u_char *name, size_t len );
@@ -140,6 +140,7 @@ error_code _os9_delete_directory(char *pathlist);
 error_code _os9_rename( char *pathlist, char *new_name );
 error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry);
 error_code _os9_close(os9_path_id);
+error_code _os9_format(char *pathname, int os968k, int tracks, int sectorsPerTrack, int heads, int sectorSize, int clusterSize, char *diskName, int sectorAllocationSize, int tpi, int density, int formatEntire, int isDragon, int isHDD, unsigned int *totalSectors, unsigned int *totalBytes);
 
 /* gs.c */
 error_code _os9_gs_attr(os9_path_id, int *);

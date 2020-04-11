@@ -20,7 +20,7 @@ error_code _os9_makdir( char *pathlist )
 {
     error_code		ec = 0;
     os9_path_id 	parent_path, dir_path;
-    char 			filename[32];
+    char 			*filename;
     int				parentLSN;
     os9_dir_entry   newEntry;
     char			t_path[256];
@@ -30,7 +30,8 @@ error_code _os9_makdir( char *pathlist )
 	
     strcpy(t_path, pathlist);
 	
-    ec = _os9_open_parent_directory(&parent_path, t_path, FAM_DIR | FAM_WRITE, filename);
+    ec = _os9_open_parent_directory(&parent_path, t_path, FAM_DIR | FAM_WRITE, &filename);
+    free(filename);
 
     if (ec == 0)
 	{
