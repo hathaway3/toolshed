@@ -91,7 +91,6 @@ int _dtb(assembler *as)
  * OS-9 ASM DIRECTIVES (MOD, EMOD)
  *
  *****************************************************************************/
-#pragma mark OS-9 Asm Directives
 
 /*!
 	@function _mod
@@ -262,7 +261,6 @@ int _emod(assembler *as)
  * CONDITIONAL DIRECTIVES (IF, IFP1, IFP2, IFNE, IFEQ, ELSE, ENDC, etc.)
  *
  *****************************************************************************/
-#pragma mark Conditional Directives
 
 typedef enum
 {
@@ -511,7 +509,6 @@ int _else(assembler *as)
  * ALIGNMENT DIRECTIVES
  *
  *****************************************************************************/
-#pragma mark Alignment Directives
 
 /*!
 	@function _align
@@ -621,7 +618,6 @@ int _odd(assembler *as)
 * PAGING DIRECTIVES (NAM, TTL, PAGE, etc.)
 *
 *****************************************************************************/
-#pragma mark Paging Directives
 
 /*!
 	@function nam
@@ -1427,7 +1423,6 @@ int __end(assembler *as)
 * RESERVE MEMORY STORAGE (RMB, etc.)
 *
 *****************************************************************************/
-#pragma mark Reserve Memory Storage
 
 static int _reserve_memory(assembler *as, int size);
 
@@ -1523,7 +1518,6 @@ int _rmq(assembler *as)
  * FILL CONSTANT DATA
  *
  *****************************************************************************/
-#pragma mark Fill Constant Data
 
 static int _fill_constant(assembler *as, int size, int byteswapped);
 
@@ -1642,7 +1636,6 @@ int _fqb(assembler *as)
  * FILL CONSTANT DATA WITH VALUE
  *
  *****************************************************************************/
-#pragma mark Fill Constant Data With Value
 
 static int _fill_constant_with_value(assembler *as, int size, int value);
 
