@@ -121,11 +121,6 @@ static void show_decb_help(char const * const *helpMessage)
 {
 	char const * const *p = helpMessage;
 	struct cmdtbl *ptr = table;
-	char *argv[3];
-
-	argv[0] = "decb";
-	argv[1] = "-?";
-	argv[2] = NULL;
 
 	while (*p)
 	{

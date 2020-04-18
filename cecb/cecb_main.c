@@ -171,11 +171,6 @@ static void show_cecb_help(char const * const *helpMessage)
 {
 	char const * const *p = helpMessage;
 	struct cmdtbl *ptr = table;
-	char *argv[3];
-
-	argv[0] = "cecb";
-	argv[1] = "-?";
-	argv[2] = NULL;
 
 	while (*p)
 	{
