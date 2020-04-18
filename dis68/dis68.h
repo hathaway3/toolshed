@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
+#ifdef WIN32
+typedef unsigned int u_int;
+typedef unsigned short u_short;
+#endif
 
 
 #define SREG(a)		((a) & 7)			/* source register bits			*/

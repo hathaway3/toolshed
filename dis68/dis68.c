@@ -48,6 +48,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#ifdef WIN32
+typedef unsigned int u_int;
+typedef unsigned short u_short;
+#endif
 #include "dis68.h"
 
 int		prnflg = 1;				/* default to pretty printing on */
@@ -385,6 +389,9 @@ void	psect()
 	mtrap = getldat(0);                                     /* M$expt */
 	mmem = getldat(0);                                       /* M$Mem */
 	ppc += 0x3c;
+
+	(void) mname; /* unused for now */
+
 	if (pass == 2)
 		{
 		if (prnflg)
