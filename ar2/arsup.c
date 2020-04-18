@@ -193,9 +193,8 @@ void set_fstat(char *pn, FILDES *fs)
 	char			*p = fs->fd_own;
 	short			s;
 	short			mode = o2uFmode(fs->fd_attr);
-	struct passwd	*pwdbuf;
 #if !defined(WIN32)
-	struct passwd	*getpwuid();
+	struct passwd	*pwdbuf;
 #endif
 /*
 	struct  {

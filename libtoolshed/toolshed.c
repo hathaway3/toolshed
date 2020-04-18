@@ -3,6 +3,9 @@
  ********************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+#include <direct.h>
+#endif
 
 #include <toolshed.h>
 
@@ -648,20 +651,6 @@ EOL_Type DetermineEOLType(char *buffer, int size)
 }
 
 
-#ifdef	WIN32
-#define	_S_IRGRP	0x0020	/* RG, made this up */
-#define	_S_IXGRP	0x0008	/* ditto */
-#define	_S_IROTH	0x0004	/* ditto */
-#define	_S_IXOTH	0x0001	/* ditto */
-#define	S_IRGRP		_S_IRGRP	/* ditto */
-#define	S_IXGRP		_S_IXGRP	/* ditto */
-#define	S_IROTH		_S_IROTH	/* ditto */
-#define	S_IXOTH		_S_IXOTH	/* ditto */
-#define MKDIR(D,P) mkdir((D))
-#else
-#define MKDIR(D,P) mkdir(D,P)
-#endif
-
 int TSMakeDirectory(char *p)
 {
 	error_code		ec = 0;
@@ -674,8 +663,11 @@ int TSMakeDirectory(char *p)
 	if (strchr(p, ',') == NULL)
 	{
 		/* 1. Call the native file system makdir */
-		ec = MKDIR(p, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-		/* ec = mkdir(p); */
+#ifndef WIN32
+		ec = mkdir(p, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#else
+		ec = _mkdir(p);
+#endif
 	}
 	else
 	{

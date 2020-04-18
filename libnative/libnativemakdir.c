@@ -13,6 +13,9 @@
 #include "cocotypes.h"
 #include "cococonv.h"
 #include "nativepath.h"
+#ifdef WIN32
+#include <direct.h>
+#endif
 
 
 error_code _native_makdir(char *pathlist)
