@@ -43,11 +43,11 @@ int os9list(int argc, char *argv[])
 					case 'h':
 					case '?':
 						show_help(helpMessage);
-						return(0);
+						return 0;
 	
 					default:
 						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+						return 1;
 				}
 			}
 		}
@@ -70,17 +70,15 @@ int os9list(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return 1;
 	}
 
 	/* open a path to the file */
 	ec = _os9_open(&path, p, FAM_READ);
 	if (ec != 0)
 	{
-		_os9_close(path);
 		printf("Error %d opening %s\n", ec, p);
-
-		return(ec);
+		return ec;
 	}
 
 	while (_os9_gs_eof(path) == 0)
@@ -109,5 +107,5 @@ int os9list(int argc, char *argv[])
 
 	_os9_close(path);
 
-	return(0);
+	return 0;
 }
