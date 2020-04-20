@@ -46,13 +46,10 @@ error_code _decb_prsnam(char *filename)
 
 	if (dot != NULL)
 	{
-		*dot = 0;
-		if (strlen(filename) > 8 || strlen(dot + 1) > 3)
+		if (dot - filename > 8 || strlen(dot + 1) > 3)
 		{
 			ec = EOS_BPNAM;
 		}
-
-		*dot = '.';
 	}
 	else
 	{
