@@ -4,6 +4,55 @@
  * $Id$
  ********************************************************************/
 
+/*
+From http://www.cs.unc.edu/~yakowenk/coco/text/diskformat.html
+
+CoCo Disk BASIC disks are formatted to contain 35 tracks, numbered 0 through 34.
+Each track has 18 sectors, numbered 1 through 18. A sector contains 256 bytes.
+
+Track number 17 is special; it contains the directory and File Allocation Table (or FAT).
+Every other track is divided into two granules; in those tracks, sectors 1 through 9 form
+one granule, and sectors 10 through 18 form the other. So there are 68 granules on a disk,
+numbered 0 through 67, each containing 2304 bytes. Disk space for files is allocated by
+the granule, so even if you create a file that contains only one byte, a whole granule of
+2304 bytes is reserved for it. While it may seem wasteful at first, this reduces the
+amount of work in allocating space for the file as you add to it. The computer only has
+to do that allocation work once for every 2304 bytes that you add. It also reduces
+fragmentation - by reserving space in such big chunks, your file can't possibly end up
+scattered all over the disk in little tiny pieces.
+
+The directory track (17) contains the file allocation table in sector 2, and the directory
+of files in sectors 3 through 11. The remaining sectors on the directory track are unused
+("reserved for future use").
+
+The file allocation table is 68 bytes long; one byte for each granule on the disk. If one
+of these bytes is between 0 and 67, it tells the number of the next granule used by the
+same file. If it is between 192 and 201 (hex C0 and C9), then this is the last granule
+allocated for its file, and the least significant four bits tell how many sectors of the
+granule are used. If it is FF then it is unused, and may be allocated as needed. So the
+bytes in the FAT form a linked list for each file, telling which granules the file
+consists of.
+
+Each directory sector contains eight entries of 32 bytes each. So the entire directory
+has room for 72 files. (There is room in the directory for more files than there are
+granules on the disk!) Each entry contains:
+
+	eight bytes for the filename (padded with spaces)
+	three bytes for the filename extension (padded with spaces)
+	one file-type byte
+	(0=BASIC program, 1=BASIC data, 2=machine code, or 3=ASCII text)
+	one format byte (0=binary or FF=ASCII)
+	one byte telling the number of the file's first granule
+	two bytes telling the number of bytes used in the last sector in the last granule,
+	sixteen unused bytes ("reserved for future use" again).
+	
+Color Disk BASIC reserves track 17 for the directory because that is the middle position
+for the read/write head of the disk drive, so it should be efficient for frequent access.
+When allocating granules to be used in files, it chooses granules that are close to the
+directory first, so in a half-full disk you would expect the outermost and innermost
+tracks to be empty, and the tracks near the directory to be full.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
