@@ -12,9 +12,9 @@
 #include <os9module.h>
 
 
-error_code _os9_prsnam(char *filename)
+error_code _os9_prsnam(const char *filename)
 {
-    char  *a = filename;
+    const char *a = filename;
     int	  length = 0;	
 
     while (*a != 0)
@@ -36,7 +36,7 @@ error_code _os9_prsnam(char *filename)
 
 
 
-error_code _decb_prsnam(char *filename)
+error_code _decb_prsnam(const char *filename)
 {
 	error_code  ec = 0;
 	char *dot;
@@ -63,7 +63,7 @@ error_code _decb_prsnam(char *filename)
 	return ec;
 }
 
-error_code _cecb_prsnam( char *filename )
+error_code _cecb_prsnam(const char *filename )
 {
 	error_code	ec = 0;
 	int i;
