@@ -22,7 +22,7 @@ all:
 install: all
 	$(INSTALL) -d $(INSTALLDIR) $(DOCDIR)
 	$(INSTALL) ar2/ar2 os9/os9 mamou/mamou cecb/cecb decb/decb \
-	    tocgen/tocgen makewav/makewav $(INSTALLDIR)
+	    tocgen/tocgen makewav/makewav dis68/dis68 $(INSTALLDIR)
 	-$(INSTALL) cocofuse/cocofuse $(INSTALLDIR)
 	$(INSTALL) -m 0644 doc/ToolShed.html $(DOCDIR)
 
