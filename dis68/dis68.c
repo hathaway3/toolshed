@@ -18,7 +18,7 @@
   dis68 will look for unless a name is provided with the -p option.  The
   format of the parm file is a letter specifying what this block should
   be and a hex address of the last byte of the block. For example, the
-  parm file for the included demonstration binary, bsrl, is ths:
+  parm file for the included demonstration binary, bsrl, is this:
 
   l 47
   t 4d

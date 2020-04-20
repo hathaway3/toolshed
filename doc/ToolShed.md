@@ -50,6 +50,7 @@ ToolShed v2.2
   * [LIST](#list_decb) - Display the contents of a file
   * [RENAME](#rename_decb) - Give a file a new filename
 * [ar2](#ar2)
+* [dis68](#dis68)
 
 ---
 
@@ -1170,3 +1171,21 @@ Pre-extension is used during extraction to avoid segment table overflow problems
 The concatenation of two '.ar' files is still an archive, with certain limitations. If a duplicate file with duplicate version appears in both archives prior to concatenation, only the last one physically in the archive file will be saved on extraction. (Both version will actually be extracted, but the last one will overwrite earlier versions.)  One could, of course, double the size of Ar with all manner of prompting, perusing, and choosing in cases like that but I prefer to rely on the innate ability of the user deal with such problems outside of Ar.
 
 The archive file is opened in update only if necessary, so the last modified date of the archive is not disturbed by extraction or perusal. This should go a long way toward making rational backup of archives possible.
+
+---
+
+<h2 id="dis68">dis68</h2>
+
+This is a disassembler for OS-9/68K written by Carl Kreider and Dan Poole.
+
+It was written for OS-9/68K on OS-9/68K using the Microware compiler, which was more or less K&R at the time.  It has since been updated to compile with a modern compiler on Linux and on macOS.
+
+The dissassembler doesn't really know what to do without a parameter file to direct it.  It is not smart enough to figure out the contents of a binary by itself.  Normally one examines a hex dump of the binary to figure out what is text, what is code, and what is data.  It often takes a couple iterations to sort out. If you see garbage output instead of clean disassembly, it may be data or text instead of code. Fix the parameter file and try again.
+
+The parameter file does not have to be specified on the command line if it's name is the name of the binary with ".prm" tacked on. That is what dis68 will look for unless a name is provided with the -p option.  The format of the parm file is a letter specifying what this block should be and a hex address of the last byte of the block. For example, the parm file for the included demonstration binary, bsrl, is this:
+
+    l 47
+    t 4d
+    c 5f
+
+Since it is an OS-9/68K module and dis68 is not told otherwise, it will first take apart the module header. Next, it will assume long (32 bit) data up to and including address 0x47, text up to and including address 0x4d, and code up to and including address 0x5f.
