@@ -41,7 +41,6 @@ static inline int digittoint(int c)
 }
 #endif
 
-#define MAXPATHLEN 512
 #define PI 3.1415926
 
 int             seconds;
@@ -51,8 +50,8 @@ int             decb;
 char            filename[9];
 unsigned char   file_type;
 unsigned char   data_type;
-char            out_filename[MAXPATHLEN];
-char            in_filename[MAXPATHLEN];
+char           *out_filename;
+char           *in_filename;
 int             verbose;
 unsigned short  start_address;
 unsigned short  exec_address;
@@ -221,11 +220,10 @@ int             main(int argc, char **argv)
 	sample_rate = 11250;
 	binary = 0;
 	decb = 0;
-	memset(filename, ' ', 8);
-	strncpy(filename, "FILE", 4);
+	strcpy(filename, "FILE    ");
 	file_type = 2;
 	data_type = 0;
-	strncpy(out_filename, "file.wav", MAXPATHLEN);
+	out_filename = "file.wav";
 	verbose = 0;
 	start_address = 0;
 	exec_address = 0;
@@ -307,7 +305,7 @@ int             main(int argc, char **argv)
 				data_type = 0xff;
 				break;
 			case 'o':
-				strncpy(out_filename, &(argv[j][2]), MAXPATHLEN);
+				out_filename = &argv[j][2];
 				break;
 			case 'v':
 				verbose = 1;
@@ -329,7 +327,7 @@ int             main(int argc, char **argv)
 		}
 		else
 		{
-			strncpy(in_filename, argv[j], MAXPATHLEN);
+			in_filename = argv[j];
 		}
 
 	}
