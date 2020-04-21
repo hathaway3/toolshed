@@ -11,7 +11,7 @@ CFLAGS	+= -I../../../include -Wall
 
 libdecb.a:	libdecbgs.o libdecbkill.o libdecbopen.o libdecbread.o libdecbrename.o \
             libdecbseek.o libdecbss.o libdecbread.o libdecbwrite.o libdecbtokenize.o \
-            libdecbbinconcat.o libdecbsrec.o
+            libdecbbinconcat.o libdecbsrec.o libdecbdskini.o
 
 clean:
 	$(RM) *.o *.a

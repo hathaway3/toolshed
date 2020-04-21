@@ -456,7 +456,7 @@ static error_code validate_pathlist(cecb_path_id path, char *pathlist)
 		/* 1. Extract information out of pathlist. */
 
 		*p = '\0';
-		strncpy(path->imgfile, pathlist, 512);
+		path->imgfile = strdup(pathlist);
 		*p = ',';
 		p++;
 
@@ -504,7 +504,8 @@ static int term_pd(cecb_path_id path)
 		free( path->extra_chunks_buffer );
 		
 	/* 1. Deallocate path structure. */
-	
+	if (path->imgfile)
+		free(path->imgfile);
 	free(path);
 
 	/* 2. Return. */

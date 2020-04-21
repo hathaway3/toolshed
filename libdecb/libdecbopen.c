@@ -302,7 +302,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 	
 	(*path)->this_directory_entry_index = empty_entry;
 	
-	_decb_writedir(*path, &(*path)->dir_entry);
+	ec = _decb_writedir(*path, &(*path)->dir_entry);
 
 	
     return ec;
@@ -530,18 +530,14 @@ static int validate_pathlist(decb_path_id *path, char *pathlist)
 
 		/* 1. Extract information out of pathlist. */
 
-		*p = '\0';
-		strcpy((*path)->imgfile, pathlist);
-		*p = ',';
+		(*path)->imgfile = strndup(pathlist, p - pathlist);
 		p++;
 		if (*p == '/') p++;
 		q = strchr(p, ':');
 		if (q != NULL)
 		{
-			*q = '\0';
-			strcpy((*path)->filename, p);
+			(*path)->filename = strndup(p, p - q);
 			(*path)->drive = atoi(q + 1);
-			*q = ':';
 
 			q = strchr(p, '+');
 		    if (q != NULL)
@@ -554,7 +550,15 @@ static int validate_pathlist(decb_path_id *path, char *pathlist)
 		}
 		else
 		{
-			strcpy((*path)->filename, p);			
+			int len = strlen(p);
+			if (len <= 12)
+			{
+				(*path)->filename = strdup(p);			
+			}
+			else
+			{
+				ec = EOS_BPNAM;
+			}
 		}
 		
 #if 0
@@ -604,7 +608,13 @@ static int init_pd(decb_path_id *path, int mode)
 static int term_pd(decb_path_id path)
 {
 	/* 1. Deallocate path structure. */
-	
+
+	if (path->imgfile)
+		free(path->imgfile);
+		
+	if (path->filename)
+		free(path->filename);
+
 	free(path);
 
 

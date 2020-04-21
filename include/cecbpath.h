@@ -85,7 +85,7 @@ typedef struct _cecb_path_id
 {
 	int				mode;					/* access mode */
 	_tape_type		tape_type;				/* true for WAV files, false for CAS files */
-	char			imgfile[512];			/* pointer to image file */
+	char			*imgfile;				/* pointer to image file */
 	char			filename[8];			/* Filename requested */
 	cecb_dir_entry  dir_entry;
 	unsigned int	filepos;				/* file position */
