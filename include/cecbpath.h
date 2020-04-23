@@ -123,6 +123,7 @@ typedef struct _cecb_path_id
 	FILE			*fd;					/* file path pointer */
 } *cecb_path_id;
 
+error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, double silence_length);
 error_code _cecb_create(cecb_path_id *path, char *pathlist, int mode, int file_type, int data_type, int gap, int ml_load_address, int ml_exec_address);
 error_code _cecb_open(cecb_path_id *path, char *pathlist, int mode );
 error_code _cecb_close(cecb_path_id path);
