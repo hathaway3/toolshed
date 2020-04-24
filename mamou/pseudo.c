@@ -1212,11 +1212,12 @@ int _opt(assembler *as)
 		case 'o':	/* object file name */
 			if (opt_state == 0)
 			{
-				strncpy(as->object_name, as->line.optr + 1, FNAMESIZE - 1);
+				/* FIXME won't be freed */
+				as->object_name = strdup(as->line.optr + 1);
 			}
 			else
 			{
-				as->object_name[0] = EOS;
+				as->object_name = NULL;
 			}
 			break;
 
@@ -1331,7 +1332,8 @@ int _use(assembler *as)
 		
 		as->current_file = &use_file;
 		
-		strncpy(use_file.file, as->line.optr, FNAMESIZE);
+		strncpy(use_file.file, as->line.optr, FNAMESIZE - 1);
+		use_file.file[FNAMESIZE - 1] = '\0';
 
 		use_file.current_line = 0;
 		use_file.num_blank_lines = 0;
@@ -1339,7 +1341,7 @@ int _use(assembler *as)
 		use_file.end_encountered = 0;
 		
 		/* Open a path to the file. */
-		strncpy(path, use_file.file, FNAMESIZE);
+		strcpy(path, use_file.file);
 
 		do
 		{

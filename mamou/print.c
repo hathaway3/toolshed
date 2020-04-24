@@ -24,8 +24,8 @@
 void print_line(assembler *as, int override, char infochar, int counter)
 {
 	u_int i = 0;
-	char Tmp_buff[512];
-	char Line_buff[512];
+	char Tmp_buff[MAXBUF];
+	char Line_buff[MAXBUF];
 
 	Line_buff[0] = EOS;
 	
@@ -123,7 +123,7 @@ void print_line(assembler *as, int override, char infochar, int counter)
 	{
 		if (as->line.label[0] != EOS)
 		{
-			char tmp[512];
+			char tmp[MAXBUF + 1];
 			
 			sprintf(tmp, "%s:", as->line.label);
 			strcpy(as->line.label, tmp);
@@ -131,7 +131,7 @@ void print_line(assembler *as, int override, char infochar, int counter)
 		
 		if (as->line.Op[0] != EOS && as->line.mnemonic.type == OPCODE_PSEUDO)
 		{
-			char tmp[512];
+			char tmp[MAXBUF + 1];
 			
 			sprintf(tmp, ".%s", as->line.Op);
 			strcpy(as->line.Op, tmp);
@@ -139,7 +139,7 @@ void print_line(assembler *as, int override, char infochar, int counter)
 		
 		if (as->line.comment[0] != EOS)
 		{
-			char tmp[512];
+			char tmp[MAXBUF + 2];
 			
 			if (as->line.comment[0] == '*')
 			{
@@ -180,11 +180,11 @@ void print_line(assembler *as, int override, char infochar, int counter)
 		{
 			if (as->tabbed)
 			{
-				sprintf(Tmp_buff, "%s\t%s\t%s", as->line.label, as->line.Op, as->line.operand);
+				snprintf(Tmp_buff, MAXBUF, "%s\t%s\t%.256s", as->line.label, as->line.Op, as->line.operand);
 			}
 			else
 			{
-				sprintf(Tmp_buff, "%-14s %-9s %s", as->line.label, as->line.Op, as->line.operand);
+				snprintf(Tmp_buff, MAXBUF, "%-14s %-9s %.256s", as->line.label, as->line.Op, as->line.operand);
 			}
 			strcat(Line_buff, Tmp_buff);
 		}
@@ -192,11 +192,11 @@ void print_line(assembler *as, int override, char infochar, int counter)
 		{
 			if (as->tabbed)
 			{
-				sprintf(Tmp_buff, "%s\t%s\t%s\t%s", as->line.label, as->line.Op, as->line.operand, as->line.comment);
+				snprintf(Tmp_buff, MAXBUF, "%s\t%s\t%.256s\t%.512s", as->line.label, as->line.Op, as->line.operand, as->line.comment);
 			}
 			else
 			{
-				sprintf(Tmp_buff, "%-14s %-9s %-19s %s", as->line.label, as->line.Op, as->line.operand, as->line.comment);
+				snprintf(Tmp_buff, MAXBUF, "%-14s %-9s %-19.256s %.512s", as->line.label, as->line.Op, as->line.operand, as->line.comment);
 			}
 			strcat(Line_buff, Tmp_buff);
 		}
@@ -275,7 +275,7 @@ void print_summary(assembler *as)
 			   );
 	}
 	
-	if (as->object_name[0] == '\0')
+	if (as->object_name == NULL)
 	{
 		printf(" - No output file\n");
 	}

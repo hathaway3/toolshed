@@ -25,7 +25,7 @@
 
 
 /* Variable limits */
-#define FNAMESIZE	512
+#define FNAMESIZE	512	/* including terminating zero */
 #define MAXBUF		1024
 #define MAXOP		10      /* longest mnemonic */
 #define MAXLAB		32
@@ -307,7 +307,7 @@ typedef struct _assembler
 	int				o_debug;					/* debug flag */
 	coco_path_id	fd_object;					/* object file's file descriptor*/
 	int				object_output;
-	char			object_name[FNAMESIZE];
+	char			*object_name;
 	char			_crc[3];
 	u_int			do_module_crc;
 	int				ignore_errors;

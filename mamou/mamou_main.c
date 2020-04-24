@@ -220,11 +220,11 @@ int main(int argc, char **argv)
                     p = &argv[j][2];
 					if (*p == EOS)
 					{
-						strcpy(as.object_name, "mamouobj");
+						as.object_name = "mamouobj";
 					}
 					else
 					{
-						strncpy(as.object_name, p, FNAMESIZE - 1);
+						as.object_name = p;
 					}
 					as.object_output = 1;
                     break;
@@ -327,11 +327,21 @@ int mamou_assemble(assembler *as)
     for (as->current_filename_index = 0; as->current_filename_index < as->file_index; as->current_filename_index++)
     {
 		struct filestack root_file;
+		int fnlen;
 		
 		/* Set up the structure. */
 		as->current_file = &root_file;
 		
-		strncpy(root_file.file, as->file_name[as->current_filename_index], FNAMESIZE);
+		fnlen = strlen(as->file_name[as->current_filename_index]);
+		if (fnlen < FNAMESIZE)
+		{
+			memcpy(root_file.file, as->file_name[as->current_filename_index], fnlen + 1);
+		}
+		else
+		{
+			printf("mamou: filename too long: %s\n", as->file_name[as->current_filename_index]);
+			return 1;
+		}
 		root_file.current_line = 0;
 		root_file.num_blank_lines = 0;
 		root_file.num_comment_lines = 0;
@@ -373,11 +383,21 @@ int mamou_assemble(assembler *as)
         for (as->current_filename_index = 0; as->current_filename_index < as->file_index; as->current_filename_index++)
         {
 			struct filestack root_file;
+			int fnlen;
 			
 			/* Set up the structure. */
 			as->current_file = &root_file;
 			
-			strncpy(root_file.file, as->file_name[as->current_filename_index], FNAMESIZE);
+			fnlen = strlen(as->file_name[as->current_filename_index]);
+			if (fnlen < FNAMESIZE)
+			{
+				memcpy(root_file.file, as->file_name[as->current_filename_index], fnlen + 1);
+			}
+			else
+			{
+				printf("mamou: filename too long: %s\n", as->file_name[as->current_filename_index]);
+				return 1;
+			}
 			root_file.current_line = 0;
 			root_file.num_blank_lines = 0;
 			root_file.num_comment_lines = 0;
@@ -432,7 +452,6 @@ int mamou_assemble(assembler *as)
     if (as->num_errors != 0)
     {
 		ret = 1;			/* error status */
-        _coco_delete(as->object_name);
     }
 
 	/* Deinitialize the assembler. */
@@ -474,7 +493,7 @@ static void mamou_initialize(assembler *as)
 		as->conditional_stack_index = 0;
 		as->conditional_stack[0]	= 1;
 
-		if (as->object_name[0] != EOS)
+		if (as->object_name != NULL)
 		{
 			_path_type t;
 			coco_file_stat fstat;
