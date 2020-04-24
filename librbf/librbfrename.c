@@ -62,7 +62,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 	while ((ec = _os9_gs_eof(parent_path)) == 0)
 	{
 		int size;
-		char fname[32];
+		u_char fname[32];
 
 		size = sizeof(dentry);
 		ec = _os9_readdir(parent_path, dentry);
@@ -72,11 +72,11 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 			break;
 		}
 
-		strncpy(fname, (char *)dentry->name, 29);
+		memcpy(fname, dentry->name, 29);
 
-		OS9StringToCString((u_char *)fname);
+		OS9StringToCString(fname);
 
-		if (strcasecmp(fname, new_name) == 0 && strcasecmp(fname, filename) != 0)
+		if (strcasecmp((char *)fname, new_name) == 0 && strcasecmp((char *)fname, filename) != 0)
 		{
 			ec = EOS_FAE;
 
@@ -99,7 +99,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 	while ((ec = _os9_gs_eof(parent_path)) == 0)
 	{
 		int size;
-		char fname[32];
+		u_char fname[32]; /* while dentry->name is 29 wide */
 
 		size = sizeof(dentry);
 		ec = _os9_readdir(parent_path, dentry);
@@ -109,15 +109,17 @@ error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry)
 			break;
 		}
 
-		strncpy(fname, (char *)dentry->name, 29);
+		memcpy(fname, dentry->name, sizeof(dentry->name));
 
-		OS9StringToCString((u_char *)fname);
+		OS9StringToCString(fname);
 
-		if (strcasecmp(fname, filename) == 0)
+		if (strcasecmp((char *)fname, filename) == 0)
 		{
 			/* Found the source, rename it */
-			strncpy((char *)dentry->name, new_name, 29);
-			CStringToOS9String(dentry->name);
+			/* Via the larger buffer so that C string zero can fit */
+			strcpy((char *)fname, new_name); /* size is verified above */
+			CStringToOS9String(fname);
+			memcpy(dentry->name, fname, sizeof(dentry->name));
 
 			/* Back up file pointer in preparation of updating directory entry */
 			_os9_seek(parent_path, -(int)sizeof(*dentry), SEEK_CUR);

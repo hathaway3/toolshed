@@ -183,7 +183,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 			
 			if (length > 8) length = 8;
 			
-			strncpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
+			memcpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
 		}
 		else
 		{
@@ -195,7 +195,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 				length = 8;
 			}
 			
-			strncpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
+			memcpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
 			
 			
 			p++; /* skip over '.' */
@@ -207,7 +207,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 				length = 3;
 			}
 			
-			strncpy((char *)(*path)->dir_entry.file_extension, p, length);
+			memcpy((char *)(*path)->dir_entry.file_extension, p, length);
 		}
 		
 		(*path)->dir_entry.file_type = file_type;
