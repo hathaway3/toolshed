@@ -190,7 +190,7 @@ error_code _decb_gs_granule(decb_path_id path, int granule, char *buffer)
 
 	/* 2. Read granule into buffer. */
 
-	if(path->hdbdos_offset != -1)
+	if (path->hdbdos_offset > 0)
 	{
 		int count;
 

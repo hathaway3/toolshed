@@ -111,7 +111,7 @@ error_code _decb_ss_granule(decb_path_id path, int granule, char *buffer)
 
 	/* 2. Write buffer to granule. */
 	
-	if(path->hdbdos_offset != -1)
+	if(path->hdbdos_offset > 0)
 	{
 		int count;
 
