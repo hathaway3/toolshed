@@ -47,7 +47,7 @@ int             seconds;
 int             sample_rate;
 int             binary;
 int             decb;
-char            filename[9];
+char            filename[9]; /* always 8 chars, plus zero internally */
 unsigned char   file_type;
 unsigned char   data_type;
 char           *out_filename;
@@ -286,7 +286,7 @@ int             main(int argc, char **argv)
 
 					if (len > 8)
 						len = 8;
-					strncpy(filename, &(argv[j][2]), len);
+					memcpy(filename, &(argv[j][2]), len);
 				}
 				break;
 			case '0':
