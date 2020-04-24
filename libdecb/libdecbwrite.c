@@ -312,11 +312,19 @@ error_code find_free_granule(decb_path_id path, int *granule, int next_to)
 		return EOS_DF;
 	}
 
+	if (path->hdbdos_offset != -1 && next_to > 67)
+	{
+		return EOS_DF;
+	}
+
 
 	/* 2. Start search from next_to to last_granule. */
 	
 	while (path->FAT[t_next_to] != 0x00)
 	{
+		if (path->hdbdos_offset != -1 && t_next_to > 67)
+			break;
+
 		if (path->FAT[t_next_to] == 0xFF)
 		{
 			/* 1. Found one!  Return it. */
