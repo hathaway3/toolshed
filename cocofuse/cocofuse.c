@@ -418,11 +418,7 @@ static int coco_truncate(const char *path, off_t size)
 	}
 	
 #ifdef DEBUG
-#ifdef __APPLE__
-	syslog(LOG_LEVEL, "coco_truncate(%s, %lld) = %d", path, size, ec);
-#else
-	syslog(LOG_LEVEL, "coco_truncate(%s, %ld) = %d", path, size, ec);
-#endif
+	syslog(LOG_LEVEL, "coco_truncate(%s, %lld) = %d", path, (long long) size, ec);
 #endif
 
 	free(buff);
@@ -445,7 +441,7 @@ static int coco_open(const char *path, struct fuse_file_info *fi)
 	}
 	if ((ec =  -CoCoToUnixError(_coco_open(&p, buff, mflags))) == 0)
 	{
-		fi->fh = (uint64_t)p;
+		fi->fh = (uint64_t)(intptr_t)p;
 	}
 
 #ifdef DEBUG
@@ -462,7 +458,7 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset, str
 	error_code ec;
 	uint32_t _size = size;
 
-	coco_path_id p = (coco_path_id)fi->fh;
+	coco_path_id p = (coco_path_id)(intptr_t)fi->fh;
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec = -CoCoToUnixError(_coco_read(p, buf, &_size))) != 0)
 	{
