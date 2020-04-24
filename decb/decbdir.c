@@ -142,9 +142,9 @@ static int do_dir(char **argv, char *p)
 	
 	/* 4. Obtain HDB-DOS disk name, if any. */
 	
-	_decb_gs_sector(path, 17, 17, sector);
-	
-	if (sector[0] != '\xFF')
+	ec = _decb_gs_sector(path, 17, 17, sector);
+
+	if (ec == 0 && sector[0] != '\xFF')
 	{
 		printf("%s\n", sector);
 	}
@@ -152,7 +152,7 @@ static int do_dir(char **argv, char *p)
 	
 	/* 5. Read and print each directory entry*/
 	
-	while (_decb_readdir(path, &de) == 0)
+	while ((ec = _decb_readdir(path, &de)) == 0)
 	{
 		char	asciiflag;
 		int		granule_size = 1, i;
@@ -220,7 +220,11 @@ static int do_dir(char **argv, char *p)
 		printf("  %1.1d  %c  %d\n", de.file_type, asciiflag, granule_size);
 	}
 
-	
-	return 0;
+	/* return success if reached end of directory */
+
+	if (ec == EOS_PNNF)
+		ec = 0;
+
+	return ec;
 }
 

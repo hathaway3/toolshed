@@ -18,7 +18,7 @@ error_code _decb_seek(decb_path_id path, int pos, int mode)
 
 	if (path->israw == 1)
 	{
-		fseek(path->fd, pos, mode);
+		ec = fseek(path->fd, pos, mode);
 	}
 	else
 	{
@@ -80,6 +80,7 @@ error_code _decb_seekdir(decb_path_id path, int entry, int mode)
 error_code _decb_seeksector(decb_path_id path, int track, int sector)
 {
 	long	offset;
+	error_code  ec = 0;
 
 //	assert( (track>= 0) && (track<35) );
 //	assert( (sector>0) && (sector<19) );
@@ -90,18 +91,17 @@ error_code _decb_seeksector(decb_path_id path, int track, int sector)
 	offset *= 256;
 	offset += path->disk_offset;
 
-
 	/* 2. Seek to offset. */
 
-	fseek(path->fd, offset, SEEK_SET);
-
+	ec = fseek(path->fd, offset, SEEK_SET);
 	
-	return 0;
+	return ec;
 }
 
 error_code _decb_seekgranule(decb_path_id path, int granule)
 {
 	long	offset;
+	error_code  ec = 0;
 	
 //	assert( (granule>= 0) && (granule<68) );
 	
@@ -122,11 +122,9 @@ error_code _decb_seekgranule(decb_path_id path, int granule)
 	
 	offset += path->disk_offset;
 	
-
 	/* 4. Seek to granule. */
 	
-	fseek(path->fd, offset, SEEK_SET);
+	ec = fseek(path->fd, offset, SEEK_SET);
 	
-	
-	return 0;
+	return ec;
 }
