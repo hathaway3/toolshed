@@ -130,7 +130,8 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 	
 	
 	(*path)->disk_offset = 161280 * (*path)->drive;
-	(*path)->disk_offset += (*path)->hdbdos_offset;
+	if ((*path)->hdbdos_offset != -1)
+		(*path)->disk_offset += (*path)->hdbdos_offset;
 	
 	
 	/* 4. At this point, sector and granule function will work - Load FAT */
@@ -146,6 +147,9 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_t
 	
 		for (i = 0; i < 256; i++)
 		{
+			if ((*path)->hdbdos_offset != -1 && i > 67)
+				break;
+
 			if ((*path)->FAT[i] == 0xFF)
 			{
 				free_granules++;
@@ -397,7 +401,8 @@ error_code _decb_open(decb_path_id *path, char *pathlist, int mode)
 
 
 	(*path)->disk_offset = 161280 * (*path)->drive;
-	(*path)->disk_offset += (*path)->hdbdos_offset;
+	if ((*path)->hdbdos_offset != -1)
+		(*path)->disk_offset += (*path)->hdbdos_offset;
 	
 	
 	/* 6. At this point, sector and granule function will work - Load FAT */
@@ -555,6 +560,10 @@ static int validate_pathlist(decb_path_id *path, char *pathlist)
 	 			else
 	 				(*path)->hdbdos_offset = atoi(q + 1) * 256;
 	 		}
+			else
+			{
+				(*path)->hdbdos_offset = 0;
+			}
 		}
 		else
 		{
@@ -567,6 +576,7 @@ static int validate_pathlist(decb_path_id *path, char *pathlist)
 			{
 				ec = EOS_BPNAM;
 			}
+			(*path)->hdbdos_offset = - 1;
 		}
 		
 #if 0

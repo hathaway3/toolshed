@@ -757,6 +757,9 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 	*free_granules = 0;
 	for (i = 0; i < 256; i++)
 	{
+		if (path->hdbdos_offset != -1 && i > 67)
+			break;
+
 		if (path->FAT[i] == 0xFF)
 		{
 			(*free_granules)++;
