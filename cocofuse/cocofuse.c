@@ -39,9 +39,20 @@ static int coco_truncate(const char *path, off_t size);
 static int coco_open(const char *path, struct fuse_file_info *fi);
 
 /* DSK image filename pointer */
-static char dsk[1024];
+static char *dsk = NULL;
 
 
+/*
+ *
+ */
+char *dsk_path(const char *path)
+{
+	char *buff = malloc(strlen(dsk) + strlen(path) + 2);
+	strcpy(buff, dsk);
+	strcat(buff, ",");
+	strcat(buff, path);
+	return buff;
+}
 
 /*
  *
@@ -69,11 +80,12 @@ static int coco_access(const char *path, int mode)
 static int coco_statfs(const char *path, struct statvfs *stbuf)
 {
 	_path_type type;
-	char buff[1024], dname[32];
+	char *buff;
+	char dname[32];
 	u_int month, day, year, bps, total_sectors, bytes_free, free_sectors;
 	u_int largest_free_block, sectors_per_cluster, largest_count, sector_count;
 	
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	_coco_identify_image(buff, &type);
     
 	/* Here we revert to RBF or Disk BASIC to get details about the disk */
@@ -120,6 +132,8 @@ static int coco_statfs(const char *path, struct statvfs *stbuf)
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_statfs(%s) = %d", path, type);
 #endif
+
+	free(buff);
 	return 0;
 }
 
@@ -132,10 +146,10 @@ static int coco_statfs(const char *path, struct statvfs *stbuf)
 static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
 	error_code ec;
-	char buff[1024];
+	char *buff;
 	coco_path_id p;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 
 	/* open as file first */
 	if ((ec = -CoCoToUnixError(_coco_open(&p, buff, FAM_READ))) != 0)
@@ -191,6 +205,7 @@ static int coco_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_
 	syslog(LOG_LEVEL, "coco_fgetattr(%s) = %d", path, ec);
 #endif
 
+	free(buff);
     return ec;
 }
 
@@ -204,10 +219,11 @@ static int coco_getattr(const char *path, struct stat *stbuf)
 {
 	error_code ec = 0;
 	coco_file_stat fdbuf;
-	char buff[1024];
+	char *buff;
 	
     memset(stbuf, 0, sizeof(struct stat));
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
+
 	if ((ec = -CoCoToUnixError(_coco_gs_fd_pathlist(buff, &fdbuf))) == 0)
 	{
 		u_int filesize;
@@ -236,6 +252,7 @@ static int coco_getattr(const char *path, struct stat *stbuf)
 	syslog(LOG_LEVEL, "coco_getattr(%s) = %d", path, ec);
 #endif
 
+	free(buff);
     return ec;
 }
 
@@ -246,15 +263,16 @@ static int coco_getattr(const char *path, struct stat *stbuf)
 static int coco_mkdir(const char *path, mode_t mode)
 {
 	error_code ec;
-	char buff[1024];
+	char *buff;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	ec = -CoCoToUnixError(_coco_makdir(buff));
 
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_makdir(%s) = %d", path, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -265,15 +283,16 @@ static int coco_mkdir(const char *path, mode_t mode)
 static int coco_unlink(const char *path)
 {
 	error_code ec;
-	char buff[1024];
+	char *buff;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	ec = -CoCoToUnixError(_coco_delete(buff));
 
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_unlink(%s) = %d", path, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -284,14 +303,15 @@ static int coco_unlink(const char *path)
 static int coco_rmdir(const char *path)
 {
 	error_code ec = 0;
-	char buff[1024];
+	char *buff;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	ec = -CoCoToUnixError(_coco_delete_directory(buff)); //, CoCoToUnixPerm(mode));
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_rmdir(%s) = %d", path, ec);
 #endif
 	
+	free(buff);
 	return ec;
 }
 
@@ -307,7 +327,7 @@ static int coco_rename(const char *path, const char *newname)
 {
 	error_code ec = 0;
 	char *p1, *p2;
-	char buff1[1024];
+	char *buff;
 	int renameonly = 0;
 	
 	/* 1. Determine if rename is in same dir.
@@ -338,8 +358,9 @@ static int coco_rename(const char *path, const char *newname)
         /* RENAME IN SAME FOLDER! */
         *p1 = '/'; *p2 = '/';
         
-        sprintf(buff1, "%s,%s", dsk, path);
-        ec = -CoCoToUnixError(_coco_rename(buff1, p2 + 1));
+        buff = dsk_path(path);
+        ec = -CoCoToUnixError(_coco_rename(buff, p2 + 1));
+        free(buff);
     }
     else
     {
@@ -360,10 +381,10 @@ static int coco_rename(const char *path, const char *newname)
 static int coco_chmod(const char *path, mode_t mode)
 {
 	error_code ec;
-	char buff[1024];
+	char *buff;
 	coco_path_id p;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	if ((ec = -CoCoToUnixError(_coco_open(&p, buff, FAM_WRITE))) == 0)
 	{
 		ec = -CoCoToUnixError(_coco_ss_attr(p, UnixToCoCoPerms(mode)));
@@ -374,6 +395,7 @@ static int coco_chmod(const char *path, mode_t mode)
 	syslog(LOG_LEVEL, "coco_chmod(%s, $%X) = %d", path, mode, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -384,10 +406,10 @@ static int coco_chmod(const char *path, mode_t mode)
 static int coco_truncate(const char *path, off_t size)
 {
 	error_code ec = 0;
-	char buff[1024];
+	char *buff;
 	coco_path_id p;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	ec = -CoCoToUnixError(_coco_open(&p, buff, FAM_WRITE));
 	if (ec == 0)
 	{
@@ -403,6 +425,7 @@ static int coco_truncate(const char *path, off_t size)
 #endif
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -411,10 +434,10 @@ static int coco_open(const char *path, struct fuse_file_info *fi)
 {
 	error_code ec;
 	coco_path_id p;
-	char buff[1024];
+	char *buff;
 	int mflags = FAM_READ;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
 	{
@@ -429,6 +452,7 @@ static int coco_open(const char *path, struct fuse_file_info *fi)
 	syslog(LOG_LEVEL, "coco_open(%s) = %d", path, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -503,33 +527,29 @@ static int coco_create(const char *path, mode_t perms, struct fuse_file_info * f
 {
 	error_code ec = 0;
 	coco_path_id p;
-	char buff[1024];
+	char *buff;
 	coco_file_stat fstat;
 	
 	int mflags = FAM_READ | FAM_WRITE;
 	fstat.perms = FAP_READ | FAP_WRITE;
 	
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
 	{
 		fstat.perms |= FAM_WRITE;
 	}
 
-	if ((ec = -CoCoToUnixError(_coco_create(&p, buff, mflags, &fstat))) != 0)
+	if ((ec = -CoCoToUnixError(_coco_create(&p, buff, mflags, &fstat))) == 0)
 	{
-#ifdef DEBUG
-		syslog(LOG_LEVEL, "coco_create(%s, $%X) = %d", path, perms, ec);
-#endif
-		return ec;
+		fi->fh = (uint64_t)p;
 	}
-
-	fi->fh = (uint64_t)p;
 
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_create(%s, $%X) = %d", path, perms, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -538,10 +558,10 @@ static int coco_opendir(const char *path, struct fuse_file_info *fi)
 {
 	error_code ec;
 	coco_path_id p;
-	char buff[1024];
+	char *buff;
 	int mflags = FAM_READ;
 
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 
 	mflags |= FAM_DIR;
 
@@ -558,6 +578,7 @@ static int coco_opendir(const char *path, struct fuse_file_info *fi)
 	syslog(LOG_LEVEL, "coco_opendir(%s) = %d", path, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -567,15 +588,16 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
 	error_code ec = 0;
 	coco_path_id p;
 	coco_dir_entry e;
-	char buff[1024];
+	char *buff;
 
 #ifndef USE_PATH
-	sprintf(buff, "%s,%s", dsk, path);
+	buff = dsk_path(path);
 	if (_coco_open(&p, buff, FAM_READ | FAM_DIR) != 0)
 	{
 		/* DECB doesn't use FAM_DIR */
 		if (_coco_open(&p, buff, FAM_READ) != 0)
 		{
+			free(buff);
 			return -ENOENT;
 		}
 	}
@@ -618,6 +640,7 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off
 	syslog(LOG_LEVEL, "coco_readdir(%s) = %d", path, ec);
 #endif
 
+	free(buff);
 	return ec;
 }
 
@@ -650,43 +673,49 @@ static struct fuse_operations coco_filesystem_operations =
  	.utimens = coco_utimens
 };
 
-void usage(char* name)
+void usage(const char *name)
 {
 	printf("cocofuse from Toolshed " TOOLSHED_VERSION "\n");
 	printf("Usage: %s: dskimage mountpoint [FUSE options]\n", name);
-	exit(1);
 }
 
 
-int make_absolute( const char *path )
+char *make_absolute(const char *path)
 {
+    char *abs_path;
+
     if(path[0] == '/')
     {
             /* absolute path - use as-is */
-            strcpy(dsk, path);
+            abs_path = strdup(path);
     }
     else
     {
             /* relative path */
-            if (getcwd(dsk, 1024)==NULL) return -1;
+            char *pwd = getcwd(NULL, 0);
             /* Allow one for terminating null and 1 for separator
                slash */
-            if((1024 - strlen(dsk)) < (strlen(path)+2)) return -1;
-            strcat(dsk, "/");
-            strcat(dsk, path);
+            abs_path = malloc(strlen(pwd) + strlen(path) + 2);
+            strcpy(abs_path, pwd);
+            strcat(abs_path, "/");
+            strcat(abs_path, path);
+            free(pwd);
     }
-    return 0;
+    return abs_path;
 }
 
 int main(int argc, char **argv)
 {
+    int rc;
+
 	if (argc < 3)
     {
 		usage(argv[0]);
+		return 1;
     }
 
-    int rc;
-    if(make_absolute(argv[1]) < 0)
+    dsk = make_absolute(argv[1]);
+    if (!dsk)
     {
             fprintf(stderr, "Disk image path too long\n");
             rc = 1;
@@ -703,6 +732,7 @@ int main(int argc, char **argv)
 #endif
     }
     
+    free(dsk);
     return rc;
 }
 
