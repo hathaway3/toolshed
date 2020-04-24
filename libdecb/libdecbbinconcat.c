@@ -18,7 +18,12 @@ error_code _decb_binconcat(unsigned char *in_buffer, int in_size, unsigned char 
 	int i, type, in_pos, out_pos, length, address, size, size_pointer;
 	enum binconcat_mode mode;
 	
-	/* Initialize psuedo RAM buffer */
+	/* These will be initialized by FREESPACE before they are used but
+           the compiler is not convinced so it would issue warnings */
+	size = -1;
+	size_pointer = -1;
+
+	/* Initialize pseudo RAM buffer */
 	
 	buffer = malloc( sizeof(int) * 65536 );
 	
@@ -33,7 +38,7 @@ error_code _decb_binconcat(unsigned char *in_buffer, int in_size, unsigned char 
 	for( i=0; i<65535; i++ )
 		buffer[i] = -1;
 
-	/* Unpack BIN file into psuedo RAM space */
+	/* Unpack BIN file into pseudo RAM space */
 	in_pos = 0;
 	type = in_buffer[in_pos++];
 	
