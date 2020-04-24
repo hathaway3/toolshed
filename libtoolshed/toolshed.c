@@ -723,12 +723,13 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 {
 	error_code	ec = 0;
 	int i;
-	char decbpathlist[256];
+	char *decbpathlist;
 	decb_path_id path;
 
 
 	/* 1. Make a copy of the pathlist. */
 
+	decbpathlist = malloc(strlen(pathlist) + 2);
 	strcpy(decbpathlist, pathlist);
 
 
@@ -743,6 +744,8 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 	/* 3. Open a path to the device. */
 
 	ec = _decb_open(&path, decbpathlist, FAM_READ);
+
+	free(decbpathlist);
 
 	if (ec != 0)
 	{
