@@ -57,7 +57,7 @@ static u_char *os9_string(u_char *string)
 
 static char *modPermission(int perm)
 {
-	static char  tmpBuf[16];
+	static char  tmpBuf[17];
 	int  i;
 
 	for (i = 0; i < 4; i++)  {
