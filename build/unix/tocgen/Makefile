@@ -3,7 +3,7 @@ include ../rules.mak
 vpath %.c ../../../tocgen
 vpath %.h ../../../tocgen
 
-CFLAGS  += -I../../../include -Wall -g
+CFLAGS  += -I../../../include -Wall
 LDFLAGS += -L../libcoco -L../libnative -L../libdecb -L../libmisc -L../librbf -L../libsys -L../libcecb -lcoco -lnative -lcecb -ldecb -lmisc -lrbf -lsys -lm
 BINARY	= tocgen
 OBJS	= tocgen_main.o
