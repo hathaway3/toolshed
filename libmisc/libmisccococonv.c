@@ -98,16 +98,16 @@ int UnixToCoCoPerms(int attrs)
 
 char *UnixToOS9Time(time_t currentTime, char *os9time)
 {
-    struct tm *x;
+	struct tm *x;
 
-    x = localtime(&currentTime);
-    os9time[0] = x->tm_year;
-    os9time[1] = x->tm_mon + 1;
-    os9time[2] = x->tm_mday;
-    os9time[3] = x->tm_hour;
-    os9time[4] = x->tm_min;
+	x = localtime(&currentTime);
+	os9time[0] = x->tm_year;
+	os9time[1] = x->tm_mon + 1;
+	os9time[2] = x->tm_mday;
+	os9time[3] = x->tm_hour;
+	os9time[4] = x->tm_min;
 
-    return(os9time);
+	return (os9time);
 }
 
 
@@ -115,10 +115,10 @@ char *UnixToOS9Time(time_t currentTime, char *os9time)
  * character in the name as with bit 7 set. This is also used in LSN0 for
  * the disk name.
  */
-u_char *CStringToOS9String(u_char *f)
+u_char *CStringToOS9String(u_char * f)
 {
-    u_char *p;
-    int len = strlen((char *)f);
+	u_char *p;
+	int len = strlen((char *) f);
 
 	if (len > 0)
 	{
@@ -126,11 +126,11 @@ u_char *CStringToOS9String(u_char *f)
 		*p |= 0x80;
 	}
 
-	return(f);
+	return (f);
 }
 
 
-int OS9Strlen(u_char *f)
+int OS9Strlen(u_char * f)
 {
 	int count = 0;
 
@@ -140,7 +140,7 @@ int OS9Strlen(u_char *f)
 	}
 	while (!(*f++ & 0x80));
 
-	return(count);
+	return (count);
 }
 
 
@@ -149,7 +149,7 @@ int OS9Strlen(u_char *f)
  * OS-9 stores filename with the last character in the name as with bit 7
  * set. This is also used in LSN0 for the disk name.
  */
-u_char *OS9StringToCString(u_char *f)
+u_char *OS9StringToCString(u_char * f)
 {
 	u_char *p;
 
@@ -164,14 +164,14 @@ u_char *OS9StringToCString(u_char *f)
 		p++;
 	}
 
-	return(f);
+	return (f);
 }
 
 
 /* Converts a C string to a Disk BASIC filename padded with spaces.
    NOTE: We presume that the passed string is in 8.3 format
  */
-void CStringToDECBString(u_char *filename, u_char *ext, u_char *string)
+void CStringToDECBString(u_char * filename, u_char * ext, u_char * string)
 {
 	u_char *fp, *fpp;
 
@@ -204,39 +204,39 @@ void CStringToDECBString(u_char *filename, u_char *ext, u_char *string)
 /*
  * Converts a Disk BASIC filename to a regular C string.
  */
-void DECBStringToCString(u_char *filename, u_char *ext, u_char *string)
+void DECBStringToCString(u_char * filename, u_char * ext, u_char * string)
 {
 	int count = 0;
 
 
 	/* 1. Copy filename. */
-	
-	memcpy( string, filename, 8 );
+
+	memcpy(string, filename, 8);
 	string += 8;
 
-	while( *(string-1) == ' ' && count++ < 8)
+	while (*(string - 1) == ' ' && count++ < 8)
 	{
 		string--;
 	}
 
 	/* 2. If an extension exists, add it. */
-	
-	if ( !(ext[0] == ' ' && ext[1] == ' ' && ext[2] == ' ') )
+
+	if (!(ext[0] == ' ' && ext[1] == ' ' && ext[2] == ' '))
 	{
 		*(string++) = '.';
-		
+
 		/* 1. Copy extension. */
-	
+
 		count = 0;
-		memcpy( string, ext, 3 );
+		memcpy(string, ext, 3);
 		string += 3;
-	
-		while( *(string-1) == ' ' && count++ < 3)
+
+		while (*(string - 1) == ' ' && count++ < 3)
 		{
 			string--;
 		}
 	}
-	
+
 	*string = '\0';
 
 	return;
@@ -245,78 +245,78 @@ void DECBStringToCString(u_char *filename, u_char *ext, u_char *string)
 
 error_code UnixToCoCoError(int ec)
 {
-    switch (ec)
-    {
-		case 0:
-			return 0;
+	switch (ec)
+	{
+	case 0:
+		return 0;
 
-		case ENOTDIR:
-		case EPERM:
-        case EACCES:
-            return(EOS_FNA);
+	case ENOTDIR:
+	case EPERM:
+	case EACCES:
+		return (EOS_FNA);
 
-        case ENOENT:
-            return(EOS_PNNF);
+	case ENOENT:
+		return (EOS_PNNF);
 
-        case EIO:
-            return(EOS_PNNF);
+	case EIO:
+		return (EOS_PNNF);
 
-        case EBADF:
-            return(EOS_BMODE);
+	case EBADF:
+		return (EOS_BMODE);
 
-        case EEXIST:
-            return(EOS_FAE);
+	case EEXIST:
+		return (EOS_FAE);
 
-        case ENFILE:
-        case EMFILE:
-            return(EOS_PTHFUL);
+	case ENFILE:
+	case EMFILE:
+		return (EOS_PTHFUL);
 
-        case ENOSPC:
-			return(EOS_DF);
+	case ENOSPC:
+		return (EOS_DF);
 
-        case EROFS:
-            return(EOS_BMODE);
+	case EROFS:
+		return (EOS_BMODE);
 
-        case ENAMETOOLONG:
-            return(EOS_BPNAM);
+	case ENAMETOOLONG:
+		return (EOS_BPNAM);
 
-        default:
-            return ec;
-    }
+	default:
+		return ec;
+	}
 }
 
 
 int CoCoToUnixError(error_code ec)
 {
-    switch (ec)
-    {
-		case 0:
-			return 0;
+	switch (ec)
+	{
+	case 0:
+		return 0;
 
-		case EOS_FNA:
-            return(EACCES);
+	case EOS_FNA:
+		return (EACCES);
 
-        case EOS_PNNF:
-            return(ENOENT);
+	case EOS_PNNF:
+		return (ENOENT);
 
-        case EOS_BMODE:
-            return(EBADF);
+	case EOS_BMODE:
+		return (EBADF);
 
-        case EOS_FAE:
-            return(EEXIST);
+	case EOS_FAE:
+		return (EEXIST);
 
-        case EOS_PTHFUL:
-            return(ENFILE);
+	case EOS_PTHFUL:
+		return (ENFILE);
 
-        case EOS_DF:
-			return(ENOSPC);
+	case EOS_DF:
+		return (ENOSPC);
 
-        case EOS_BPNAM:
-            return(ENAMETOOLONG);
+	case EOS_BPNAM:
+		return (ENAMETOOLONG);
 
-        default:
-            return -1;
-    }
+	default:
+		return -1;
+	}
 }
 
 
@@ -327,15 +327,16 @@ int CoCoToUnixError(error_code ec)
  */
 static EOL_Type DetermineEOLType(char *buffer, int size)
 {
-    EOL_Type eol = 0;
-    int i;
+	EOL_Type eol = 0;
+	int i;
 
 
 	/* Scan to determine EOL ending type */
 
 	for (i = 0; i < size; i++)
 	{
-		if (i < size - 1 && (buffer[i] == 0x0D && buffer[i + 1] == 0x0A))
+		if (i < size - 1
+		    && (buffer[i] == 0x0D && buffer[i + 1] == 0x0A))
 		{
 			/* We have DOS/Windows line endings (0D0A)... */
 			eol = EOL_DOS;
@@ -371,167 +372,167 @@ static EOL_Type DetermineEOLType(char *buffer, int size)
  * The caller must free the returned buffer in 'newBuffer' once
  * finished with the buffer.
  */
-void NativeToDECB(char *buffer, int size, char **newBuffer, u_int *newSize)
+void NativeToDECB(char *buffer, int size, char **newBuffer, u_int * newSize)
 {
-    EOL_Type	eolMethod;
-    int		i;
+	EOL_Type eolMethod;
+	int i;
 
 
 	eolMethod = DetermineEOLType(buffer, size);
 
-    switch (eolMethod)
-    {
-        case EOL_UNIX:
-            /* Change all occurences of 0x0A to 0x0D */
+	switch (eolMethod)
+	{
+	case EOL_UNIX:
+		/* Change all occurences of 0x0A to 0x0D */
 
-            for(i = 0; i < size; i++)
-            {
-                if (buffer[i] == 0x0A)
-                {
-                    buffer[i] = 0x0D;
-                }
-            }
-            *newBuffer = (char *)malloc(size);
-            if (*newBuffer == NULL)
-            {
-                return;
-            }
+		for (i = 0; i < size; i++)
+		{
+			if (buffer[i] == 0x0A)
+			{
+				buffer[i] = 0x0D;
+			}
+		}
+		*newBuffer = (char *) malloc(size);
+		if (*newBuffer == NULL)
+		{
+			return;
+		}
 
-            memcpy(*newBuffer, buffer, size);
+		memcpy(*newBuffer, buffer, size);
 
-            *newSize = size;
+		*newSize = size;
 
-            break;
+		break;
 
-        case EOL_DOS:
-            /* Things are a bit more involved here. */
+	case EOL_DOS:
+		/* Things are a bit more involved here. */
 
-            /* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
+		/* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
 
-            {
-                int dosEOLCount = 0;
-                char *newP;
-                int i;
-
-
-                /* 1. First we count up the number of 0x0A line endings. */
-
-                for (i = 0; i < size; i++)
-                {
-                    if (buffer[i] == 0x0A)
-                    {
-                        dosEOLCount++;
-                    }
-                }
+		{
+			int dosEOLCount = 0;
+			char *newP;
+			int i;
 
 
-                /* 2. Now we allocate a buffer to hold the current size -
-                    'dosEOLCount' bytes.
-                */
+			/* 1. First we count up the number of 0x0A line endings. */
 
-                *newSize = size - dosEOLCount;
-
-                *newBuffer = (char *)malloc(*newSize);
-
-                if (*newBuffer == NULL)
-                {
-                    return;
-                }
-
-                newP = *newBuffer;
-
-                for (i = 0; i < size; i++)
-                {
-					if (buffer[i] != 0x0A)
-                    {
-                        *newP = buffer[i];
-                        newP++;
-					}
-                }
-            }
-            break;
-
-        default:
-            return;
-    }
+			for (i = 0; i < size; i++)
+			{
+				if (buffer[i] == 0x0A)
+				{
+					dosEOLCount++;
+				}
+			}
 
 
-    return;
+			/* 2. Now we allocate a buffer to hold the current size -
+			   'dosEOLCount' bytes.
+			 */
+
+			*newSize = size - dosEOLCount;
+
+			*newBuffer = (char *) malloc(*newSize);
+
+			if (*newBuffer == NULL)
+			{
+				return;
+			}
+
+			newP = *newBuffer;
+
+			for (i = 0; i < size; i++)
+			{
+				if (buffer[i] != 0x0A)
+				{
+					*newP = buffer[i];
+					newP++;
+				}
+			}
+		}
+		break;
+
+	default:
+		return;
+	}
+
+
+	return;
 }
 
 
-void DECBToNative(char *buffer, int size, char **newBuffer, u_int *newSize)
+void DECBToNative(char *buffer, int size, char **newBuffer, u_int * newSize)
 {
 #ifdef WIN32
-    int dosEOLCount = 0;
-    char *newP;
-    int		i;
+	int dosEOLCount = 0;
+	char *newP;
+	int i;
 
 
-    /* Things are a bit more involved here. */
+	/* Things are a bit more involved here. */
 
-    /* We will add 0x0As after all 0x0Ds. */
-
-
-    /* 1. First we count up the number of 0x0D Disk BASIC line endings. */
-
-    for (i = 0; i < size; i++)
-    {
-        if (buffer[i] == 0x0D)
-        {
-            dosEOLCount++;
-        }
-    }
+	/* We will add 0x0As after all 0x0Ds. */
 
 
-    /* 2. Now we allocate a buffer to hold the current size +
-        'dosEOLCount' bytes.
-    */
+	/* 1. First we count up the number of 0x0D Disk BASIC line endings. */
+
+	for (i = 0; i < size; i++)
+	{
+		if (buffer[i] == 0x0D)
+		{
+			dosEOLCount++;
+		}
+	}
+
+
+	/* 2. Now we allocate a buffer to hold the current size +
+	   'dosEOLCount' bytes.
+	 */
 
 	*newSize = size + dosEOLCount;
-    *newBuffer = (char *)malloc(*newSize);
+	*newBuffer = (char *) malloc(*newSize);
 
-    if (*newBuffer == NULL)
+	if (*newBuffer == NULL)
 	{
-        return;
-    }
+		return;
+	}
 
-    newP = *newBuffer;
+	newP = *newBuffer;
 
-    for (i = 0; i < size; i++)
-    {
-        *newP = buffer[i];
-        newP++;
+	for (i = 0; i < size; i++)
+	{
+		*newP = buffer[i];
+		newP++;
 
-        if (buffer[i] == 0x0D)
-        {
-            *newP = 0x0A;
-            newP++;
-        }
-    }
+		if (buffer[i] == 0x0D)
+		{
+			*newP = 0x0A;
+			newP++;
+		}
+	}
 #else
-    int		i;
+	int i;
 
 
-    /* Change all occurences of 0x0D to 0x0A */
+	/* Change all occurences of 0x0D to 0x0A */
 
-	for(i = 0; i < size; i++)
-    {
-        if (buffer[i] == 0x0D)
-        {
-            buffer[i] = 0x0A;
-        }
-    }
+	for (i = 0; i < size; i++)
+	{
+		if (buffer[i] == 0x0D)
+		{
+			buffer[i] = 0x0A;
+		}
+	}
 
-    *newBuffer = (char *)malloc(size);
-    if (*newBuffer == NULL)
-    {
-        return;
-    }
+	*newBuffer = (char *) malloc(size);
+	if (*newBuffer == NULL)
+	{
+		return;
+	}
 
-    memcpy(*newBuffer, buffer, size);
+	memcpy(*newBuffer, buffer, size);
 
-    *newSize = size;
+	*newSize = size;
 #endif
 
 
@@ -552,7 +553,7 @@ void OS9AttrToString(int attr_byte, char string[9])
 	/* print attributes */
 	for (i = 0; i < 8; i++)
 	{
-		if (attr_byte & (1 << (7- i)))
+		if (attr_byte & (1 << (7 - i)))
 		{
 			string[i] = attrs[i];
 		}

@@ -13,11 +13,13 @@
  * Create a container
  */
 
-error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, double silence_length)
+error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample,
+			   double silence_length)
 {
-    error_code ec = 0;
+	error_code ec = 0;
 	native_path_id nativepath;
-	int i, headers_size, bytes_per_sample, silent_samples_count, silent_samples_bytes;
+	int i, headers_size, bytes_per_sample, silent_samples_count,
+		silent_samples_bytes;
 
 	_native_truncate(path, 0);
 
@@ -27,17 +29,18 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, dou
 
 	if (ec != 0)
 	{
-		ec = _native_create(&nativepath, path, FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+		ec = _native_create(&nativepath, path, FAM_READ | FAM_WRITE,
+				    FAP_READ | FAP_WRITE);
 
 		if (ec != 0)
 		{
-			return(ec);
+			return (ec);
 		}
 	}
 
 	_native_seek(nativepath, 0, SEEK_SET);
 
-	if( strendcasecmp( path, CAS_FILE_EXTENSION ) == 0 )
+	if (strendcasecmp(path, CAS_FILE_EXTENSION) == 0)
 		return 0;
 
 	bytes_per_sample = bits_per_sample / 8;
@@ -45,14 +48,14 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, dou
 	silent_samples_bytes = silent_samples_count * bytes_per_sample;
 
 	headers_size = 4 +	/* RIFF */
-					4 +			/* Data size */
-					4 +			/* RIFF type */
-					4 +			/* fmt  chunk id */
-					4 +			/* fmt  chunk size */
-					18 +		/* fmt  chunk data */
-					4 +			/* data chunk id */
-					4 +			/* data chunk size */
-					silent_samples_bytes;
+		4 +		/* Data size */
+		4 +		/* RIFF type */
+		4 +		/* fmt  chunk id */
+		4 +		/* fmt  chunk size */
+		18 +		/* fmt  chunk data */
+		4 +		/* data chunk id */
+		4 +		/* data chunk size */
+		silent_samples_bytes;
 
 	/* Set up WAV file format header */
 
@@ -72,9 +75,9 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, dou
 	fwrite("data", 4, 1, nativepath->fd);
 	fwrite_le_int(silent_samples_bytes, nativepath->fd);	/* chunk size */
 
-	for( i=0; i<silent_samples_count; i++ )
+	for (i = 0; i < silent_samples_count; i++)
 	{
-		if( bits_per_sample == 8 )
+		if (bits_per_sample == 8)
 			fwrite_le_char(127, nativepath->fd);
 		else
 			fwrite_le_short(0, nativepath->fd);

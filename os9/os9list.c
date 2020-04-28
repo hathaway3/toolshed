@@ -14,8 +14,7 @@
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: list {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Display contents of a text file.\n",
 	"Options:\n",
@@ -25,7 +24,7 @@ static char const * const helpMessage[] =
 
 int os9list(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	os9_path_id path;
 	int i;
@@ -40,14 +39,16 @@ int os9list(int argc, char *argv[])
 
 				switch (*p)
 				{
-					case 'h':
-					case '?':
-						show_help(helpMessage);
-						return 0;
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return 1;
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return 0;
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return 1;
 				}
 			}
 		}
@@ -92,7 +93,7 @@ int os9list(int argc, char *argv[])
 		{
 			break;
 		}
-		
+
 		buffer[size] = '\0';
 
 		p = strchr(buffer, 0x0D);

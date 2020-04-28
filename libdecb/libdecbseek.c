@@ -13,7 +13,7 @@
 
 error_code _decb_seek(decb_path_id path, int pos, int mode)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 
 
 	if (path->israw == 1)
@@ -22,44 +22,45 @@ error_code _decb_seek(decb_path_id path, int pos, int mode)
 	}
 	else
 	{
-		switch(mode)
+		switch (mode)
 		{
-			case SEEK_SET:
-				path->filepos = pos;
-				break;
+		case SEEK_SET:
+			path->filepos = pos;
+			break;
 
-			case SEEK_CUR:
-				path->filepos = path->filepos + pos;
-				break;
+		case SEEK_CUR:
+			path->filepos = path->filepos + pos;
+			break;
 
-			case SEEK_END:
-				fprintf(stderr, "_decb_seek(): SEEK_END not implemented.\n");
-				break;
+		case SEEK_END:
+			fprintf(stderr,
+				"_decb_seek(): SEEK_END not implemented.\n");
+			break;
 		}
 	}
 
 
-    return ec;
+	return ec;
 }
 
 
 
 error_code _decb_seekdir(decb_path_id path, int entry, int mode)
 {
-	error_code  ec = 0;
+	error_code ec = 0;
 
 	/* 1. Determine the seek type. */
 	switch (mode)
 	{
-		case SEEK_SET:
-			break;
+	case SEEK_SET:
+		break;
 
-		case SEEK_CUR:
-			entry += path->directory_entry_index;
-			break;
+	case SEEK_CUR:
+		entry += path->directory_entry_index;
+		break;
 
-		case SEEK_END:
-			break;
+	case SEEK_END:
+		break;
 	}
 
 	if (entry < 0 || entry > 72)
@@ -79,11 +80,11 @@ error_code _decb_seekdir(decb_path_id path, int entry, int mode)
 
 error_code _decb_seeksector(decb_path_id path, int track, int sector)
 {
-	long	offset;
-	error_code  ec = 0;
+	long offset;
+	error_code ec = 0;
 
-//	assert( (track>= 0) && (track<35) );
-//	assert( (sector>0) && (sector<19) );
+//      assert( (track>= 0) && (track<35) );
+//      assert( (sector>0) && (sector<19) );
 
 	/* 1. Compute offset. */
 
@@ -94,21 +95,21 @@ error_code _decb_seeksector(decb_path_id path, int track, int sector)
 	/* 2. Seek to offset. */
 
 	ec = fseek(path->fd, offset, SEEK_SET);
-	
+
 	return ec;
 }
 
 error_code _decb_seekgranule(decb_path_id path, int granule)
 {
-	long	offset;
-	error_code  ec = 0;
-	
-//	assert( (granule>= 0) && (granule<68) );
-	
+	long offset;
+	error_code ec = 0;
+
+//      assert( (granule>= 0) && (granule<68) );
+
 	/* 1. Compute offset. */
-	
+
 	offset = granule * 2304;
-	
+
 
 	/* 2. Account for directory (2 granules) */
 
@@ -116,15 +117,15 @@ error_code _decb_seekgranule(decb_path_id path, int granule)
 	{
 		offset += (2304 * 2);
 	}
-		
+
 
 	/* 3. Add in disk offset. */
-	
+
 	offset += path->disk_offset;
-	
+
 	/* 4. Seek to granule. */
-	
+
 	ec = fseek(path->fd, offset, SEEK_SET);
-	
+
 	return ec;
 }

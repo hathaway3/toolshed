@@ -22,87 +22,86 @@ int StrToInt(char *s)
 
 	switch (*s)
 	{
-		case '$':	/* Hex conversion */
-            s++;
-            t = strlen(s);
-            for (i = 0; i < t; i++)
-            {
-                int c;
+	case '$':		/* Hex conversion */
+		s++;
+		t = strlen(s);
+		for (i = 0; i < t; i++)
+		{
+			int c;
 
-                c = toupper(s[i]);
-                if (c >= 'A' && c <= 'F')
-                {
-                    c -= 7;
-                }
-
-                c -= 48;
-                power = pow(16, t - i - 1);	
-
-                accum += c * power;
-            }
-            break;
-
-        case '%':	/* Binary conversion */
-            s++;
-            t = strlen(s);
-            for (i = 0; i < t; i++)
-            {
-                int c;
-
-                c = s[i];
-                c -= 48;
-                power = pow(2, t - i - 1);	
-                accum += c * power;
-            }
-            break;
-
-        case '0':	/* Octal conversion */
-            s++;
-            t = strlen(s);
-            for (i = 0; i < t; i++)
-            {
-                int c;
-
-                c = s[i];
-                c -= 48;
-
-                power = pow(8, t - i - 1);	
-                accum += c * power;
+			c = toupper(s[i]);
+			if (c >= 'A' && c <= 'F')
+			{
+				c -= 7;
 			}
-            break;
+
+			c -= 48;
+			power = pow(16, t - i - 1);
+
+			accum += c * power;
+		}
+		break;
+
+	case '%':		/* Binary conversion */
+		s++;
+		t = strlen(s);
+		for (i = 0; i < t; i++)
+		{
+			int c;
+
+			c = s[i];
+			c -= 48;
+			power = pow(2, t - i - 1);
+			accum += c * power;
+		}
+		break;
+
+	case '0':		/* Octal conversion */
+		s++;
+		t = strlen(s);
+		for (i = 0; i < t; i++)
+		{
+			int c;
+
+			c = s[i];
+			c -= 48;
+
+			power = pow(8, t - i - 1);
+			accum += c * power;
+		}
+		break;
 
 
-        default:	/* Decimal conversion */
-            accum = atoi(s);
-            break;
-    }
+	default:		/* Decimal conversion */
+		accum = atoi(s);
+		break;
+	}
 
-    return(accum);	
+	return (accum);
 }
 
-int strendcasecmp( char *s1, char *s2 )
+int strendcasecmp(char *s1, char *s2)
 {
 	int a, b;
-	
+
 	a = strlen(s1);
 	b = strlen(s2);
-	
-	if( a < b )
-		return -1;
-	
-	return strcasecmp( s1+a-b, s2 );
-}
-	
 
-void show_help(char const * const *helpMessage)
+	if (a < b)
+		return -1;
+
+	return strcasecmp(s1 + a - b, s2);
+}
+
+
+void show_help(char const *const *helpMessage)
 {
-	char const * const *p = helpMessage;
+	char const *const *p = helpMessage;
 
 	while (*p)
-    {
+	{
 		fprintf(stderr, "%s", *(p++));
 	}
 
-    return;
+	return;
 }
-

@@ -18,7 +18,9 @@ void test_decb_dskini()
 	ASSERT_EQUALS(ec, 0);
 
 	// test format of an existing disk image with a disk name that is way too long
-	ec = _decb_dskini("test.dsk", 35, "TESTDISKNAMEISWAYTOOLONGFORNORMALOPERATION", 1, 256, 0);
+	ec = _decb_dskini("test.dsk", 35,
+			  "TESTDISKNAMEISWAYTOOLONGFORNORMALOPERATION", 1,
+			  256, 0);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test format of an existing disk image with a disk name that is barely too long
@@ -36,36 +38,45 @@ void test_decb_create()
 	error_code ec;
 
 	// test create of a non-existing illegal file on a non-existing disk image
-	ec = _decb_create(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist", FAM_READ, 0, 1);
+	ec = _decb_create(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist",
+			  FAM_READ, 0, 1);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test create of a non-existing legal file on a non-existing disk image
-	ec = _decb_create(&p, "test_disk_doesnt_exist.dsk,FILE.TXT", FAM_READ, 0, 1);
+	ec = _decb_create(&p, "test_disk_doesnt_exist.dsk,FILE.TXT", FAM_READ,
+			  0, 1);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test create of a non-existing file on an existing disk image
-	ec = _decb_create(&p, "test.dsk,test.txt:0", FAM_READ | FAM_WRITE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test.txt:0", FAM_READ | FAM_WRITE, 0,
+			  1);
 	ASSERT_EQUALS(ec, 0);
 	ec = _decb_close(p);
 	ASSERT_EQUALS(ec, 0);
 
 	// test create of an existing file on an existing disk image
-	ec = _decb_create(&p, "test.dsk,test.txt", FAM_READ | FAM_WRITE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test.txt", FAM_READ | FAM_WRITE, 0,
+			  1);
 	ASSERT_EQUALS(ec, 0);
 	ec = _decb_close(p);
 	ASSERT_EQUALS(ec, 0);
 
 	// test create of an existing file on an existing disk image with FAM_NOCREATE
-	ec = _decb_create(&p, "test.dsk,test.txt", FAM_READ | FAM_WRITE | FAM_NOCREATE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test.txt",
+			  FAM_READ | FAM_WRITE | FAM_NOCREATE, 0, 1);
 	ASSERT_EQUALS(ec, EOS_FAE);
 
 	// test create of an extra long (illegal) filename on an existing disk image
-	ec = _decb_create(&p, "test.dsk,file_doesnt_exist_and_is_much_longer_than_decb_limit_of_8_characters", FAM_READ, 0, 1);
+	ec = _decb_create(&p,
+			  "test.dsk,file_doesnt_exist_and_is_much_longer_than_decb_limit_of_8_characters",
+			  FAM_READ, 0, 1);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test create of an extra long (illegal) filename with a subfolder on an existing disk image
 	// the root file is a directory when it isn't
-	ec = _decb_create(&p, "test.dsk,file_doesnt_exist_and_is_much_longer_than_rbf_limit_of_8_characters/and_this_is_an_even_longer_name_than_the_8_character_limit_in9_rbf_because_it_has_more_characters", FAM_READ, 0, 1);
+	ec = _decb_create(&p,
+			  "test.dsk,file_doesnt_exist_and_is_much_longer_than_rbf_limit_of_8_characters/and_this_is_an_even_longer_name_than_the_8_character_limit_in9_rbf_because_it_has_more_characters",
+			  FAM_READ, 0, 1);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 }
 
@@ -75,7 +86,8 @@ void test_decb_read()
 	error_code ec;
 
 	// test create of a non-existing file on an existing disk image
-	ec = _decb_create(&p, "test.dsk,test2.txt", FAM_READ | FAM_WRITE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test2.txt", FAM_READ | FAM_WRITE, 0,
+			  1);
 	ASSERT_EQUALS(ec, 0);
 
 	// test read of an empty file
@@ -95,7 +107,8 @@ void test_decb_write()
 	error_code ec;
 
 	// test create of a non-exsting file on an existing disk image
-	ec = _decb_create(&p, "test.dsk,test3.txt", FAM_READ | FAM_WRITE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test3.txt", FAM_READ | FAM_WRITE, 0,
+			  1);
 	ASSERT_EQUALS(ec, 0);
 
 	// test write when file only open for read
@@ -109,7 +122,8 @@ void test_decb_write()
 	ASSERT_EQUALS(ec, 0);
 
 	// test create of a non-existing file on an existing disk image
-	ec = _decb_create(&p, "test.dsk,test4.txt", FAM_READ | FAM_WRITE, 0, 1);
+	ec = _decb_create(&p, "test.dsk,test4.txt", FAM_READ | FAM_WRITE, 0,
+			  1);
 	ASSERT_EQUALS(ec, 0);
 
 	// test write when file open for read and write
@@ -129,7 +143,8 @@ void test_decb_open_and_read()
 	error_code ec;
 
 	// test open of a non-existing disk image
-	ec = _decb_open(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist", FAM_READ);
+	ec = _decb_open(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist",
+			FAM_READ);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test open of an existing file on an existing disk image
@@ -171,7 +186,8 @@ void test_decb_rename()
 	error_code ec;
 
 	// test rename of a non-existing file in an existing disk image
-	ec = _decb_rename("test.dsk,file_doesnt_exist", "another_file_doesnt_exist");
+	ec = _decb_rename("test.dsk,file_doesnt_exist",
+			  "another_file_doesnt_exist");
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test rename of an existing file in an existing disk image with an illegal name

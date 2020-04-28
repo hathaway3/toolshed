@@ -12,11 +12,14 @@
 
 #define BUFFSIZ	256
 
-static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks, int sectorsPerTrack, int heads, int sectorSize, int clusterSize, char *diskName, int sectorAllocationSize, int tpi, int density, int bytesPerSector, int formatEntire);
+static int do_format(char **argv, char *vdisk, int os968k, int quiet,
+		     int tracks, int sectorsPerTrack, int heads,
+		     int sectorSize, int clusterSize, char *diskName,
+		     int sectorAllocationSize, int tpi, int density,
+		     int bytesPerSector, int formatEntire);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: format {[<opts>]} <disk> {[<...>]} {[<opts>]}\n",
 	"Usage:  Create a disk image of a given size.\n",
 	"Options:\n",
@@ -44,7 +47,7 @@ static char const * const helpMessage[] =
 
 int os9format(int argc, char **argv)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 	int tracks = 35;
@@ -65,7 +68,7 @@ int os9format(int argc, char **argv)
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* walk command line for options */
@@ -75,120 +78,139 @@ int os9format(int argc, char **argv)
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '4':	/* 48 tpi */
-						tpi = 48;
-						break;
+				case '4':	/* 48 tpi */
+					tpi = 48;
+					break;
 
-					case '9':	/* 96 tpi */
-						tpi = 96;
-						break;
+				case '9':	/* 96 tpi */
+					tpi = 96;
+					break;
 
-					case 'c':
-						/* TODO: verify clusterSize is a power of 2! */
-						clusterSize = atoi(p+1);
-						while (*(p + 1) != '\0') p++;
-						break;
+				case 'c':
+					/* TODO: verify clusterSize is a power of 2! */
+					clusterSize = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
 
-					case 'e':
-						formatEntire = 1;
-						break;
+				case 'e':
+					formatEntire = 1;
+					break;
 
-					case 'k':
-						os968k = 1;
-						break;
+				case 'k':
+					os968k = 1;
+					break;
 
-					case 'q':
-						quiet = 1;
-						break;
+				case 'q':
+					quiet = 1;
+					break;
 
-					case 'b':	/* bytes/sector */
-						switch (*(p+1))
+				case 'b':	/* bytes/sector */
+					switch (*(p + 1))
+					{
+					case 's':
+						bytesPerSector = atoi(p + 2);
+						if (bytesPerSector % 256 != 0)
 						{
-							case 's':
-								bytesPerSector = atoi(p+2);
-								if (bytesPerSector % 256 != 0)
-								{
-									fprintf(stderr, "%s: bytes per sector must be a multiple of 256\n", argv[0]);
-									return(0);
-								}
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
+							fprintf(stderr,
+								"%s: bytes per sector must be a multiple of 256\n",
+								argv[0]);
+							return (0);
 						}
-						while (*(p + 1) != '\0') p++;
 						break;
-
-					case 'd':	/* double density or sides */
-						switch (*(p+1))
-						{
-							case 'd':
-								density = 1;
-								break;
-
-							case 's':
-								heads = 2;
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 's':	/* single density or sides */
-						switch (*(p+1))
-						{
-							case 'a':
-								sectorAllocationSize = atoi(p+2);
-								while (*(p + 1) != '\0') p++;
-								break;
-
-							case 'd':
-								density = 0;
-								break;
-
-							case 's':
-								heads = 1;
-								break;
-
-							case 't':
-								sectorsPerTrack = atoi(p+2);
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 't':	/* tracks */
-						tracks = atoi(p+1);
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 'n':	/* disk name */
-						diskName = p + 1;
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 'l':	/* logical sectors */
-						logicalSectors = atoi(p+1);
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case '?':
-						show_help(helpMessage);
-						return(0);
 
 					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'd':	/* double density or sides */
+					switch (*(p + 1))
+					{
+					case 'd':
+						density = 1;
+						break;
+
+					case 's':
+						heads = 2;
+						break;
+
+					default:
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 's':	/* single density or sides */
+					switch (*(p + 1))
+					{
+					case 'a':
+						sectorAllocationSize =
+							atoi(p + 2);
+						while (*(p + 1) != '\0')
+							p++;
+						break;
+
+					case 'd':
+						density = 0;
+						break;
+
+					case 's':
+						heads = 1;
+						break;
+
+					case 't':
+						sectorsPerTrack = atoi(p + 2);
+						break;
+
+					default:
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 't':	/* tracks */
+					tracks = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'n':	/* disk name */
+					diskName = p + 1;
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'l':	/* logical sectors */
+					logicalSectors = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -222,7 +244,7 @@ int os9format(int argc, char **argv)
 				heads = i;
 				i = 0;
 			}
-		}	
+		}
 	}
 
 	/* walk command line for pathnames */
@@ -234,18 +256,25 @@ int os9format(int argc, char **argv)
 		}
 		else
 		{
-			do_format(argv, argv[i], os968k, quiet, tracks, sectorsPerTrack, heads, bytesPerSector, clusterSize, diskName, sectorAllocationSize, tpi, density, bytesPerSector, formatEntire);
+			do_format(argv, argv[i], os968k, quiet, tracks,
+				  sectorsPerTrack, heads, bytesPerSector,
+				  clusterSize, diskName, sectorAllocationSize,
+				  tpi, density, bytesPerSector, formatEntire);
 		}
 	}
 
-	return(ec);
+	return (ec);
 }
 
 
 
-static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks, int sectorsPerTrack, int heads, int sectorSize, int clusterSize, char *diskName, int sectorAllocationSize, int tpi, int density, int bytesPerSector, int formatEntire)
+static int do_format(char **argv, char *vdisk, int os968k, int quiet,
+		     int tracks, int sectorsPerTrack, int heads,
+		     int sectorSize, int clusterSize, char *diskName,
+		     int sectorAllocationSize, int tpi, int density,
+		     int bytesPerSector, int formatEntire)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	os9_path_id path;
 	lsn0_sect s0;
 	unsigned int totalSectors, totalBytes, sectorsLeft;
@@ -257,13 +286,15 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	ec = _os9_open(&path, vdisk, FAM_WRITE);
 	if (ec != 0)
 	{
-		ec = _os9_create(&path, vdisk, FAM_WRITE, FAP_READ | FAP_WRITE);
+		ec = _os9_create(&path, vdisk, FAM_WRITE,
+				 FAP_READ | FAP_WRITE);
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: cannot open virtual disk\n", argv[0]);
+			fprintf(stderr, "%s: cannot open virtual disk\n",
+				argv[0]);
 
-			return(ec);
+			return (ec);
 		}
 	}
 
@@ -276,7 +307,7 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	_int3(totalSectors, s0.dd_tot);
 
 	totalBytes = totalSectors * bytesPerSector;
-	
+
 	/* Determine appropriate cluster size */
 	if (clusterSize == 0)
 	{
@@ -295,26 +326,26 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	{
 		fprintf(stderr, "Disk too large\n");
 
-		return(1);
+		return (1);
 	}
-	else
-	if (int3(s0.dd_tot) < 4)
+	else if (int3(s0.dd_tot) < 4)
 	{
 		fprintf(stderr, "Too few sectors\n");
 
-		return(1);
+		return (1);
 	}
 
 	sectorsLeft = int3(s0.dd_tot);
 
 	_int1(sectorsPerTrack, s0.dd_tks);
 	_int2((int3(s0.dd_tot) / (8 * clusterSize)), s0.dd_map);
-	if (int3(s0.dd_tot) == 0) _int3(1, s0.dd_tot);
+	if (int3(s0.dd_tot) == 0)
+		_int3(1, s0.dd_tot);
 	_int2(clusterSize, s0.dd_bit);
 
 	/* Compute starting location of root directory */
-	_int3((int2(s0.dd_map) + sectorSize) / sectorSize + 
-		(int2(s0.dd_map) % sectorSize != 0), s0.dd_dir);
+	_int3((int2(s0.dd_map) + sectorSize) / sectorSize +
+	      (int2(s0.dd_map) % sectorSize != 0), s0.dd_dir);
 
 	_int2(0, s0.dd_own);
 	_int1(0xFF, s0.dd_att);
@@ -324,38 +355,38 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	b = 0;
 	switch (tpi)
 	{
-		case 48:
-			b |= 0;
-			break;
+	case 48:
+		b |= 0;
+		break;
 
-		case 96:
-			b |= 4;
-			break;
+	case 96:
+		b |= 4;
+		break;
 	}
 
 	switch (heads)
 	{
-		case 1:
-			b |= 0;
-			break;
+	case 1:
+		b |= 0;
+		break;
 
-		case 2:
-			b |= 1;
-			break;
+	case 2:
+		b |= 1;
+		break;
 	}
 
 	switch (density)
 	{
-		case 0:
-			b |= 0;
-			break;
+	case 0:
+		b |= 0;
+		break;
 
-		case 1:
-			b |= 2;
-			break;
+	case 1:
+		b |= 2;
+		break;
 	}
 
-	_int1(b, s0.dd_fmt); // B2 = tpi, B1 = density, B0 = SS or DS
+	_int1(b, s0.dd_fmt);	// B2 = tpi, B1 = density, B0 = SS or DS
 
 	_int2(sectorsPerTrack, s0.dd_spt);
 	_int2(0, s0.dd_res);
@@ -373,22 +404,22 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		s0.dd_nam[i] = diskName[i] + 128;
 	}
 
-	_int1( DT_RBF, s0.pd_dtp );
-	_int1( 1, s0.pd_drv );
-	_int1( 0, s0.pd_stp );
-	_int1( 0x20, s0.pd_typ );
-	_int1( 1, s0.pd_dns );
-	
-	_int2( tracks, s0.pd_cyl );
+	_int1(DT_RBF, s0.pd_dtp);
+	_int1(1, s0.pd_drv);
+	_int1(0, s0.pd_stp);
+	_int1(0x20, s0.pd_typ);
+	_int1(1, s0.pd_dns);
 
-	_int1( heads, s0.pd_sid );
-	_int1( 0, s0.pd_vfy );
+	_int2(tracks, s0.pd_cyl);
 
-	_int2( sectorsPerTrack, s0.pd_sct );
-	_int2( sectorsPerTrack, s0.pd_t0s );
+	_int1(heads, s0.pd_sid);
+	_int1(0, s0.pd_vfy);
 
-	_int1( 3, s0.pd_ilv );
-	_int1( sectorAllocationSize, s0.pd_sas );
+	_int2(sectorsPerTrack, s0.pd_sct);
+	_int2(sectorsPerTrack, s0.pd_t0s);
+
+	_int1(3, s0.pd_ilv);
+	_int1(sectorAllocationSize, s0.pd_sas);
 
 	if (os968k == 1)
 	{
@@ -397,13 +428,13 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		/* put sync bytes */
 		_int4(0x4372757A, s0.dd_sync);
 		/* put bitmap starting sector number */
-		_int4( 1, s0.dd_maplsn);
+		_int4(1, s0.dd_maplsn);
 		/* put sector 0 version ID */
-		_int2( 1, s0.dd_versid);
+		_int2(1, s0.dd_versid);
 	}
 
 	/* put bytes per sector */
-	_int1( bytesPerSector / 256, s0.dd_lsnsize);
+	_int1(bytesPerSector / 256, s0.dd_lsnsize);
 
 	/***** Write LSN0 *****/
 	{
@@ -428,15 +459,21 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		u_char *bitmap;
 		int size;
 
-		bitmapSectors = (int2(s0.dd_map) / sectorSize + (int2(s0.dd_map) % sectorSize != 0));
+		bitmapSectors =
+			(int2(s0.dd_map) / sectorSize +
+			 (int2(s0.dd_map) % sectorSize != 0));
 
-		if (bitmapSectors == 0) { bitmapSectors++; }
+		if (bitmapSectors == 0)
+		{
+			bitmapSectors++;
+		}
 
-		size = NextHighestMultiple(bitmapSectors * sectorSize, clusterSize);
-		bitmap = (u_char *)malloc(size);
+		size = NextHighestMultiple(bitmapSectors * sectorSize,
+					   clusterSize);
+		bitmap = (u_char *) malloc(size);
 		if (bitmap == NULL)
 		{
-			return(1);
+			return (1);
 		}
 
 		/* Clear out bitmap sectors (assume all space available) */
@@ -446,7 +483,8 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		{
 			int extraBitStart = int3(s0.dd_tot) / clusterSize;
 
-			_os9_allbit(bitmap, extraBitStart, (size * 8) - extraBitStart);
+			_os9_allbit(bitmap, extraBitStart,
+				    (size * 8) - extraBitStart);
 		}
 
 		/* Allocate LSN0, Bitmap Sectors, Root FD and Root Dir */
@@ -456,7 +494,7 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 			sectorsToAlloc++;	/* LSN0 */
 			sectorsToAlloc += bitmapSectors;	/* Bitmap sectors */
 
-			rootSects = 1;				/* Root FD Sector */
+			rootSects = 1;	/* Root FD Sector */
 			rootSects += sectorAllocationSize;	/* Root dirent sectors */
 
 			sectorsToAlloc += rootSects;	/* Total sectors so far -- will be a multiple of cluster size */
@@ -467,10 +505,14 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 			 * number of sectors remaining in the cluster.
 			 */
 			{
-				unsigned int sectorsToAllocOld = sectorsToAlloc;
+				unsigned int sectorsToAllocOld =
+					sectorsToAlloc;
 
-				sectorsToAlloc = NextHighestMultiple(sectorsToAlloc, clusterSize);
-				rootSects += sectorsToAlloc - sectorsToAllocOld;
+				sectorsToAlloc =
+					NextHighestMultiple(sectorsToAlloc,
+							    clusterSize);
+				rootSects +=
+					sectorsToAlloc - sectorsToAllocOld;
 			}
 
 			if ((clusters = sectorsToAlloc / clusterSize) < 1)
@@ -496,24 +538,26 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		totalSectors = sectorsToAlloc - 1 - bitmapSectors;
 		totalBytes = totalSectors * sectorSize;
 
-		allocedSectors = (char *)malloc(totalBytes);
+		allocedSectors = (char *) malloc(totalBytes);
 		if (allocedSectors == NULL)
 		{
-			return(1);
+			return (1);
 		}
 
 		memset(allocedSectors, 0, totalBytes);
 
 		/* Build FD sector */
 		{
-			Fd_stats statSector = (Fd_stats)allocedSectors;
+			Fd_stats statSector = (Fd_stats) allocedSectors;
 
 			char lastModifiedDate[5], createDate[5];
 
 			UnixToOS9Time(time(NULL), lastModifiedDate);
 			UnixToOS9Time(time(NULL), createDate);
 
-			statSector->fd_att = FAP_DIR | FAP_READ | FAP_WRITE | FAP_EXEC | FAP_PREAD | FAP_PWRITE | FAP_PEXEC;
+			statSector->fd_att =
+				FAP_DIR | FAP_READ | FAP_WRITE | FAP_EXEC |
+				FAP_PREAD | FAP_PWRITE | FAP_PEXEC;
 			_int2(0, statSector->fd_own);
 			memcpy(statSector->fd_dat, lastModifiedDate, 5);
 			statSector->fd_lnk = 1;
@@ -521,12 +565,13 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 			memcpy(statSector->fd_creat, lastModifiedDate, 3);
 
 			_int3(int3(s0.dd_dir) + 1, statSector->fd_seg[0].lsn);
-			_int2(rootSects-1, statSector->fd_seg[0].num);
+			_int2(rootSects - 1, statSector->fd_seg[0].num);
 		}
 
 		/* Build directory sector */
 		{
-			Fd_dentry d = (Fd_dentry)&allocedSectors[sectorSize];
+			Fd_dentry d =
+				(Fd_dentry) & allocedSectors[sectorSize];
 
 			/* Create '..' */
 			strcpy(d->name, "..");
@@ -552,7 +597,7 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 	{
 		char *oneEmptySector;
 
-		oneEmptySector = (char *)malloc(sectorSize);
+		oneEmptySector = (char *) malloc(sectorSize);
 
 		if (oneEmptySector != NULL)
 		{
@@ -587,5 +632,5 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet, int tracks
 		printf("   Cluster size: %d\n", clusterSize);
 	}
 
-	return(ec);
+	return (ec);
 }

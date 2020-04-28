@@ -17,8 +17,7 @@ int bits_per_sample = 8;
 double silence_length = 0.5;
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: bulkerase {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Create cassette image files, WAV for CAS.\n",
 	"Options:\n",
@@ -31,7 +30,7 @@ static char const * const helpMessage[] =
 
 int cecbbulkerase(int argc, char *argv[])
 {
-    error_code ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -46,33 +45,39 @@ int cecbbulkerase(int argc, char *argv[])
 			{
 				switch (*p)
 				{
-					case 'l':
-						silence_length = atof(p + 1);
-						while (*(p + 1) != '\0') p++;
-						break;
+				case 'l':
+					silence_length = atof(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
 
-					case 's':
-						sample_rate = atoi(p + 1);
-						while (*(p + 1) != '\0') p++;
-						break;
+				case 's':
+					sample_rate = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
 
-					case 'b':
-						bits_per_sample = atoi(p + 1);
-						while (*(p + 1) != '\0') p++;
+				case 'b':
+					bits_per_sample = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
 
-						if( (bits_per_sample != 8) && (bits_per_sample != 16 ) )
-							bits_per_sample = 8;
+					if ((bits_per_sample != 8)
+					    && (bits_per_sample != 16))
+						bits_per_sample = 8;
 
-						break;
+					break;
 
-					case 'h':
-					case '?':
-						show_help(helpMessage);
-						return(0);
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
 
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -91,18 +96,24 @@ int cecbbulkerase(int argc, char *argv[])
 		{
 			p = argv[i];
 
-			ec = _cecb_bulkerase(argv[i], sample_rate, bits_per_sample, silence_length);
+			ec = _cecb_bulkerase(argv[i], sample_rate,
+					     bits_per_sample, silence_length);
 
-			if(ec==0)
+			if (ec == 0)
 			{
-                printf( "Creating WAV file: %s\n", argv[i] );
-                printf( "      Sample Rate: %d\n", sample_rate );
-                printf( "  Bits Per Sample: %d\n", bits_per_sample );
-                printf( "   Silence Length: %f\n\n", silence_length );
+				printf("Creating WAV file: %s\n", argv[i]);
+				printf("      Sample Rate: %d\n",
+				       sample_rate);
+				printf("  Bits Per Sample: %d\n",
+				       bits_per_sample);
+				printf("   Silence Length: %f\n\n",
+				       silence_length);
 			}
 			else
 			{
-			    fprintf(stderr, "%s: cannot open virtual cassette: %s\n\n", argv[0], argv[i]);
+				fprintf(stderr,
+					"%s: cannot open virtual cassette: %s\n\n",
+					argv[0], argv[i]);
 			}
 		}
 	}
@@ -110,9 +121,9 @@ int cecbbulkerase(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 
-	return(0);
+	return (0);
 }

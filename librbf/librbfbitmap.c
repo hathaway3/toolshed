@@ -17,27 +17,27 @@
  * has checked the bounds before calling.
  */
 
-int _os9_allbit(u_char *bitmap, int firstbit, int numbits)
+int _os9_allbit(u_char * bitmap, int firstbit, int numbits)
 {
-    error_code ec = 0;
-    int i, startbyte, startbit;
+	error_code ec = 0;
+	int i, startbyte, startbit;
 
 
-    startbyte = firstbit / 8;	/* compute start byte */
-    startbit = firstbit % 8;	/* and start bit */
+	startbyte = firstbit / 8;	/* compute start byte */
+	startbit = firstbit % 8;	/* and start bit */
 
-    for (i = 0; i < numbits; i++)
-    {
-        if (startbit > 7)
-        {
-            startbit = 0;	/* reset bit counter */
-            startbyte++;	/* and increase byte counter */
-        }
+	for (i = 0; i < numbits; i++)
+	{
+		if (startbit > 7)
+		{
+			startbit = 0;	/* reset bit counter */
+			startbyte++;	/* and increase byte counter */
+		}
 
-        bitmap[startbyte] |= (1 << (7 - startbit++));
-    }
+		bitmap[startbyte] |= (1 << (7 - startbit++));
+	}
 
-    return(ec);
+	return (ec);
 }
 
 
@@ -48,28 +48,28 @@ int _os9_allbit(u_char *bitmap, int firstbit, int numbits)
  * has checked the bounds before calling.
  */
 
-int _os9_delbit(u_char *bitmap, int firstbit, int numbits)
+int _os9_delbit(u_char * bitmap, int firstbit, int numbits)
 {
-    error_code ec = 0;
-    int i, startbyte, startbit;
+	error_code ec = 0;
+	int i, startbyte, startbit;
 
-	
-    startbyte = firstbit / 8;	/* compute start byte */
-    startbit = firstbit % 8;	/* and start bit */
 
-    for (i = 0; i < numbits; i++)
-    {
-        if (startbit > 7)
-        {
-            startbit = 0;	/* reset bit counter */
-            startbyte++;	/* and increase byte counter */
-        }
-        
-        bitmap[startbyte] &= ~(1 << (7 - startbit++));
-    }
+	startbyte = firstbit / 8;	/* compute start byte */
+	startbit = firstbit % 8;	/* and start bit */
 
-	
-    return ec;
+	for (i = 0; i < numbits; i++)
+	{
+		if (startbit > 7)
+		{
+			startbit = 0;	/* reset bit counter */
+			startbyte++;	/* and increase byte counter */
+		}
+
+		bitmap[startbyte] &= ~(1 << (7 - startbit++));
+	}
+
+
+	return ec;
 }
 
 
@@ -80,40 +80,40 @@ int _os9_delbit(u_char *bitmap, int firstbit, int numbits)
  * has checked the bounds before calling.
  */
 
-int _os9_ckbit(u_char *bitmap, int bitnumber)
+int _os9_ckbit(u_char * bitmap, int bitnumber)
 {
-    int startbyte, startbit;
+	int startbyte, startbit;
 
-	
-    startbyte = bitnumber / 8;
-    startbit = bitnumber % 8;
-	
 
-    return bitmap[startbyte] & (1 << (7 - startbit));
+	startbyte = bitnumber / 8;
+	startbit = bitnumber % 8;
+
+
+	return bitmap[startbyte] & (1 << (7 - startbit));
 }
 
 
 
 /* Return free bit */
 
-int _os9_getfreebit(u_char *bitmap, int total_sectors)
+int _os9_getfreebit(u_char * bitmap, int total_sectors)
 {
-    int i;
+	int i;
 
-	
-    for (i = 2; i < total_sectors; i++)
-    {
-        if (!_os9_ckbit(bitmap, i))
-        {
-            /* bit is clear, cluster is free */
-            
+
+	for (i = 2; i < total_sectors; i++)
+	{
+		if (!_os9_ckbit(bitmap, i))
+		{
+			/* bit is clear, cluster is free */
+
 			_os9_allbit(bitmap, i, 1);	/* allocate cluster */
 
-            return i;			/* return offset */
-        }
-    }
+			return i;	/* return offset */
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
 
@@ -129,65 +129,65 @@ int _os9_getfreebit(u_char *bitmap, int total_sectors)
 
 error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 {
-    unsigned int	pd_sas = int1(path->lsn0->pd_sas);
-    unsigned int	pd_tot = int3(path->lsn0->dd_tot);
-	u_int			i, count;
+	unsigned int pd_sas = int1(path->lsn0->pd_sas);
+	unsigned int pd_tot = int3(path->lsn0->dd_tot);
+	u_int i, count;
 
-	
-    /* Sanity check pd_sas */
 
-    if (pd_sas < 1 || pd_sas > (pd_tot / 2))
-    {
-        pd_sas = 1;
+	/* Sanity check pd_sas */
 
-        _int1(pd_sas, path->lsn0->pd_sas);
-    }
-	
-	
-    /* Adjust pd_sas so that it is at least a multiple of the
-     * cluster size
-     */
+	if (pd_sas < 1 || pd_sas > (pd_tot / 2))
+	{
+		pd_sas = 1;
 
-    pd_sas = NextHighestMultiple(pd_sas, path->spc);
+		_int1(pd_sas, path->lsn0->pd_sas);
+	}
 
-	
-    /* Now go and find pd_sas number of contiguous clusters */
 
-    i = count = 0;
+	/* Adjust pd_sas so that it is at least a multiple of the
+	 * cluster size
+	 */
 
-    while (count < (pd_sas / path->spc))
-    {
+	pd_sas = NextHighestMultiple(pd_sas, path->spc);
+
+
+	/* Now go and find pd_sas number of contiguous clusters */
+
+	i = count = 0;
+
+	while (count < (pd_sas / path->spc))
+	{
 		if (i > pd_tot)
 		{
 			return -1;
 		}
-			
-        if (!_os9_ckbit(path->bitmap, i++))
-        {
-            /* Bit is clear */
-			
-            count += 1;
-        }
-        else
-        {
-            count = 0;
-        }
-    }
 
-	
-    if (i > pd_tot)
-    {
-        return 1;		/* none found */
-    }
+		if (!_os9_ckbit(path->bitmap, i++))
+		{
+			/* Bit is clear */
 
-	
-    *cluster = (i - count) * path->spc;
-    *size = count * path->spc;
-	
-    _os9_allbit(path->bitmap, i - count, count);
-	
-	
-    return 0;
+			count += 1;
+		}
+		else
+		{
+			count = 0;
+		}
+	}
+
+
+	if (i > pd_tot)
+	{
+		return 1;	/* none found */
+	}
+
+
+	*cluster = (i - count) * path->spc;
+	*size = count * path->spc;
+
+	_os9_allbit(path->bitmap, i - count, count);
+
+
+	return 0;
 }
 
 
@@ -196,5 +196,5 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 
 unsigned int NextHighestMultiple(unsigned int value, unsigned int multiple)
 {
-    return (value / multiple + (value % multiple != 0)) * multiple;
+	return (value / multiple + (value % multiple != 0)) * multiple;
 }

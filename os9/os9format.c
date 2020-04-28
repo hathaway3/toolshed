@@ -14,8 +14,7 @@
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: format {[<opts>]} <disk> {[<...>]} {[<opts>]}\n",
 	"Usage:  Create a disk image of a given size.\n",
 	"Options:\n",
@@ -44,7 +43,7 @@ static char const * const helpMessage[] =
 
 int os9format(int argc, char **argv)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 	int tracks = 35;
@@ -60,14 +59,14 @@ int os9format(int argc, char **argv)
 	int sectorAllocationSize = 8;	/* default */
 	int os968k = 0;		/* assume OS-9/6809 LSN0 */
 	int formatEntire = 0;	/* format entire disk image */
-	int isDragon = 0;		/* format disk as Dragon, with reserved boot sectors at begining */
-	int isHDD = 0; /* Is this image for a hard drive */
-	
+	int isDragon = 0;	/* format disk as Dragon, with reserved boot sectors at begining */
+	int isHDD = 0;		/* Is this image for a hard drive */
+
 	/* if no arguments, show help and return */
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* walk command line for options */
@@ -77,134 +76,157 @@ int os9format(int argc, char **argv)
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '4':	/* 48 tpi */
-						tpi = 48;
-						break;
+				case '4':	/* 48 tpi */
+					tpi = 48;
+					break;
 
-					case '9':	/* 96 tpi */
-						tpi = 96;
-						break;
+				case '9':	/* 96 tpi */
+					tpi = 96;
+					break;
 
-					case 'c':
-						clusterSize = atoi(p+1);
-						if (clusterSize == 0 || (clusterSize & (clusterSize - 1)))
+				case 'c':
+					clusterSize = atoi(p + 1);
+					if (clusterSize == 0
+					    || (clusterSize &
+						(clusterSize - 1)))
+					{
+						fprintf(stderr,
+							"%s: cluster size must be a power of two\n",
+							argv[0]);
+						return 0;
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'e':
+					formatEntire = 1;
+					break;
+
+				case 'k':
+					os968k = 1;
+					break;
+
+				case 'q':
+					quiet = 1;
+					break;
+
+				case 'b':	/* bytes/sector */
+					switch (*(p + 1))
+					{
+					case 's':
+						bytesPerSector = atoi(p + 2);
+						if (bytesPerSector % 256 != 0)
 						{
-							fprintf(stderr, "%s: cluster size must be a power of two\n", argv[0]);
-							return 0;
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 'e':
-						formatEntire = 1;
-						break;
-
-					case 'k':
-						os968k = 1;
-						break;
-
-					case 'q':
-						quiet = 1;
-						break;
-
-					case 'b':	/* bytes/sector */
-						switch (*(p+1))
-						{
-							case 's':
-								bytesPerSector = atoi(p+2);
-								if (bytesPerSector % 256 != 0)
-								{
-									fprintf(stderr, "%s: bytes per sector must be a multiple of 256\n", argv[0]);
-									return(0);
-								}
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 'd':	/* double density or sides */
-						switch (*(p+1))
-						{
-							case 'd':
-								density = 1;
-								break;
-
-							case 's':
-								heads = 2;
-								break;
-								
-							case 'r':
-								isDragon = 1;
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 's':	/* single density or sides */
-						switch (*(p+1))
-						{
-							case 'a':
-								sectorAllocationSize = atoi(p+2);
-								while (*(p + 1) != '\0') p++;
-								break;
-
-							case 'd':
-								density = 0;
-								break;
-
-							case 's':
-								heads = 1;
-								break;
-
-							case 't':
-								sectorsPerTrack = atoi(p+2);
-								break;
-
-							default:
-								fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-								return(0);
-						}
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 't':	/* tracks */
-						tracks = atoi(p+1);
-						while (*(p + 1) != '\0') p++;
-						break;
-
-					case 'n':	/* disk name */
-						diskName = p + 1;
-						while (*(p + 1) != '\0') p++;
-						// FIX: chop off disk name if too long
-						if (strlen(diskName) > 32)
-						{
-							diskName[32] = '\0';
+							fprintf(stderr,
+								"%s: bytes per sector must be a multiple of 256\n",
+								argv[0]);
+							return (0);
 						}
 						break;
-
-					case 'l':	/* logical sectors */
-						logicalSectors = atoi(p+1);
-						while (*(p + 1) != '\0') p++;
-						isHDD = 1;
-						break;
-
-					case '?':
-						show_help(helpMessage);
-						return(0);
 
 					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'd':	/* double density or sides */
+					switch (*(p + 1))
+					{
+					case 'd':
+						density = 1;
+						break;
+
+					case 's':
+						heads = 2;
+						break;
+
+					case 'r':
+						isDragon = 1;
+						break;
+
+					default:
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 's':	/* single density or sides */
+					switch (*(p + 1))
+					{
+					case 'a':
+						sectorAllocationSize =
+							atoi(p + 2);
+						while (*(p + 1) != '\0')
+							p++;
+						break;
+
+					case 'd':
+						density = 0;
+						break;
+
+					case 's':
+						heads = 1;
+						break;
+
+					case 't':
+						sectorsPerTrack = atoi(p + 2);
+						break;
+
+					default:
+						fprintf(stderr,
+							"%s: unknown option '%c'\n",
+							argv[0], *p);
+						return (0);
+					}
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 't':	/* tracks */
+					tracks = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					break;
+
+				case 'n':	/* disk name */
+					diskName = p + 1;
+					while (*(p + 1) != '\0')
+						p++;
+					// FIX: chop off disk name if too long
+					if (strlen(diskName) > 32)
+					{
+						diskName[32] = '\0';
+					}
+					break;
+
+				case 'l':	/* logical sectors */
+					logicalSectors = atoi(p + 1);
+					while (*(p + 1) != '\0')
+						p++;
+					isHDD = 1;
+					break;
+
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -252,30 +274,43 @@ int os9format(int argc, char **argv)
 		{
 			unsigned int totalSectors, totalBytes;
 
-			error_code ec = _os9_format(argv[i], os968k, tracks, sectorsPerTrack, heads, bytesPerSector, clusterSize, diskName, sectorAllocationSize, tpi, density, formatEntire, isDragon, isHDD, &totalSectors, &totalBytes);
+			error_code ec =
+				_os9_format(argv[i], os968k, tracks,
+					    sectorsPerTrack, heads,
+					    bytesPerSector, clusterSize,
+					    diskName, sectorAllocationSize,
+					    tpi, density, formatEntire,
+					    isDragon, isHDD, &totalSectors,
+					    &totalBytes);
 
 			if (ec == 0)
-			{	
+			{
 				/* Print summary */
 				if (!quiet)
 				{
 					printf("Format Summary\n");
 					printf("--------------\n");
 					printf("Geometry Data:\n");
-					printf("      Cylinders: %d\n", tracks);
-					printf("          Heads: %d\n", heads);
-					printf("  Sectors/track: %d\n", sectorsPerTrack);
-					printf("    Sector size: %d\n", bytesPerSector);
+					printf("      Cylinders: %d\n",
+					       tracks);
+					printf("          Heads: %d\n",
+					       heads);
+					printf("  Sectors/track: %d\n",
+					       sectorsPerTrack);
+					printf("    Sector size: %d\n",
+					       bytesPerSector);
 					printf("\nLogical Data:\n");
-					printf("  Total sectors: %u\n", totalSectors);
-					printf("  Size in bytes: %u\n", totalBytes);
-					printf("   Cluster size: %d\n", clusterSize);
+					printf("  Total sectors: %u\n",
+					       totalSectors);
+					printf("  Size in bytes: %u\n",
+					       totalBytes);
+					printf("   Cluster size: %d\n",
+					       clusterSize);
 				}
 			}
 
 		}
 	}
 
-	return(ec);
+	return (ec);
 }
-

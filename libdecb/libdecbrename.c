@@ -25,9 +25,10 @@ error_code _decb_rename(char *pathlist, char *new_name)
 
 
 
-error_code _decb_rename_ex(char *pathlist, char *new_name, decb_dir_entry *dirent)
+error_code _decb_rename_ex(char *pathlist, char *new_name,
+			   decb_dir_entry * dirent)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char filename[8], extension[3];
 	char nfilename[8], nextension[3];
 	decb_path_id path;
@@ -54,11 +55,15 @@ error_code _decb_rename_ex(char *pathlist, char *new_name, decb_dir_entry *diren
 	}
 
 	/* 3. Convert filename to format required by dentry */
-	CStringToDECBString((unsigned char *)filename, (unsigned char *)extension, (unsigned char *)old_name);
-	CStringToDECBString((unsigned char *)nfilename, (unsigned char *)nextension, (unsigned char *)new_name);
+	CStringToDECBString((unsigned char *) filename,
+			    (unsigned char *) extension,
+			    (unsigned char *) old_name);
+	CStringToDECBString((unsigned char *) nfilename,
+			    (unsigned char *) nextension,
+			    (unsigned char *) new_name);
 
 	/* 4. Open a path to the file */
-	ec = _decb_open(&path, pathlist, FAM_READ| FAM_WRITE);
+	ec = _decb_open(&path, pathlist, FAM_READ | FAM_WRITE);
 
 	if (ec != 0)
 	{
@@ -74,7 +79,9 @@ error_code _decb_rename_ex(char *pathlist, char *new_name, decb_dir_entry *diren
 	/* See if another file in this directory has the same name as our destination */
 	while (_decb_readdir(path, dirent) == 0)
 	{
-		if (!strncmp((char *)dirent->filename, nfilename, 8) && !strncmp((char *)dirent->file_extension, nextension, 3))
+		if (!strncmp((char *) dirent->filename, nfilename, 8)
+		    && !strncmp((char *) dirent->file_extension, nextension,
+				3))
 		{
 			ec = EOS_FAE;
 
@@ -95,7 +102,9 @@ error_code _decb_rename_ex(char *pathlist, char *new_name, decb_dir_entry *diren
 
 	while (_decb_readdir(path, dirent) == 0)
 	{
-		if (!strncmp((char *)dirent->filename, filename, 8) && !strncmp((char *)dirent->file_extension, extension, 3))
+		if (!strncmp((char *) dirent->filename, filename, 8)
+		    && !strncmp((char *) dirent->file_extension, extension,
+				3))
 		{
 			/* 1. Found the source, rename it. */
 			memcpy(dirent->filename, nfilename, 8);

@@ -34,19 +34,23 @@ void test_cecb_create()
 	unsigned int size;
 
 	// Try to make a file with a name too long
-	ec = _cecb_create(&p_wav, "test.wav,TOOLONGFILENAME", FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
+	ec = _cecb_create(&p_wav, "test.wav,TOOLONGFILENAME",
+			  FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// Try to make a file with a name too long
-	ec = _cecb_create(&p_cas, "test.cas,TOOLONGFILENAME", FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
+	ec = _cecb_create(&p_cas, "test.cas,TOOLONGFILENAME",
+			  FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// Open file written in previous written
-	ec = _cecb_create(&p_wav, "test.wav,FILE", FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
+	ec = _cecb_create(&p_wav, "test.wav,FILE", FAM_READ | FAM_WRITE, 1,
+			  255, 0, 0x55, 0x65);
 	ASSERT_EQUALS(ec, 0);
 
 	// Open file written in previous written
-	ec = _cecb_create(&p_cas, "test.cas,FILE", FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
+	ec = _cecb_create(&p_cas, "test.cas,FILE", FAM_READ | FAM_WRITE, 1,
+			  255, 0, 0x55, 0x65);
 	ASSERT_EQUALS(ec, 0);
 
 	// Write data to file
@@ -77,23 +81,24 @@ void test_cecb_read()
 	unsigned int size;
 
 	// Opening in write mode is not supported
-	ec = _cecb_open(&p_wav, "DoesNoteExit.wav,FILE", FAM_READ | FAM_WRITE );
+	ec = _cecb_open(&p_wav, "DoesNoteExit.wav,FILE",
+			FAM_READ | FAM_WRITE);
 	ASSERT_EQUALS(ec, EOS_IC);
 
 	// Opening in write mode is not supported
-	ec = _cecb_open(&p_wav, "DoesNoteExit.wav,FILE", FAM_READ );
+	ec = _cecb_open(&p_wav, "DoesNoteExit.wav,FILE", FAM_READ);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// Opening existing file
-	ec = _cecb_open(&p_cas, "DoesNoteExit.cas,FILE", FAM_READ );
+	ec = _cecb_open(&p_cas, "DoesNoteExit.cas,FILE", FAM_READ);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// Opening existing file
-	ec = _cecb_open(&p_wav, "test.wav,FILE", FAM_READ );
+	ec = _cecb_open(&p_wav, "test.wav,FILE", FAM_READ);
 	ASSERT_EQUALS(ec, 0);
 
 	// Opening existing file
-	ec = _cecb_open(&p_cas, "test.cas,FILE", FAM_READ );
+	ec = _cecb_open(&p_cas, "test.cas,FILE", FAM_READ);
 	ASSERT_EQUALS(ec, 0);
 
 	// Read file into buffer

@@ -11,8 +11,7 @@
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: dskini {[<opts>]} <disk> {[<...>]} {[<opts>]}\n",
 	"Usage:  Create a Disk BASIC image.\n",
 	"Options:\n",
@@ -28,7 +27,7 @@ static char const * const helpMessage[] =
 
 int decbdskini(int argc, char **argv)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 	int tracks = 35;
@@ -37,59 +36,63 @@ int decbdskini(int argc, char **argv)
 	int skitzo = 0;
 
 	/* 1. If no arguments, show help and return. */
-	
+
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
 
-		return(0);
+		return (0);
 	}
 
 
 	/* 2. Walk command line for options. */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '3':	/* 35 tracks */
-						tracks = 35;
-						break;
+				case '3':	/* 35 tracks */
+					tracks = 35;
+					break;
 
-					case '4':	/* 40 tracks */
-						tracks = 40;
-						break;
+				case '4':	/* 40 tracks */
+					tracks = 40;
+					break;
 
-					case '8':	/* 80 tracks */
-						tracks = 80;
-						break;
+				case '8':	/* 80 tracks */
+					tracks = 80;
+					break;
 
-					case 'h':	/* HDB-DOS drives */
-						hdbdrives = atoi(p + 1);
-						tracks = 35;
-						while (*(p + 1) != '\0') p++;
-						break;
-						
-					case 'n':	/* disk name */
-						diskName = p + 1;
-						while (*(p + 1) != '\0') p++;
-						break;
+				case 'h':	/* HDB-DOS drives */
+					hdbdrives = atoi(p + 1);
+					tracks = 35;
+					while (*(p + 1) != '\0')
+						p++;
+					break;
 
-					case 's':	/* skitzo disk */
-						skitzo = 1;
-						break;
-						
-					case '?':
-						show_help(helpMessage);
-						return(0);
+				case 'n':	/* disk name */
+					diskName = p + 1;
+					while (*(p + 1) != '\0')
+						p++;
+					break;
 
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case 's':	/* skitzo disk */
+					skitzo = 1;
+					break;
+
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -97,7 +100,7 @@ int decbdskini(int argc, char **argv)
 
 
 	/* 3. Walk command line for pathnames. */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
@@ -106,9 +109,10 @@ int decbdskini(int argc, char **argv)
 		}
 		else
 		{
-			ec = _decb_dskini(argv[i], tracks, diskName, hdbdrives, 256, skitzo);
+			ec = _decb_dskini(argv[i], tracks, diskName,
+					  hdbdrives, 256, skitzo);
 		}
 	}
 
-	return(ec);
+	return (ec);
 }

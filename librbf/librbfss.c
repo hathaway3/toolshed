@@ -16,68 +16,68 @@
 
 error_code _os9_ss_attr(os9_path_id path, int perms)
 {
-    error_code	ec = 0;
-    fd_stats fdbuf;
+	error_code ec = 0;
+	fd_stats fdbuf;
 
 
-    ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
+	ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
 
-    if (ec == 0)
-    {
-        fdbuf.fd_att = perms;
-        ec = _os9_ss_fd(path, sizeof(fd_stats), &fdbuf);
-    }
+	if (ec == 0)
+	{
+		fdbuf.fd_att = perms;
+		ec = _os9_ss_fd(path, sizeof(fd_stats), &fdbuf);
+	}
 
 
-    return ec;
+	return ec;
 }
 
 
 
-error_code _os9_ss_fd(os9_path_id path, int count, fd_stats *fdbuf)
+error_code _os9_ss_fd(os9_path_id path, int count, fd_stats * fdbuf)
 {
-    error_code	ec = 0;
-    int size;
+	error_code ec = 0;
+	int size;
 
-    {
-        /* seek to FD LSN of pathlist */
-        fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);	
+	{
+		/* seek to FD LSN of pathlist */
+		fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
 
-        /* write the file descriptor sector */
-        size = sizeof(fd_stats);
-        if (count < size)
-        {
-            size = count;
-        }
+		/* write the file descriptor sector */
+		size = sizeof(fd_stats);
+		if (count < size)
+		{
+			size = count;
+		}
 
-        fwrite(fdbuf, 1, size, path->fd);
-    }
+		fwrite(fdbuf, 1, size, path->fd);
+	}
 
-    return(ec);
+	return (ec);
 }
 
 
 error_code _os9_ss_size(os9_path_id path, int size)
 {
-    error_code	ec = 0;
-    fd_stats fdbuf;
+	error_code ec = 0;
+	fd_stats fdbuf;
 
 
-    /* if path is raw, return entire disk as size */
-    if (path->israw == 1)
-    {
-        return(ec);
-    }
+	/* if path is raw, return entire disk as size */
+	if (path->israw == 1)
+	{
+		return (ec);
+	}
 
-    ec = _os9_gs_fd(path, sizeof(fdbuf), &fdbuf);
-    if (ec != 0)
-    {
-        return(ec);
-    }
+	ec = _os9_gs_fd(path, sizeof(fdbuf), &fdbuf);
+	if (ec != 0)
+	{
+		return (ec);
+	}
 
-    _int4(size, fdbuf.fd_siz);
+	_int4(size, fdbuf.fd_siz);
 
-    ec = _os9_ss_fd(path, sizeof(fdbuf), &fdbuf);
+	ec = _os9_ss_fd(path, sizeof(fdbuf), &fdbuf);
 
-    return(ec);
+	return (ec);
 }

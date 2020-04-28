@@ -14,8 +14,7 @@
 #include <cocopath.h>
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: list {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Display contents of a text file.\n",
 	"Options:\n",
@@ -28,7 +27,7 @@ static char const * const helpMessage[] =
 
 int decblist(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	coco_path_id path;
 	int i;
@@ -38,7 +37,7 @@ int decblist(int argc, char *argv[])
 	int srec_translation = 0;
 
 	/* 1. Walk command line for options */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
@@ -48,31 +47,33 @@ int decblist(int argc, char *argv[])
 
 				switch (*p)
 				{
-					case 't':
-						token_translation = 1;
-						break;
-						
-					case 's':
-						srec_translation = 1;
-						break;
-						
+				case 't':
+					token_translation = 1;
+					break;
 
-					case 'h':
-					case '?':
-						show_help(helpMessage);
-						return(0);
-					
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case 's':
+					srec_translation = 1;
+					break;
+
+
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
 	}
 
-	
+
 	/* 2. Walk command line for pathnames. */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
@@ -89,69 +90,73 @@ int decblist(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* 3. Open a path to the file. */
-	
-	ec = _coco_open_read_whole_file( &path, p, FAM_READ, &buffer, &size );
+
+	ec = _coco_open_read_whole_file(&path, p, FAM_READ, &buffer, &size);
 	if (ec != 0)
 	{
 		_coco_close(path);
 		printf("Error %d opening %s\n", ec, p);
 
-		return(ec);
+		return (ec);
 	}
 
-	if( token_translation == 1 )
+	if (token_translation == 1)
 	{
 		char *program;
 		u_int program_size;
-		
-		ec = _decb_detoken( buffer, size, &program, &program_size);
+
+		ec = _decb_detoken(buffer, size, &program, &program_size);
 		if (ec != 0)
 		{
 			return ec;
 		}
-		
-		free( buffer );
-		buffer = (u_char *)program;
+
+		free(buffer);
+		buffer = (u_char *) program;
 		size = program_size;
 	}
 
-	if( srec_translation == 1 )
+	if (srec_translation == 1)
 	{
 		char *program;
 		u_int program_size;
 		coco_file_stat statbuf;
 		_path_type disk_type;
-		
-		_coco_gs_fd( path, &statbuf );
-		_coco_gs_pathtype( path, &disk_type);
-		
-		if( (disk_type == CECB) && (statbuf.gap_flag == 0) )
-			ec = _decb_srec_encode_sr(buffer, size, statbuf.ml_load_address, statbuf.ml_exec_address, &program, &program_size);
+
+		_coco_gs_fd(path, &statbuf);
+		_coco_gs_pathtype(path, &disk_type);
+
+		if ((disk_type == CECB) && (statbuf.gap_flag == 0))
+			ec = _decb_srec_encode_sr(buffer, size,
+						  statbuf.ml_load_address,
+						  statbuf.ml_exec_address,
+						  &program, &program_size);
 		else
-			ec = _decb_srec_encode(buffer, size, &program, &program_size);
-			
+			ec = _decb_srec_encode(buffer, size, &program,
+					       &program_size);
+
 		if (ec != 0)
 		{
 			return ec;
 		}
-		
-		free( buffer );
-		buffer = (u_char *)program;
+
+		free(buffer);
+		buffer = (u_char *) program;
 		size = program_size;
 	}
 
-	DECBToNative((char *)buffer, size, (char **)&buffer2, &size2);
+	DECBToNative((char *) buffer, size, (char **) &buffer2, &size2);
 
-	printf( "%s", buffer2 );
+	printf("%s", buffer2);
 
-	free( buffer );
-	free( buffer2 );
-	
+	free(buffer);
+	free(buffer2);
+
 	_coco_close(path);
 
-	return(0);
+	return (0);
 }

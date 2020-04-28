@@ -13,8 +13,7 @@
 static int do_modbust(char **argv, char *filename);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: modbust {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Bust a single merged file of OS-9 modules into separate files.\n",
 	"Options:\n",
@@ -25,7 +24,7 @@ static char const * const helpMessage[] =
 
 int os9modbust(int argc, char **argv)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
 	char *p = NULL;
 
@@ -39,25 +38,27 @@ int os9modbust(int argc, char **argv)
 
 
 	/* 1. Walk command line for options. */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
 
-						return 0;
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
+					return 0;
 
-						return 0;
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+
+					return 0;
 				}
 			}
 		}
@@ -65,7 +66,7 @@ int os9modbust(int argc, char **argv)
 
 
 	/* 2. Walk command line for pathnames. */
-	
+
 	for (i = 1; i < argc; i++)
 	{
 		if (argv[i][0] == '-')
@@ -81,7 +82,8 @@ int os9modbust(int argc, char **argv)
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d opening file %s\n", argv[0], ec, p);
+			fprintf(stderr, "%s: error %d opening file %s\n",
+				argv[0], ec, p);
 
 			return ec;
 		}
@@ -108,13 +110,13 @@ int modbust_osk(os9_path_id path)
 	size = 6;
 
 	ec = _os9_read(path, buffer, &size);
-	size = int4((u_char *)buffer + 2);
-	module = (u_char *)malloc(size);
+	size = int4((u_char *) buffer + 2);
+	module = (u_char *) malloc(size);
 
 	if (module == NULL)
 	{
 		printf("Memory allocation error\n");
-		return(1);
+		return (1);
 	}
 
 	module[0] = OSK_ID0;
@@ -129,7 +131,7 @@ int modbust_osk(os9_path_id path)
 	ec = _os9_read(path, &module[8], &size);
 	nameoffset = int4(&module[12]);
 	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
-	OS9StringToCString((u_char *)name);
+	OS9StringToCString((u_char *) name);
 	printf("Busting module %s...\n", name);
 
 	fstat.perms = FAP_READ | FAP_WRITE;
@@ -138,7 +140,7 @@ int modbust_osk(os9_path_id path)
 	if (ec != 0)
 	{
 		printf("Error creating file %s\n", name);
-		return(1);
+		return (1);
 	}
 
 	size += 8;
@@ -165,13 +167,13 @@ int modbust_os9(os9_path_id path)
 	size = 2;
 
 	ec = _os9_read(path, buffer, &size);
-	size = int2((u_char *)buffer);
-	module = (u_char *)malloc(size);
+	size = int2((u_char *) buffer);
+	module = (u_char *) malloc(size);
 
 	if (module == NULL)
 	{
 		printf("Memory allocation error\n");
-		return(1);
+		return (1);
 	}
 
 	module[0] = 0x87;
@@ -182,7 +184,7 @@ int modbust_os9(os9_path_id path)
 	ec = _os9_read(path, &module[4], &size);
 	nameoffset = int2(&module[4]);
 	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
-	OS9StringToCString((u_char *)name);
+	OS9StringToCString((u_char *) name);
 	printf("Busting module %s...\n", name);
 
 	fstat.perms = FAP_READ | FAP_WRITE;
@@ -191,7 +193,7 @@ int modbust_os9(os9_path_id path)
 	if (ec != 0)
 	{
 		printf("Error creating file %s\n", name);
-		return(1);
+		return (1);
 	}
 
 	size += 4;
@@ -205,7 +207,7 @@ int modbust_os9(os9_path_id path)
 
 static int do_modbust(char **argv, char *filename)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char buffer[256];
 	os9_path_id path;
 
@@ -215,7 +217,7 @@ static int do_modbust(char **argv, char *filename)
 	{
 		return ec;
 	}
-    
+
 	while (_os9_gs_eof(path) == 0)
 	{
 		u_int size = 2;
@@ -223,16 +225,19 @@ static int do_modbust(char **argv, char *filename)
 		ec = _os9_read(path, buffer, &size);
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error reading file %s\n", argv[0], filename);
+			fprintf(stderr, "%s: error reading file %s\n",
+				argv[0], filename);
 
 			return ec;
 		}
-     
-		if (buffer[0] == (char)OS9_ID0 && buffer[1] == (char)OS9_ID1)
+
+		if (buffer[0] == (char) OS9_ID0
+		    && buffer[1] == (char) OS9_ID1)
 		{
 			modbust_os9(path);
 		}
-		else if (buffer[0] == (char)OSK_ID0 && buffer[1] == (char)OSK_ID1)
+		else if (buffer[0] == (char) OSK_ID0
+			 && buffer[1] == (char) OSK_ID1)
 		{
 			modbust_osk(path);
 		}

@@ -17,8 +17,7 @@
 static int do_free(char **argv, char *p);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: free {[<opts>]} {<disk> [<...>]} {[<opts>]}\n",
 	"Usage:  Displays the amount of free space on an image.\n",
 	"Options:\n",
@@ -28,9 +27,9 @@ static char const * const helpMessage[] =
 
 int os9free(int argc, char *argv[])
 {
-	error_code	ec = 0;
-	char		*p = NULL;
-	int		i;
+	error_code ec = 0;
+	char *p = NULL;
+	int i;
 
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
@@ -39,16 +38,18 @@ int os9free(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -70,24 +71,25 @@ int os9free(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, p);
-			return(ec);
+			fprintf(stderr, "%s: error %d opening '%s'\n",
+				argv[0], ec, p);
+			return (ec);
 		}
 	}
 
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
-	return(0);
+	return (0);
 }
 
 
 static int do_free(char **argv, char *p)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
 	char os9pathlist[256];
 	os9_path_id path;
@@ -118,7 +120,7 @@ static int do_free(char **argv, char *p)
 	{
 		fprintf(stderr, "%s: error %d opening '%s'\n",
 			argv[0], ec, os9pathlist);
-		return(ec);
+		return (ec);
 	}
 
 	/* seek to the beginning of the disk */
@@ -166,15 +168,14 @@ static int do_free(char **argv, char *p)
 
 	p = strdup(sector0.dd_nam);
 	printf("\n\"%s\" created on %02d/%02d/%04d\n",
-		OS9NameToString(p), sector0.dd_dat[1],
-		sector0.dd_dat[1], sector0.dd_dat[0] + 1900);
+	       OS9NameToString(p), sector0.dd_dat[1],
+	       sector0.dd_dat[1], sector0.dd_dat[0] + 1900);
 	if ((total_sectors * path->bps) < (1024 * 1024))
 	{
 		postfixDivisor = 1024;
 		strcpy(postfix, "KB");
 	}
-	else
-	if ((total_sectors * path->bps) < (1024 * 1024 * 1024))
+	else if ((total_sectors * path->bps) < (1024 * 1024 * 1024))
 	{
 		postfixDivisor = (1024 * 1024);
 		strcpy(postfix, "MB");
@@ -185,11 +186,11 @@ static int do_free(char **argv, char *p)
 		strcpy(postfix, "GB");
 	}
 
-	printf("Capacity: %d%s (%d sectors) %d-sector clusters\n", 
-		(total_sectors * path->bps) / postfixDivisor, postfix,
-		total_sectors, sectors_per_cluster);
+	printf("Capacity: %d%s (%d sectors) %d-sector clusters\n",
+	       (total_sectors * path->bps) / postfixDivisor, postfix,
+	       total_sectors, sectors_per_cluster);
 	printf("%d Free sectors, largest block %d sectors\n",
-		free_sectors, largest_free_block);
+	       free_sectors, largest_free_block);
 
 	bytes_free = free_sectors * path->bps * sectors_per_cluster;
 
@@ -198,8 +199,7 @@ static int do_free(char **argv, char *p)
 		postfixDivisor = 1024;
 		strcpy(postfix, "KB");
 	}
-	else
-	if (bytes_free < (1024 * 1024 * 1024))
+	else if (bytes_free < (1024 * 1024 * 1024))
 	{
 		postfixDivisor = (1024 * 1024);
 		strcpy(postfix, "MB");
@@ -211,11 +211,11 @@ static int do_free(char **argv, char *p)
 	}
 
 	printf("Free space: %d%s (%d bytes)\n", bytes_free / postfixDivisor,
-		postfix, bytes_free);
+	       postfix, bytes_free);
 
 	printf("\n");
 
 	_os9_close(path);
 
-	return(0);
+	return (0);
 }

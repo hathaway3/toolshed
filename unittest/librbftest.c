@@ -15,11 +15,14 @@ void test_os9_format()
 
 	// test format of a non-existent disk image
 	unsigned int totalSectors, totalBytes;
-	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1, "Test Disk", 8, 8, 1, 1, 0, 0, &totalSectors, &totalBytes);
+	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1, "Test Disk", 8, 8,
+			 1, 1, 0, 0, &totalSectors, &totalBytes);
 	ASSERT_EQUALS(ec, 0);
 
 	// test format of a non-existent disk image with a disk name that is way too long
-	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1, "Test Disk with filename that is way too long for the field", 8, 8, 1, 1, 0, 0, &totalSectors, &totalBytes);
+	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1,
+			 "Test Disk with filename that is way too long for the field",
+			 8, 8, 1, 1, 0, 0, &totalSectors, &totalBytes);
 	ASSERT_EQUALS(ec, 0);
 
 	// TODO: test format with oddball parameters to make sure it can survive
@@ -31,7 +34,8 @@ void test_os9_create()
 	error_code ec;
 
 	// test create of a non-existing file on a non-existing disk image
-	ec = _os9_create(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist", FAM_READ, FAP_READ);
+	ec = _os9_create(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist",
+			 FAM_READ, FAP_READ);
 	ASSERT_EQUALS(ec, EOS_PNNF);
 
 	// test create of a non-existing file on an existing disk image
@@ -47,16 +51,21 @@ void test_os9_create()
 	ASSERT_EQUALS(ec, 0);
 
 	// test create of an existing file on an existing disk image with FAM_NOCREATE
-	ec = _os9_create(&p, "test.dsk,test.txt", FAM_READ | FAM_NOCREATE, FAP_READ);
+	ec = _os9_create(&p, "test.dsk,test.txt", FAM_READ | FAM_NOCREATE,
+			 FAP_READ);
 	ASSERT_EQUALS(ec, EOS_FAE);
 
 	// test create of an extra long (illegal) filename on an existing disk image
-	ec = _os9_create(&p, "test.dsk,file_doesnt_exist_and_is_much_longer_than_os9_limit_of_29_characters", FAM_READ, FAP_READ);
+	ec = _os9_create(&p,
+			 "test.dsk,file_doesnt_exist_and_is_much_longer_than_os9_limit_of_29_characters",
+			 FAM_READ, FAP_READ);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
 
 	// test create of an extra long (illegal) filename with a subfolder on an existing disk image
 	// the root file is a directory when it isn't
-	ec = _os9_create(&p, "test.dsk,file_doesnt_exist_and_is_much_longer_than_rbf_limit_of_29_characters/and_this_is_an_even_longer_name_than_the_29_character_limit_in9_rbf_because_it_has_more_characters", FAM_READ, FAP_READ);
+	ec = _os9_create(&p,
+			 "test.dsk,file_doesnt_exist_and_is_much_longer_than_rbf_limit_of_29_characters/and_this_is_an_even_longer_name_than_the_29_character_limit_in9_rbf_because_it_has_more_characters",
+			 FAM_READ, FAP_READ);
 	ASSERT_EQUALS(ec, EOS_PNNF);
 }
 
@@ -100,7 +109,8 @@ void test_os9_write()
 	ASSERT_EQUALS(ec, 0);
 
 	// test create of a non-existing file on an existing disk image
-	ec = _os9_create(&p, "test.dsk,test4.txt", FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+	ec = _os9_create(&p, "test.dsk,test4.txt", FAM_READ | FAM_WRITE,
+			 FAP_READ | FAP_WRITE);
 	ASSERT_EQUALS(ec, 0);
 
 	// test write when file open for read and write
@@ -120,7 +130,8 @@ void test_os9_open_and_read()
 	error_code ec;
 
 	// test open of a non-existing disk image
-	ec = _os9_open(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist", FAM_READ);
+	ec = _os9_open(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist",
+		       FAM_READ);
 	ASSERT_EQUALS(ec, EOS_PNNF);
 
 	// test open of an existing file on an existing disk image
@@ -188,7 +199,8 @@ void test_os9_rename()
 	error_code ec;
 
 	// test rename of a non-existing file in an existing disk image
-	ec = _os9_rename("test.dsk,file_doesnt_exist", "another_file_doesnt_exist");
+	ec = _os9_rename("test.dsk,file_doesnt_exist",
+			 "another_file_doesnt_exist");
 	ASSERT_EQUALS(ec, EOS_PNNF);
 
 	// test rename of an existing file in an existing disk image
@@ -203,7 +215,8 @@ void test_os9_gs_calls()
 	int perms = FAP_READ | FAP_WRITE;
 
 	// test create of a non-existing file in an existing disk image
-	ec = _os9_create(&p, "test.dsk,newfile.txt", FAM_READ | FAM_WRITE, perms);
+	ec = _os9_create(&p, "test.dsk,newfile.txt", FAM_READ | FAM_WRITE,
+			 perms);
 	ASSERT_EQUALS(ec, 0);
 
 	int gsperms;

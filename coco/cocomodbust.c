@@ -13,8 +13,7 @@
 static int do_modbust(char **argv, char *filename);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: modbust {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Bust a single merged file of OS-9 modules into separate files.\n",
 	"Options:\n",
@@ -24,14 +23,14 @@ static char const * const helpMessage[] =
 
 int os9modbust(int argc, char **argv)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
 	char *p = NULL;
 
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* walk command line for options */
@@ -41,16 +40,18 @@ int os9modbust(int argc, char **argv)
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -74,17 +75,17 @@ int os9modbust(int argc, char **argv)
 		{
 			fprintf(stderr, "%s: error %d opening file %s\n",
 				argv[0], ec, p);
-			return(ec);
+			return (ec);
 		}
 	}
 
-	return(0);
+	return (0);
 }
 
 
 static int do_modbust(char **argv, char *filename)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char buffer[256];
 	os9_path_id path;
 	u_char *module;
@@ -93,9 +94,9 @@ static int do_modbust(char **argv, char *filename)
 
 	if (ec != 0)
 	{
-		return(ec);
+		return (ec);
 	}
-    
+
 	while (_os9_gs_eof(path) == 0)
 	{
 		int size = 1;
@@ -105,9 +106,9 @@ static int do_modbust(char **argv, char *filename)
 		{
 			fprintf(stderr, "%s: error reading file %s\n",
 				argv[0], filename);
-			return(ec);
+			return (ec);
 		}
-     
+
 		if (buffer[0] == '\x87')
 		{
 			size = 1;
@@ -125,11 +126,11 @@ static int do_modbust(char **argv, char *filename)
 
 				ec = _os9_read(path, buffer, &size);
 				size = int2(buffer);
-				module = (u_char *)malloc(size);
+				module = (u_char *) malloc(size);
 				if (module == NULL)
 				{
 					printf("Memory allocation error\n");
-					return(1);
+					return (1);
 				}
 				module[0] = 0x87;
 				module[1] = 0xCD;
@@ -138,14 +139,17 @@ static int do_modbust(char **argv, char *filename)
 				size -= 4;
 				ec = _os9_read(path, &module[4], &size);
 				nameoffset = int2(&module[4]);
-				memcpy(name, &module[nameoffset], OS9NameLen(&module[nameoffset]));
+				memcpy(name, &module[nameoffset],
+				       OS9NameLen(&module[nameoffset]));
 				OS9NameToString(name);
 				printf("Busting module %s...\n", name);
-				ec = _os9_create(&path2, name, FAM_WRITE, FAP_READ | FAP_WRITE);
+				ec = _os9_create(&path2, name, FAM_WRITE,
+						 FAP_READ | FAP_WRITE);
 				if (ec != 0)
 				{
-					printf("Error creating file %s\n", name);
-					return(1);
+					printf("Error creating file %s\n",
+					       name);
+					return (1);
 				}
 				size += 4;
 				_os9_write(path2, module, &size);
@@ -158,5 +162,5 @@ static int do_modbust(char **argv, char *filename)
 
 	_os9_close(path);
 
-	return(0);
+	return (0);
 }

@@ -17,8 +17,7 @@ static int do_makdir(char **argv, char *p);
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: makdir {<dirname> [<...>]}\n",
 	"Usage:  Create one or more directories.\n",
 	NULL
@@ -27,7 +26,7 @@ static char const * const helpMessage[] =
 
 int os9makdir(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -38,16 +37,18 @@ int os9makdir(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -69,53 +70,55 @@ int os9makdir(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d creating '%s'\n", argv[0], ec, p);
-			return(ec);
+			fprintf(stderr, "%s: error %d creating '%s'\n",
+				argv[0], ec, p);
+			return (ec);
 		}
 	}
 
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
-	return(0);
+	return (0);
 }
-	
+
 
 static int do_makdir(char **argv, char *p)
 {
-        error_code		ec = 0;
-        char			*subPath;
-        int			i = 0, length = strlen(p);
-        
-        subPath = malloc( length + 1 );
-        
+	error_code ec = 0;
+	char *subPath;
+	int i = 0, length = strlen(p);
+
+	subPath = malloc(length + 1);
+
 	/* Walk path and create directory entries as we go */
 
-    do
-    {
-        subPath[i] = p[i];
-          
-        if( subPath[i] == 0 )
-        {
-             ec = _os9_makdir(subPath);
+	do
+	{
+		subPath[i] = p[i];
 
-             return ec;
-        }
-        else if( subPath[i] == '/' )
-        {
-            subPath[i] = 0;
-            ec = _os9_makdir( subPath );
-            subPath[i] = '/';
-        }
-        
-        i++;
-    } while (i <= length);
+		if (subPath[i] == 0)
+		{
+			ec = _os9_makdir(subPath);
 
-    free(subPath);
-	
-	
-    return ec;
+			return ec;
+		}
+		else if (subPath[i] == '/')
+		{
+			subPath[i] = 0;
+			ec = _os9_makdir(subPath);
+			subPath[i] = '/';
+		}
+
+		i++;
+	}
+	while (i <= length);
+
+	free(subPath);
+
+
+	return ec;
 }

@@ -14,31 +14,33 @@
 
 error_code _os9_prsnam(const char *filename)
 {
-    const char *a = filename;
-    int	  length = 0;	
+	const char *a = filename;
+	int length = 0;
 
-    while (*a != 0)
-    {
-        length++;
-        if (length > D_NAMELEN)
-        {
-            return(EOS_BPNAM);
-        }
-        if (! (isalnum(*a) || *a == '_' || *a == '.' || *a == '-' || *a == ' ' || *a == '$') )
+	while (*a != 0)
 	{
-            return EOS_BPNAM;
+		length++;
+		if (length > D_NAMELEN)
+		{
+			return (EOS_BPNAM);
+		}
+		if (!
+		    (isalnum(*a) || *a == '_' || *a == '.' || *a == '-'
+		     || *a == ' ' || *a == '$'))
+		{
+			return EOS_BPNAM;
+		}
+		a++;
 	}
-        a++;
-    }
 
-    return 0;
+	return 0;
 }
 
 
 
 error_code _decb_prsnam(const char *filename)
 {
-	error_code  ec = 0;
+	error_code ec = 0;
 	char *dot;
 
 	/* 1. Check if filename contains a dot */
@@ -63,24 +65,23 @@ error_code _decb_prsnam(const char *filename)
 	return ec;
 }
 
-error_code _cecb_prsnam(const char *filename )
+error_code _cecb_prsnam(const char *filename)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
-	
-	if( strlen(filename) > 8 )
+
+	if (strlen(filename) > 8)
 	{
 		ec = EOS_BPNAM;
 	}
 	else
 	{
-		for( i=0; i<strlen(filename); i++ )
+		for (i = 0; i < strlen(filename); i++)
 		{
-			if( isgraph( filename[i] ) != 0 )
+			if (isgraph(filename[i]) != 0)
 				ec = EOS_BPNAM;
 		}
 	}
-	
+
 	return ec;
 }
-

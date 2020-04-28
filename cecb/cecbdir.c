@@ -16,8 +16,7 @@
 static int do_dir(char **argv, char *p);
 
 /* Help Message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: dir {[<opts>]} {<dir> [<...>]} {[<opts>]}\n",
 	"Usage:  Display the contents of a cassette image.\n",
 	"Options:\n",
@@ -27,7 +26,7 @@ static char const * const helpMessage[] =
 
 int cecbdir(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -46,16 +45,18 @@ int cecbdir(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return 0;
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return 0;
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return 0;
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return 0;
 				}
 			}
 		}
@@ -77,7 +78,8 @@ int cecbdir(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, p);
+			fprintf(stderr, "%s: error %d opening '%s'\n",
+				argv[0], ec, p);
 
 			return ec;
 		}
@@ -92,54 +94,54 @@ static int do_dir(char **argv, char *p)
 	error_code ec = 0;
 	cecb_path_id path;
 	char asciiflag;
-	cecb_dir_entry	dir_entry;
-	
-	ec = _cecb_open(&path, p, FAM_READ );
-	
-	if( ec == 0 )
+	cecb_dir_entry dir_entry;
+
+	ec = _cecb_open(&path, p, FAM_READ);
+
+	if (ec == 0)
 	{
-		while( ec == 0 )
+		while (ec == 0)
 		{
-			ec = _cecb_read_next_dir_entry( path, &dir_entry );
-			
-			if( ec == EOS_EOF )
+			ec = _cecb_read_next_dir_entry(path, &dir_entry);
+
+			if (ec == EOS_EOF)
 			{
 				ec = 0;
 				break;
 			}
 
-			if( ec == EOS_CRC )
+			if (ec == EOS_CRC)
 			{
 				ec = 0;
-				printf( "!" );
+				printf("!");
 			}
 			else
-				printf( " " );
-			
-			if( ec != 0 )
+				printf(" ");
+
+			if (ec != 0)
 				break;
-				
-			switch(dir_entry.ascii_flag)
+
+			switch (dir_entry.ascii_flag)
 			{
-				case 0x00:
-					asciiflag = 'B';
-					break;
-				case 0xFF:
-					asciiflag = 'A';
-					break;
-				default:
-					asciiflag = '?';
-					break;
+			case 0x00:
+				asciiflag = 'B';
+				break;
+			case 0xFF:
+				asciiflag = 'A';
+				break;
+			default:
+				asciiflag = '?';
+				break;
 			}
 
-			printf( " %8.8s %d %c\n", dir_entry.filename, dir_entry.file_type, asciiflag );
+			printf(" %8.8s %d %c\n", dir_entry.filename,
+			       dir_entry.file_type, asciiflag);
 		}
 
-		ec = _cecb_close( path );
+		ec = _cecb_close(path);
 	}
 
-	printf( "\n" );
+	printf("\n");
 
 	return ec;
 }
-

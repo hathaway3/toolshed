@@ -22,14 +22,14 @@
  *
  * read the passed logical sector number
  */
-int read_lsn(os9_path_id path, int lsn, void *buffer )
+int read_lsn(os9_path_id path, int lsn, void *buffer)
 {
-    int	result;
+	int result;
 
-    fseek(path->fd, lsn * path->bps, SEEK_SET);
-    result = fread(buffer, 1, path->bps, path->fd);
+	fseek(path->fd, lsn * path->bps, SEEK_SET);
+	result = fread(buffer, 1, path->bps, path->fd);
 
-    return result;
+	return result;
 }
 
 
@@ -40,21 +40,21 @@ int read_lsn(os9_path_id path, int lsn, void *buffer )
  */
 void show_attrs(int attr_byte)
 {
-    int i;
+	int i;
 
-    /* print attributes */
-    for (i = 7; i >= 0; i--)
-    {
-        char *attrs = "rwerwesd";
+	/* print attributes */
+	for (i = 7; i >= 0; i--)
+	{
+		char *attrs = "rwerwesd";
 
-        if (attr_byte & (1 << i))
-        {
-            /* bit set, print attr */
-            printf("%c", attrs[i]);
-        }
-        else
-        {
-            printf("-");
-        }
-    }
+		if (attr_byte & (1 << i))
+		{
+			/* bit set, print attr */
+			printf("%c", attrs[i]);
+		}
+		else
+		{
+			printf("-");
+		}
+	}
 }

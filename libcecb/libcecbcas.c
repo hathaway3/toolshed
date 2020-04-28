@@ -15,38 +15,40 @@
  * Returned bit are left aligned in unsigned char.
  */
 
-error_code _cecb_read_bits_cas( cecb_path_id path, int count, unsigned char *result )
+error_code _cecb_read_bits_cas(cecb_path_id path, int count,
+			       unsigned char *result)
 {
 	error_code ec = 0;
 	unsigned char data;
-	
+
 	data = 0;
-	
-	while( count > 0 )
+
+	while (count > 0)
 	{
-		if( path->cas_current_bit == 0 )
+		if (path->cas_current_bit == 0)
 		{
 			path->cas_current_byte++;
-			if( fread( &(path->cas_byte), 1, 1, path->fd ) != 1 )
+			if (fread(&(path->cas_byte), 1, 1, path->fd) != 1)
 			{
 				*result = data;
 				return EOS_EOF;
 			}
-			
+
 			path->cas_current_bit = 0x01;
 		}
-			
+
 		data >>= 1;
-		
-		if( (path->cas_byte & path->cas_current_bit) == path->cas_current_bit )
+
+		if ((path->cas_byte & path->cas_current_bit) ==
+		    path->cas_current_bit)
 			data |= 0x80;
-		
+
 		path->cas_current_bit <<= 1;
 		count--;
 	}
-	
+
 	*result = data;
-	
+
 	return ec;
 }
 
@@ -57,17 +59,18 @@ error_code _cecb_read_bits_cas( cecb_path_id path, int count, unsigned char *res
  *
  */
 
-error_code _cecb_parse_cas( cecb_path_id path )
+error_code _cecb_parse_cas(cecb_path_id path)
 {
 	path->tape_type = CAS;
-	
+
 	path->cas_start_byte = path->cas_current_byte = path->play_at / 8;
-	path->cas_start_bit = path->cas_current_bit = 0x01 << (path->play_at % 8);
-	
-//	printf( "%d, %x\n", path->cas_start_byte, path->cas_start_bit );
-	
-	fseek( path->fd, path->cas_start_byte, SEEK_SET );
-	
+	path->cas_start_bit = path->cas_current_bit =
+		0x01 << (path->play_at % 8);
+
+//      printf( "%d, %x\n", path->cas_start_byte, path->cas_start_bit );
+
+	fseek(path->fd, path->cas_start_byte, SEEK_SET);
+
 	return 0;
 }
 
@@ -78,24 +81,25 @@ error_code _cecb_parse_cas( cecb_path_id path )
  *
  */
 
-error_code _cecb_write_cas_data( cecb_path_id path, char *buffer, int total_length)
+error_code _cecb_write_cas_data(cecb_path_id path, char *buffer,
+				int total_length)
 {
 	error_code ec = 0;
 	int i, j;
-	
-	for( i=0; i<total_length; i++ )
+
+	for (i = 0; i < total_length; i++)
 	{
-		for( j=0x01; j<0x100; j<<=1 )
+		for (j = 0x01; j < 0x100; j <<= 1)
 		{
-			if( path->cas_current_bit == 0 )
+			if (path->cas_current_bit == 0)
 			{
-				fwrite( &path->cas_byte, 1, 1, path->fd );
+				fwrite(&path->cas_byte, 1, 1, path->fd);
 				path->cas_current_byte++;
 				path->cas_current_bit = 0x01;
 				path->cas_byte = 0;
 			}
-			
-			if( (buffer[i] & j) == j )
+
+			if ((buffer[i] & j) == j)
 				path->cas_byte |= path->cas_current_bit;
 
 			path->cas_current_bit <<= 1;
@@ -104,4 +108,3 @@ error_code _cecb_write_cas_data( cecb_path_id path, char *buffer, int total_leng
 
 	return ec;
 }
-
