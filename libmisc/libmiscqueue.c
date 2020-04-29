@@ -19,6 +19,9 @@
  * qDeleteNode()
  * 		removes a node from a queue
  *
+ * qCheckDuplicateNode()
+ * 		check for a duplicate node, already in the list
+ *
  * $Id$
  ********************************************************************/
 #include <stdlib.h>
@@ -131,4 +134,48 @@ int qDeleteNode(NodeType * head, NodeType targetNode)
 	}
 
 	return (1);
+}
+
+
+int qDeleteLastNode(NodeType * head)
+{
+	NodeType p = *head;
+	NodeType prev = *head;
+
+	/* take 1st case where queue is empty */
+	if (p == NULL)
+	{
+		return 0;
+	}
+	/* walk queue to find last node */
+	while (p != NULL)
+	{
+		if (p->next == NULL)
+		{
+			break;
+		}
+		prev = p;
+		p = p->next;
+	}
+
+	free(p->data);
+	free(p);
+	prev->next = NULL;
+	return 0;
+}
+
+
+int qCheckDuplicateNode(NodeType head, void *data, int size)
+{
+	/* walk queue looking for a duplicate node */
+	while (head != NULL)
+	{
+		if (!memcmp(head->data, data, size))
+		{
+			return 1;
+		}
+		head = head->next;
+	}
+
+	return 0;
 }

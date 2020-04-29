@@ -20,7 +20,7 @@
 #define	DIR_COLWIDTH	16	/* width of a non-extended directory entry column */
 #define	DIR_COLS		5	/* number of non-extended directory entries per line */
 
-static int do_dir(char **argv, char *p);
+static int do_dir(char **argv, char *p, NodeType *q_recursion);
 
 /* globals */
 static int extended = 0, dotfiles = 0, recurse = 0;
@@ -42,6 +42,7 @@ int os9dir(int argc, char *argv[])
 	error_code ec = 0;
 	char *p = NULL;
 	int i;
+	NodeType q_recursion = NULL;
 
 	if (argv[1] == NULL)
 	{
@@ -97,7 +98,7 @@ int os9dir(int argc, char *argv[])
 			p = argv[i];
 		}
 
-		ec = do_dir(argv, p);
+		ec = do_dir(argv, p, &q_recursion);
 
 		if (ec != 0)
 		{
@@ -111,7 +112,7 @@ int os9dir(int argc, char *argv[])
 }
 
 
-static int do_dir(char **argv, char *p)
+static int do_dir(char **argv, char *p, NodeType *q_recursion)
 {
 	error_code ec = 0;
 	int col_count = 0;
@@ -170,6 +171,15 @@ static int do_dir(char **argv, char *p)
 
 		return (ec);
 	}
+	if (qCheckDuplicateNode(*q_recursion, &(path->pl_fd_lsn),
+				sizeof(unsigned int)))
+	{
+		fprintf(stderr, "\nabort: already processed file descriptor sector %X: %s\n",
+			path->pl_fd_lsn, os9pathlist);
+		_os9_close(path);
+		return 0;
+	}
+	qAddNode(q_recursion, &(path->pl_fd_lsn), sizeof(unsigned int));
 
 	printf("\n                           Directory of %s\n", os9pathlist);
 
@@ -181,7 +191,6 @@ static int do_dir(char **argv, char *p)
 		printf(" Owner    Last modified    Attributes Sector Bytecount Name\n");
 		printf("-------   ---------------  ---------- ------ --------- ----\n");
 	}
-
 
 	while (_os9_gs_eof(path) == 0)
 	{
@@ -305,7 +314,7 @@ static int do_dir(char **argv, char *p)
 		while (node != NULL)
 		{
 			depth++;
-			do_dir(argv, (char *) node->data);
+			do_dir(argv, (char *) node->data, q_recursion);
 			depth--;
 			deadNode = node;
 			node = qGetNextNode(node);
@@ -314,6 +323,7 @@ static int do_dir(char **argv, char *p)
 	}
 
 	_os9_close(path);
+	qDeleteLastNode(q_recursion);
 
 	return (0);
 }

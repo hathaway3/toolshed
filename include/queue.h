@@ -22,6 +22,8 @@ int qAllocNode(NodeType *node, void *data, int size);
 int qAddNode(NodeType *head, void *data, int size);
 NodeType qGetNextNode(NodeType nextNode);
 int qDeleteNode(NodeType *head, NodeType targetNode);
+int qDeleteLastNode(NodeType *head);
+int qCheckDuplicateNode(NodeType head, void *data, int size);
 
 #ifdef __cplusplus
 }
