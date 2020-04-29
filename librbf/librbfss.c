@@ -41,7 +41,7 @@ error_code _os9_ss_fd(os9_path_id path, int count, fd_stats * fdbuf)
 
 	{
 		/* seek to FD LSN of pathlist */
-		fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+		_os9_lsn_fseek(path, path->pl_fd_lsn);
 
 		/* write the file descriptor sector */
 		size = sizeof(fd_stats);

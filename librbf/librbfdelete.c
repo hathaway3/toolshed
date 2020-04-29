@@ -279,12 +279,12 @@ u_char DecrementLinkCount(os9_path_id path, int fd_lsn)
 	u_char result;
 
 
-	fseek(path->fd, fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, fd_lsn);
 	fread(&fdbuf, 1, sizeof(fd_stats), path->fd);
 
 	result = fdbuf.fd_lnk = fdbuf.fd_lnk - 1;
 
-	fseek(path->fd, fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, fd_lsn);
 	fwrite(&fdbuf, 1, sizeof(fd_stats), path->fd);
 
 

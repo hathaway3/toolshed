@@ -36,7 +36,7 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 
 	/* 2. Seek to FD LSN of pathlist */
 
-	fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, path->pl_fd_lsn);
 
 
 	/* 3. Read the file descriptor sector */
@@ -123,7 +123,7 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 
 		/* 1. Seek to sector where segment starts and compute the segment size. */
 
-		fseek(path->fd, int3(segptr[i].lsn) * path->bps, SEEK_SET);
+		_os9_lsn_fseek(path, int3(segptr[i].lsn));
 		seg_size_bytes = int2(segptr[i].num) * path->bps;
 
 

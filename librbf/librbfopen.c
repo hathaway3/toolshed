@@ -191,7 +191,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		/* 6. Write file descriptor to image file. */
 
-		fseek(parent_path->fd, newLSN * parent_path->bps, SEEK_SET);
+		_os9_lsn_fseek(parent_path, newLSN);
 		fwrite(&newFD, 1, sizeof(fd_stats), parent_path->fd);
 
 		memset(&newDEntry, 0, sizeof(os9_dir_entry));
@@ -269,7 +269,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
  * 1. imagename,@     (considered to be a 'raw' open of the image)
  * 2. imagename,      (considered to be an open of the root directory)
  * 3. imagename,file  (considered to be a file or directory open within the image)
- * 4. imagename       (considered to be an error) 
+ * 4. imagename       (considered to be an error)
  *
  * The presence of a comma in the pathlist indicates that at the least, a non-native open will
  * be performed.
@@ -469,8 +469,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		int andresult;
 
 
-		fseek((*path)->fd, (*path)->pl_fd_lsn * (*path)->bps,
-		      SEEK_SET);
+		_os9_lsn_fseek((*path), (*path)->pl_fd_lsn);
 		fread(&fd_sector, 1, sizeof(fd_stats), (*path)->fd);
 
 		/* 1. Check permissions to determine if we can access the file. */
@@ -611,7 +610,7 @@ static void _os9_truncate_seg_list(os9_path_id path)
 
 	/* 1. Seek to file descriptor sector for this file and get it in memory. */
 
-	fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, path->pl_fd_lsn);
 	fread(&fd_sector, 1, sizeof(fd_stats), path->fd);
 
 
@@ -676,7 +675,7 @@ static void _os9_truncate_seg_list(os9_path_id path)
 	}
 
 
-	fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, path->pl_fd_lsn);
 	fwrite(&fd_sector, 1, sizeof(fd_stats), path->fd);
 
 
@@ -870,9 +869,8 @@ static int init_bitmap(os9_path_id path)
 	bitmap_sectors = (int2(path->lsn0->dd_map) / path->bps) +
 		(int2(path->lsn0->dd_map) % path->bps != 0);
 	path->bitmap_bytes = int2(path->lsn0->dd_map);
-	path->ss = path->bps;
 	path->spc = int2(path->lsn0->dd_bit);
-	path->cs = path->spc * path->ss;	/* compute cluster size */
+	path->cs = path->spc * path->bps;	/* compute cluster size */
 
 	path->bitmap = (u_char *) malloc(bitmap_sectors * path->bps);
 
@@ -881,7 +879,7 @@ static int init_bitmap(os9_path_id path)
 		return 1;
 	}
 
-	fseek(path->fd, 1 * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, 1);
 
 	if (fread(path->bitmap, 1, bitmap_sectors * path->bps, path->fd) == 0)
 	{
@@ -902,7 +900,7 @@ static int term_bitmap(os9_path_id path)
 {
 	/* 1. Write back out bitmap. */
 
-	fseek(path->fd, path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, 1);
 	fwrite(path->bitmap, 1, path->bitmap_bytes, path->fd);
 
 	free(path->bitmap);
@@ -931,7 +929,7 @@ static int init_lsn0(os9_path_id path)
 
 	/* 2. Compute bytes per sector from value at LSN0. */
 
-	fseek(path->fd, 0, SEEK_SET);
+	_os9_lsn_fseek(path, 0);
 
 
 	/* 3. Read 256 byte LSN0. */
@@ -958,6 +956,16 @@ static int init_lsn0(os9_path_id path)
 		path->bps = int1(path->lsn0->dd_lsnsize) * 256;
 	}
 
+	/* 5. Determine proper sectors per track */
+
+	path->spt = int2(path->lsn0->dd_spt);
+	path->t0s = int2(path->lsn0->pd_t0s);
+
+	if (path->t0s == 0)
+	{
+		fprintf( stderr, "Warning: T0S is zero. Assuming SPT: %d\n", path->spt);
+		path->t0s = path->spt;
+	}
 
 	return 0;
 }

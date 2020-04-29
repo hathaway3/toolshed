@@ -46,7 +46,7 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 
 		/* 1. Seek to FD LSN of pathlist */
 
-		fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+		_os9_lsn_fseek(path, path->pl_fd_lsn);
 
 
 		/* 2. Read the file descriptor sector */
@@ -149,8 +149,7 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 
 			/* 1. Seek to sector where segment starts and compute the segment size. */
 
-			fseek(path->fd, int3(segptr[i].lsn) * path->bps,
-			      SEEK_SET);
+			_os9_lsn_fseek(path, int3(segptr[i].lsn));
 			seg_size_bytes = int2(segptr[i].num) * path->bps;
 
 
@@ -193,7 +192,7 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 
 		/* 12. Write updated file descriptor back to image file */
 
-		fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+		_os9_lsn_fseek(path, path->pl_fd_lsn);
 		fwrite(&fd_sector, 1, sizeof(fd_stats), path->fd);
 	}
 

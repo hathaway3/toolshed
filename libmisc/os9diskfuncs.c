@@ -26,7 +26,7 @@ int read_lsn(os9_path_id path, int lsn, void *buffer)
 {
 	int result;
 
-	fseek(path->fd, lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, lsn);
 	result = fread(buffer, 1, path->bps, path->fd);
 
 	return result;

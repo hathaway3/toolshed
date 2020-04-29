@@ -197,6 +197,7 @@ static int do_id(char **argv, char *p)
 					int1(buffer.dd_lsnsize) * 256;
 			}
 			printf("  Bytes/Sector    :   %d\n", bytesPerSector);
+			printf("  Sectors Track 0 :   %d\n", int2(buffer.pd_t0s));
 		}
 	}
 

@@ -18,6 +18,12 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 
 	if (path->israw == 1)
 	{
+		if (pos != 0 && mode == SEEK_SET)
+		{
+			fprintf(stderr, "_os9_seek(): SET_SEEK not implemented on raw paths. T0S not accounted for.\n");
+			exit(0);
+		}
+
 		fseek(path->fd, pos, mode);
 	}
 	else
@@ -42,4 +48,26 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 
 
 	return ec;
+}
+
+
+/*
+ * _os9_lsn_fseek()
+ *
+ * Seek to proper LSN accounting for short track zero.
+ */
+
+int _os9_lsn_fseek(os9_path_id path, int lsn)
+{
+	long offset;
+
+	if(lsn >= path->t0s)
+	{
+		/* Skip past missing sectors */
+		lsn += path->spt - path->t0s;
+	}
+
+	offset = lsn * path->bps;
+
+	return fseek(path->fd, offset, SEEK_SET);
 }

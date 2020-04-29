@@ -62,7 +62,7 @@ error_code _os9_gs_fd(os9_path_id path, int count, fd_stats * fdbuf)
 
 	/* Seek to FD LSN of pathlist */
 
-	fseek(path->fd, path->pl_fd_lsn * path->bps, SEEK_SET);
+	_os9_lsn_fseek(path, path->pl_fd_lsn);
 
 
 	/* Read the file descriptor sector */

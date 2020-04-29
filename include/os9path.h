@@ -103,9 +103,10 @@ typedef struct _os9_path_id
 	FILE		*fd;		/* file path pointer */
 	lsn0_sect	*lsn0;		/* copy of LSN0 */
 	u_char		*bitmap;	/* bitmap */
-	int		ss;		/* sector size in bytes */
 	unsigned int	spc;		/* sectors per cluster */
 	unsigned int	bps;		/* bytes per sector */
+	unsigned int	spt;		/* sectors per track */
+	unsigned int	t0s;		/* sectors per track on track zero */
 	int		cs;		/* cluster size in bytes */
 	int		bitmap_bytes;
 	int		israw;		/* raw flag */
@@ -123,6 +124,7 @@ error_code _os9_read(os9_path_id, void *, u_int *);
 error_code _os9_readdir(os9_path_id, os9_dir_entry *);
 error_code _os9_ncpy_name( os9_dir_entry e, u_char *name, size_t len );
 error_code _os9_seek(os9_path_id, int, int);
+int _os9_lsn_fseek(os9_path_id seek_path, int lsn);
 error_code _os9_allbit(u_char *bitmap, int firstbit, int numbits);
 error_code _os9_delbit(u_char *bitmap, int firstbit, int numbits);
 int _os9_ckbit( u_char *bitmap, int LSN );
