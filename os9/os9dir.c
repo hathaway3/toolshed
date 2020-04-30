@@ -259,10 +259,25 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 					printf("%s", attrs);
 				}
 
-				/* print fd sector, file size, filename */
-				printf("%8X  %8d %s\n",
+				/* print fd sector, file size */
+				printf("%8X  %8d ",
 				       int3(dentry.lsn),
-				       int4(fdbuf.fd_siz), filename);
+				       int4(fdbuf.fd_siz));
+
+				/* print escaped filename */
+				for (int i = 0; i < strlen(filename); i++)
+				{
+					if (isprint(filename[i]))
+					{
+						putchar(filename[i]);
+					}
+					else
+					{
+						printf("\\%o", filename[i]);
+					}
+				}
+
+				printf("\n");
 			}
 		}
 
