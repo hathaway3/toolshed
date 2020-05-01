@@ -28,7 +28,8 @@ static char const *const helpMessage[] = {
 	"     -a    dump output in assembler format (hex)\n",
 	"     -b    dump output in assembler format (binary)\n",
 	"     -c    don't display ASCII character data\n",
-	"     -h    don't display header\n",
+	"     -t    don't display header\n",
+	"     -h    don't display header (DEPRECATED)\n",
 	"     -l    don't display line label/count\n",
 	NULL
 };
@@ -82,6 +83,10 @@ int os9dump(int argc, char **argv)
 					break;
 
 				case 'h':
+					fprintf(stderr, "%s: warning: option -h is deprecated, use -t\n",
+						argv[0]);
+					/* fallthrough */
+				case 't':
 					displayHeader = 0;
 					break;
 
