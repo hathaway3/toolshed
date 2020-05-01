@@ -219,6 +219,7 @@ int os9format(int argc, char **argv)
 					break;
 
 				case '?':
+				case 'h':
 					show_help(helpMessage);
 					return (0);
 
