@@ -477,7 +477,11 @@ static error_code validate_pathlist(cecb_path_id path, char *pathlist)
 	{
 		/* 1. Extract information out of pathlist. */
 
-		path->imgfile = strndup(pathlist, p - pathlist);
+		/* path->imgfile = strndup(pathlist, p - pathlist); */
+		path->imgfile = malloc(p - pathlist + 1);
+		memcpy(path->imgfile, pathlist, p - pathlist);
+		path->imgfile[p - pathlist] = '\0';
+
 		p++;
 
 		if (strlen(p) > 8)
