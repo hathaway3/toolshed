@@ -435,7 +435,7 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
  * The caller must free the returned buffer in 'newBuffer' once
  * finished with the buffer.
  */
-void NativeToCoCo(char *buffer, int size, char **newBuffer, u_int * newSize)
+void NativeToCoCo(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
 	EOL_Type eolMethod;
 	int i;
@@ -473,7 +473,7 @@ void NativeToCoCo(char *buffer, int size, char **newBuffer, u_int * newSize)
 		/* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
 
 		{
-			int dosEOLCount = 0;
+			u_int dosEOLCount = 0;
 			char *newP;
 			int i;
 
@@ -535,10 +535,10 @@ void NativeToCoCo(char *buffer, int size, char **newBuffer, u_int * newSize)
 }
 
 
-void CoCoToNative(char *buffer, int size, char **newBuffer, u_int * newSize)
+void CoCoToNative(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
 #ifdef WIN32
-	int dosEOLCount = 0;
+	u_int dosEOLCount = 0;
 	char *newP;
 	int i;
 

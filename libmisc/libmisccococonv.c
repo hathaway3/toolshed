@@ -372,7 +372,7 @@ static EOL_Type DetermineEOLType(char *buffer, int size)
  * The caller must free the returned buffer in 'newBuffer' once
  * finished with the buffer.
  */
-void NativeToDECB(char *buffer, int size, char **newBuffer, u_int * newSize)
+void NativeToDECB(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
 	EOL_Type eolMethod;
 	int i;
@@ -410,7 +410,7 @@ void NativeToDECB(char *buffer, int size, char **newBuffer, u_int * newSize)
 		/* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
 
 		{
-			int dosEOLCount = 0;
+			u_int dosEOLCount = 0;
 			char *newP;
 			int i;
 
@@ -461,10 +461,10 @@ void NativeToDECB(char *buffer, int size, char **newBuffer, u_int * newSize)
 }
 
 
-void DECBToNative(char *buffer, int size, char **newBuffer, u_int * newSize)
+void DECBToNative(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
 #ifdef WIN32
-	int dosEOLCount = 0;
+	u_int dosEOLCount = 0;
 	char *newP;
 	int i;
 
