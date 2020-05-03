@@ -22,8 +22,8 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 		{
 			if (path->t0s != path->spt)
 			{
-				fprintf(stderr, "Warning: _os9_seek() SET_SEEK not implemented on raw paths with a short track zero.\n");
-				exit(0);
+				fprintf(stderr, "Error: _os9_seek() SET_SEEK not implemented on raw paths with a short track zero.\n");
+				exit(-1);
 			}
 		}
 
