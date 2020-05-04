@@ -17,7 +17,7 @@
 
 error_code _os9_format(char *pathname, int os968k, int tracks,
 		       int sectorsPerTrack, int heads, int sectorSize,
-		       int clusterSize, char *diskName,
+		       int *clusterSize, char *diskName,
 		       int sectorAllocationSize, int tpi, int density,
 		       int formatEntire, int isDragon, int isHDD,
 		       unsigned int *totalSectors, unsigned int *totalBytes)
@@ -52,12 +52,12 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 	/* Determine appropriate cluster size */
 
-	if (clusterSize == 0)
+	if (*clusterSize == 0)
 	{
-		clusterSize = 1;	/* Set cluster size to 1 to start with */
-		while ((clusterSize * (65535 * 8)) < *totalSectors)	/* test if the right amount of reserved sectors has been reached */
+		*clusterSize = 1;	/* Set cluster size to 1 to start with */
+		while ((*clusterSize * (65535 * 8)) < *totalSectors)	/* test if the right amount of reserved sectors has been reached */
 		{
-			clusterSize *= 2;	/* Double Cluster Size for next test pass */
+			*clusterSize *= 2;	/* Double Cluster Size for next test pass */
 		}
 	}
 
@@ -81,11 +81,11 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 	_int1(sectorsPerTrack, s0.dd_tks);
 
 	bitmapBytes =
-		int3(s0.dd_tot) / (8 * clusterSize) +
-		(int3(s0.dd_tot) % (8 * clusterSize) != 0);
+		int3(s0.dd_tot) / (8 * *clusterSize) +
+		(int3(s0.dd_tot) % (8 * *clusterSize) != 0);
 	_int2(bitmapBytes, s0.dd_map);
 
-	_int2(clusterSize, s0.dd_bit);
+	_int2(*clusterSize, s0.dd_bit);
 
 	// Compute bitmap sectors here
 	bitmapSectors =
@@ -235,7 +235,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 		/* Allocate bits after s0.dd_dot sectors to end of bitmap */
 		{
-			int extraBitStart = int3(s0.dd_tot) / clusterSize;
+			int extraBitStart = int3(s0.dd_tot) / *clusterSize;
 
 			_os9_allbit(bitmap, extraBitStart,
 				    (bitmapSize * 8) - extraBitStart);
@@ -269,12 +269,12 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 				sectorsToAlloc =
 					NextHighestMultiple(sectorsToAlloc,
-							    clusterSize);
+							    *clusterSize);
 				rootSects +=
 					sectorsToAlloc - sectorsToAllocOld;
 			}
 
-			clusters = sectorsToAlloc / clusterSize;
+			clusters = sectorsToAlloc / *clusterSize;
 			_os9_allbit(bitmap, 0, clusters);
 
 			sectorsLeft -= sectorsToAlloc;

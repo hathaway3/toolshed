@@ -15,12 +15,14 @@ void test_os9_format()
 
 	// test format of a non-existent disk image
 	unsigned int totalSectors, totalBytes;
-	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1, "Test Disk", 8, 8,
+	int clusterSize = 0;
+	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, &clusterSize, "Test Disk", 8, 8,
 			 1, 1, 0, 0, &totalSectors, &totalBytes);
 	ASSERT_EQUALS(ec, 0);
+	ASSERT_EQUALS(clusterSize, 1);
 
 	// test format of a non-existent disk image with a disk name that is way too long
-	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, 1,
+	ec = _os9_format("test.dsk", 0, 35, 18, 1, 256, &clusterSize,
 			 "Test Disk with filename that is way too long for the field",
 			 8, 8, 1, 1, 0, 0, &totalSectors, &totalBytes);
 	ASSERT_EQUALS(ec, 0);

@@ -278,7 +278,7 @@ int os9format(int argc, char **argv)
 			error_code ec =
 				_os9_format(argv[i], os968k, tracks,
 					    sectorsPerTrack, heads,
-					    bytesPerSector, clusterSize,
+					    bytesPerSector, &clusterSize,
 					    diskName, sectorAllocationSize,
 					    tpi, density, formatEntire,
 					    isDragon, isHDD, &totalSectors,
