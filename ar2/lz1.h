@@ -135,3 +135,7 @@ int fetch(void);
 int writeshort(FILE *fp, short s);
 int readshort(FILE *fp, short *sp);
 int readushort(FILE *fp, unsigned short *sp);
+#ifdef DEBUG
+void dump_otbl(void);
+void dump_itbl(void);
+#endif

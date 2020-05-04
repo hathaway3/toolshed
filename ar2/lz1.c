@@ -45,6 +45,9 @@
 #else
 # include <types.h>
 #endif
+#ifdef DEBUG
+#include <string.h>
+#endif
 #include "arerrs.h"
 #include "lz1.h"
 
@@ -498,7 +501,7 @@ int lz1_config(int bits)
 	}
 #ifdef DEBUG
 /*page*/
-dump_itbl()
+void dump_itbl()
 	{
 	short	nxt, chn, suf;
 	int		i, lim = maxmaxcode + 1;
@@ -529,7 +532,7 @@ dump_itbl()
 	}
 
 
-dump_otbl()
+void dump_otbl()
 	{
 	short	ch, pref;
 	int		i, lim = maxmaxcode + 1;
