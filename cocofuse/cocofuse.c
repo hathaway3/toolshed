@@ -477,14 +477,15 @@ static int coco_read(const char *path, char *buf, size_t size, off_t offset,
 	if ((ec = -CoCoToUnixError(_coco_read(p, buf, &_size))) != 0)
 	{
 #ifdef DEBUG
-		syslog(LOG_LEVEL, "coco_read(%s, %p, %ld) = %d", path, buf,
-		       size, ec);
+		syslog(LOG_LEVEL, "coco_read(%s, %p, %lld) = %d", path, buf,
+		       (long long) size, ec);
 #endif
 		return ec;
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_read(%s, %p, %ld) = %d", path, buf, size, ec);
+	syslog(LOG_LEVEL, "coco_read(%s, %p, %lld) = %d", path, buf,
+	       (long long) size, ec);
 #endif
 
 	return size;
@@ -497,21 +498,21 @@ static int coco_write(const char *path, const char *buf, size_t size,
 	error_code ec;
 	uint32_t _size = size;
 
-	coco_path_id p = (coco_path_id) fi->fh;
+	coco_path_id p = (coco_path_id) (intptr_t) fi->fh;
 	_coco_seek(p, offset, SEEK_SET);
 	if ((ec =
 	     -CoCoToUnixError(_coco_write(p, (char *) buf, &_size))) != 0)
 	{
 #ifdef DEBUG
-		syslog(LOG_LEVEL, "coco_write(%s, %p, %ld) = %d", path, buf,
-		       size, ec);
+		syslog(LOG_LEVEL, "coco_write(%s, %p, %lld) = %d", path, buf,
+		       (long long) size, ec);
 #endif
 		return ec;
 	}
 
 #ifdef DEBUG
-	syslog(LOG_LEVEL, "coco_write(%s, %p, %ld) = %d", path, buf, size,
-	       ec);
+	syslog(LOG_LEVEL, "coco_write(%s, %p, %lld) = %d", path, buf,
+	       (long long) size, ec);
 #endif
 
 	return size;
@@ -528,7 +529,7 @@ static int coco_release(const char *path, struct fuse_file_info *fi)
 {
 	error_code ec;
 
-	ec = -CoCoToUnixError(_coco_close((coco_path_id) fi->fh));
+	ec = -CoCoToUnixError(_coco_close((coco_path_id) (intptr_t) fi->fh));
 
 #ifdef DEBUG
 	syslog(LOG_LEVEL, "coco_release(%s) = %d", path, ec);
@@ -559,7 +560,7 @@ static int coco_create(const char *path, mode_t perms,
 	if ((ec =
 	     -CoCoToUnixError(_coco_create(&p, buff, mflags, &fstat))) == 0)
 	{
-		fi->fh = (uint64_t) p;
+		fi->fh = (uint64_t) (intptr_t) p;
 	}
 
 #ifdef DEBUG
@@ -588,7 +589,7 @@ static int coco_opendir(const char *path, struct fuse_file_info *fi)
 	}
 	if ((ec = -CoCoToUnixError(_coco_open(&p, buff, mflags))) == 0)
 	{
-		fi->fh = (uint64_t) p;
+		fi->fh = (uint64_t) (intptr_t) p;
 	}
 
 #ifdef DEBUG
@@ -620,7 +621,7 @@ static int coco_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		}
 	}
 #else
-	p = (coco_path_id) fi->fh;
+	p = (coco_path_id) (intptr_t) fi->fh;
 #endif
 
 	while (_coco_readdir(p, &e) == 0)
