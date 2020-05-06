@@ -12,14 +12,14 @@
 
 #define BUFFSIZ	256
 
-static u_int	dumpchunk;
+static u_int dumpchunk;
 
-static void	dump(u_char * buffer, size_t num_bytes, int format, int address);
-static void	dump_line(u_char * buffer, int count, int format);
-static void	dumpDECB(u_char * buffer, size_t num_bytes, int format);
-static int	do_dump(char **argv, char *file, int format);
-static void	dump_header(int format);
-static char    *binary(char s);
+static void dump(u_char * buffer, size_t num_bytes, int format, int address);
+static void dump_line(u_char * buffer, int count, int format);
+static void dumpDECB(u_char * buffer, size_t num_bytes, int format);
+static int do_dump(char **argv, char *file, int format);
+static void dump_header(int format);
+static char *binary(char s);
 
 /* Help message */
 static char const *const helpMessage[] = {
@@ -37,17 +37,17 @@ static char const *const helpMessage[] = {
 };
 
 
-static int	assemblerFormat;
-static int	displayASCII;
-static int	displayHeader;
-static int	displayLabel;
-static int	decbBinary;
+static int assemblerFormat;
+static int displayASCII;
+static int displayHeader;
+static int displayLabel;
+static int decbBinary;
 
-int		os9dump    (int argc, char **argv)
+int os9dump(int argc, char **argv)
 {
-	error_code	ec = 0;
-	char           *p = NULL;
-	int		i;
+	error_code ec = 0;
+	char *p = NULL;
+	int i;
 
 	assemblerFormat = 0;
 	displayASCII = 1;
@@ -85,7 +85,8 @@ int		os9dump    (int argc, char **argv)
 					break;
 
 				case 'h':
-					fprintf(stderr, "%s: warning: option -h is deprecated, use -t\n",
+					fprintf(stderr,
+						"%s: warning: option -h is deprecated, use -t\n",
 						argv[0]);
 					/* fallthrough */
 				case 't':
@@ -120,7 +121,8 @@ int		os9dump    (int argc, char **argv)
 		if (argv[i][0] == '-')
 		{
 			continue;
-		} else
+		}
+		else
 		{
 			p = argv[i];
 		}
@@ -139,14 +141,14 @@ int		os9dump    (int argc, char **argv)
 }
 
 
-static int	byte_count;
+static int byte_count;
 
-static int	do_dump(char **argv, char *file, int format)
+static int do_dump(char **argv, char *file, int format)
 {
-	error_code	ec = 0;
-	u_char		buffer  [BUFFSIZ], *tot_buffer;
-	u_int		tot_bytes = 0;
-	coco_path_id	path;
+	error_code ec = 0;
+	u_char buffer[BUFFSIZ], *tot_buffer;
+	u_int tot_bytes = 0;
+	coco_path_id path;
 
 
 	byte_count = 0;
@@ -167,7 +169,7 @@ static int	do_dump(char **argv, char *file, int format)
 	}
 	while (1)
 	{
-		u_int		num_bytes;
+		u_int num_bytes;
 
 		num_bytes = BUFFSIZ;
 		ec = _coco_read(path, buffer, &num_bytes);
@@ -186,13 +188,15 @@ static int	do_dump(char **argv, char *file, int format)
 		if (decbBinary)
 		{
 			dumpDECB(tot_buffer, tot_bytes, format);
-		} else
+		}
+		else
 		{
 			dump(tot_buffer, tot_bytes, format, 0);
 		}
 
 		free(tot_buffer);
-	} else
+	}
+	else
 	{
 		fprintf(stderr, "No memory to open: %s.\n", file);
 	}
@@ -206,11 +210,11 @@ static int	do_dump(char **argv, char *file, int format)
 }
 
 
-static void	dumpDECB(u_char * buffer, size_t num_bytes, int format)
+static void dumpDECB(u_char * buffer, size_t num_bytes, int format)
 {
-	int		length;
-	int		address;
-	int		count = 0;
+	int length;
+	int address;
+	int count = 0;
 
 	while (count < num_bytes)
 	{
@@ -228,7 +232,8 @@ static void	dumpDECB(u_char * buffer, size_t num_bytes, int format)
 			}
 			dump(&(buffer[count]), length, format, address);
 			count += length;
-		} else if (buffer[count] == 0xff)
+		}
+		else if (buffer[count] == 0xff)
 		{
 			count++;
 			length = buffer[count++] << 8;
@@ -239,19 +244,23 @@ static void	dumpDECB(u_char * buffer, size_t num_bytes, int format)
 			if (assemblerFormat)
 			{
 				printf("\n         end   $%4.4X\n", address);
-			} else
+			}
+			else
 			{
-				printf("\n\nExecution address: $%4.4X\n", address);
+				printf("\n\nExecution address: $%4.4X\n",
+				       address);
 			}
 
-			int		remain = count - num_bytes;
+			int remain = count - num_bytes;
 
 			if (remain > 0)
 			{
-				printf("%d bytes left at end of file.\n", remain);
+				printf("%d bytes left at end of file.\n",
+				       remain);
 			}
 			break;
-		} else
+		}
+		else
 		{
 			printf("Aborting: expected 0 or 255 for block header\n");
 			break;
@@ -261,9 +270,9 @@ static void	dumpDECB(u_char * buffer, size_t num_bytes, int format)
 
 
 
-static void	dump(u_char * buffer, size_t num_bytes, int format, int address)
+static void dump(u_char * buffer, size_t num_bytes, int format, int address)
 {
-	u_int		i;
+	u_int i;
 
 	for (i = 0; i < num_bytes; i += dumpchunk)
 	{
@@ -277,16 +286,20 @@ static void	dump(u_char * buffer, size_t num_bytes, int format, int address)
 			if (displayLabel == 1)
 			{
 				printf("\n%08x  ", address + byte_count);
-			} else
+			}
+			else
 			{
 				printf("\n");
 			}
-		} else
+		}
+		else
 		{
 			if (displayLabel == 1)
 			{
-				printf("\nL%04X    fcb   ", address + byte_count);
-			} else
+				printf("\nL%04X    fcb   ",
+				       address + byte_count);
+			}
+			else
 			{
 				printf("\n         fcb   ");
 			}
@@ -295,7 +308,8 @@ static void	dump(u_char * buffer, size_t num_bytes, int format, int address)
 		{
 			dump_line(&buffer[i], dumpchunk, format);
 			byte_count += dumpchunk;
-		} else
+		}
+		else
 		{
 			dump_line(&buffer[i], num_bytes - i, format);
 			byte_count += num_bytes - i;
@@ -306,10 +320,10 @@ static void	dump(u_char * buffer, size_t num_bytes, int format, int address)
 }
 
 
-static void	dump_line(u_char * buffer, int count, int format)
+static void dump_line(u_char * buffer, int count, int format)
 {
-	int		i;
-	int		carry = 0;
+	int i;
+	int carry = 0;
 
 	if (count % 2 != 0)
 	{
@@ -329,7 +343,8 @@ static void	dump_line(u_char * buffer, int count, int format)
 			{
 				printf("$%02X,$%02X", buffer[i],
 				       buffer[i + 1]);
-			} else
+			}
+			else
 			{
 				printf("$%02X,$%02X,", buffer[i],
 				       buffer[i + 1]);
@@ -341,7 +356,8 @@ static void	dump_line(u_char * buffer, int count, int format)
 			{
 				printf("%%%s,%%%s", binary(buffer[i]),
 				       binary(buffer[i + 1]));
-			} else
+			}
+			else
 			{
 				printf("%%%s,%%%s,", binary(buffer[i]),
 				       binary(buffer[i + 1]));
@@ -397,7 +413,8 @@ static void	dump_line(u_char * buffer, int count, int format)
 			if (format == 1)
 			{
 				printf("        ");
-			} else
+			}
+			else
 			{
 				printf("     ");
 			}
@@ -409,11 +426,13 @@ static void	dump_line(u_char * buffer, int count, int format)
 			if (buffer[i] >= 32 && buffer[i] < 127)
 			{
 				printf("%c", buffer[i]);
-			} else if (buffer[i] >= 128 + 32
-				   && buffer[i] <= 128 + 'z')
+			}
+			else if (buffer[i] >= 128 + 32
+				 && buffer[i] <= 128 + 'z')
 			{
 				printf("%c", buffer[i] - 128);
-			} else
+			}
+			else
 			{
 				printf(".");
 			}
@@ -423,7 +442,7 @@ static void	dump_line(u_char * buffer, int count, int format)
 }
 
 
-static void	dump_header(int format)
+static void dump_header(int format)
 {
 	if (format == 0 && displayHeader == 1)
 	{
@@ -444,21 +463,22 @@ static void	dump_header(int format)
 }
 
 
-static char    *binary(char s)
+static char *binary(char s)
 {
-	static char	buffer[9] =
-	{'0', '0', '0', '0', '0', '0', '0', '0', '\0'};
-	int		i;
+	static char buffer[9] =
+		{ '0', '0', '0', '0', '0', '0', '0', '0', '\0' };
+	int i;
 
 
 	for (i = 0; i < 8; i++)
 	{
-		int		x = s & (1 << (7 - i));
+		int x = s & (1 << (7 - i));
 
 		if (x != 0)
 		{
 			buffer[i] = '1';
-		} else
+		}
+		else
 		{
 			buffer[i] = '0';
 		}
