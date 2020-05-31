@@ -9,16 +9,23 @@
 #include "cocotypes.h"
 #include "cococonv.h"
 
-
 #define BUFFSIZ	256
 
-static u_int dumpchunk;
+enum dumpformat
+{
+	FMT_STANDARD,
+	FMT_ASMHEX,
+	FMT_ASMBIN,
+	FMT_C,
+};
 
-static void dump(u_char * buffer, size_t num_bytes, int format, int address);
-static void dump_line(u_char * buffer, int count, int format);
-static void dumpDECB(u_char * buffer, size_t num_bytes, int format);
-static int do_dump(char **argv, char *file, int format);
-static void dump_header(int format);
+static void dump(u_char * buffer, u_int offset, size_t num_bytes,
+		 enum dumpformat format);
+static void dumpDECB(u_char * buffer, size_t num_bytes,
+		     enum dumpformat format);
+static void dump_line(u_char * buffer, u_int count, enum dumpformat format);
+static int do_dump(char **argv, char *file, enum dumpformat format);
+static void dump_header(enum dumpformat format);
 static char *binary(char s);
 
 /* Help message */
@@ -29,6 +36,7 @@ static char const *const helpMessage[] = {
 	"     -a    dump output in assembler format (hex)\n",
 	"     -b    dump output in assembler format (binary)\n",
 	"     -c    don't display ASCII character data\n",
+	"     -e    dump output in C format\n",
 	"     -t    don't display header\n",
 	"     -h    don't display header (DEPRECATED)\n",
 	"     -l    don't display line label/count\n",
@@ -36,20 +44,20 @@ static char const *const helpMessage[] = {
 	NULL
 };
 
-
-static int assemblerFormat;
 static int displayASCII;
 static int displayHeader;
 static int displayLabel;
 static int decbBinary;
+static u_int dumpchunk;
 
 int os9dump(int argc, char **argv)
 {
+	static enum dumpformat format;
 	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
-	assemblerFormat = 0;
+	format = FMT_STANDARD;
 	displayASCII = 1;
 	displayHeader = 1;
 	displayLabel = 1;
@@ -71,17 +79,22 @@ int os9dump(int argc, char **argv)
 				switch (*p)
 				{
 				case 'a':
-					assemblerFormat = 1;
+					format = FMT_ASMHEX;
 					dumpchunk = 8;
 					break;
 
 				case 'b':
-					assemblerFormat = 2;
+					format = FMT_ASMBIN;
 					dumpchunk = 1;
 					break;
 
 				case 'c':
 					displayASCII = 0;
+					break;
+
+				case 'e':
+					format = FMT_C;
+					dumpchunk = 8;
 					break;
 
 				case 'h':
@@ -127,7 +140,7 @@ int os9dump(int argc, char **argv)
 			p = argv[i];
 		}
 
-		ec = do_dump(argv, p, assemblerFormat);
+		ec = do_dump(argv, p, format);
 
 		if (ec != 0)
 		{
@@ -140,21 +153,14 @@ int os9dump(int argc, char **argv)
 	return (0);
 }
 
-
-static int byte_count;
-
-static int do_dump(char **argv, char *file, int format)
+static int do_dump(char **argv, char *file, enum dumpformat format)
 {
 	error_code ec = 0;
 	u_char buffer[BUFFSIZ], *tot_buffer;
 	u_int tot_bytes = 0;
 	coco_path_id path;
 
-
-	byte_count = 0;
-
 	/* 1. Open a path to the file. */
-
 	ec = _coco_open(&path, file, FAM_READ);
 
 	if (ec != 0)
@@ -167,6 +173,14 @@ static int do_dump(char **argv, char *file, int format)
 			return (ec);
 		}
 	}
+
+	if (format == FMT_C)
+	{
+		printf("{");
+	}
+
+	/* 2. Determine file size by reading until error */
+
 	while (1)
 	{
 		u_int num_bytes;
@@ -175,14 +189,20 @@ static int do_dump(char **argv, char *file, int format)
 		ec = _coco_read(path, buffer, &num_bytes);
 		tot_bytes += num_bytes;
 		if (ec != 0)
+		{
 			break;
+		}
 	}
 
+	/* 2. Rewind and dump the file */
+
 	_coco_seek(path, 0, SEEK_SET);
+
 	tot_buffer = malloc(tot_bytes);
 
 	if (tot_buffer != 0)
 	{
+
 		ec = _coco_read(path, tot_buffer, &tot_bytes);
 
 		if (decbBinary)
@@ -191,7 +211,8 @@ static int do_dump(char **argv, char *file, int format)
 		}
 		else
 		{
-			dump(tot_buffer, tot_bytes, format, 0);
+			dump_header(format);
+			dump(tot_buffer, 0, tot_bytes, format);
 		}
 
 		free(tot_buffer);
@@ -201,6 +222,10 @@ static int do_dump(char **argv, char *file, int format)
 		fprintf(stderr, "No memory to open: %s.\n", file);
 	}
 
+	if (format == FMT_C)
+	{
+		printf("\n}");
+	}
 
 	printf("\n");
 
@@ -209,11 +234,11 @@ static int do_dump(char **argv, char *file, int format)
 	return ec;
 }
 
-
-static void dumpDECB(u_char * buffer, size_t num_bytes, int format)
+static void dumpDECB(u_char * buffer, size_t num_bytes,
+		     enum dumpformat format)
 {
 	int length;
-	int address;
+	u_int address;
 	int count = 0;
 
 	while (count < num_bytes)
@@ -225,12 +250,10 @@ static void dumpDECB(u_char * buffer, size_t num_bytes, int format)
 			length += buffer[count++];
 			address = buffer[count++] << 8;
 			address += buffer[count++];
-			byte_count = 0;
-			if (assemblerFormat == 1)
-			{
-				printf("         org   $%4.4X", address);
-			}
-			dump(&(buffer[count]), length, format, address);
+
+			dump_header(format);
+			dump(&(buffer[count]), address, length, format);
+			printf("\n");
 			count += length;
 		}
 		else if (buffer[count] == 0xff)
@@ -241,21 +264,13 @@ static void dumpDECB(u_char * buffer, size_t num_bytes, int format)
 			address = buffer[count++] << 8;
 			address += buffer[count++];
 
-			if (assemblerFormat)
-			{
-				printf("\n         end   $%4.4X\n", address);
-			}
-			else
-			{
-				printf("\n\nExecution address: $%4.4X\n",
-				       address);
-			}
+			printf("\nExecution address: $%04X\n", address);
 
-			int remain = count - num_bytes;
+			int remain = num_bytes - count;
 
 			if (remain > 0)
 			{
-				printf("%d bytes left at end of file.\n",
+				printf("%d bytes extra at end of file.\n",
 				       remain);
 			}
 			break;
@@ -268,59 +283,71 @@ static void dumpDECB(u_char * buffer, size_t num_bytes, int format)
 	}
 }
 
-
-
-static void dump(u_char * buffer, size_t num_bytes, int format, int address)
+static void dump(u_char * buffer, u_int offset, size_t num_bytes,
+		 enum dumpformat format)
 {
-	u_int i;
+	u_int i, j;
 
-	for (i = 0; i < num_bytes; i += dumpchunk)
+	for (i = 0, j = 0; i < num_bytes; i += dumpchunk)
 	{
-		if (byte_count % BUFFSIZ == 0)
+		if (j > 255)
 		{
 			dump_header(format);
+			j = 0;
 		}
-		/* print line header */
-		if (format == 0)
+		if (format == FMT_STANDARD)
 		{
 			if (displayLabel == 1)
 			{
-				printf("\n%08x  ", address + byte_count);
+				printf("\n%08x  ", offset);
 			}
 			else
 			{
 				printf("\n");
 			}
 		}
-		else
+		else if (format == FMT_ASMHEX || format == FMT_ASMBIN)
 		{
 			if (displayLabel == 1)
 			{
-				printf("\nL%04X    fcb   ",
-				       address + byte_count);
+				printf("\nL%04X    fcb   ", offset);
 			}
 			else
 			{
 				printf("\n         fcb   ");
 			}
 		}
+		else if (format == FMT_C)
+		{
+			if (displayLabel == 1)
+			{
+				printf("\n   /* offset = %08X */ ", offset);
+			}
+			else
+			{
+				printf("\n   ");
+			}
+		}
+
 		if (num_bytes - i > dumpchunk)
 		{
 			dump_line(&buffer[i], dumpchunk, format);
-			byte_count += dumpchunk;
 		}
 		else
 		{
 			dump_line(&buffer[i], num_bytes - i, format);
-			byte_count += num_bytes - i;
 		}
+
+		offset += dumpchunk;
+
+		j += dumpchunk;
+
 	}
 
 	return;
 }
 
-
-static void dump_line(u_char * buffer, int count, int format)
+static void dump_line(u_char * buffer, u_int count, enum dumpformat format)
 {
 	int i;
 	int carry = 0;
@@ -334,11 +361,11 @@ static void dump_line(u_char * buffer, int count, int format)
 	{
 		switch (format)
 		{
-		case 0:
+		case FMT_STANDARD:
 			printf("%02x%02x ", buffer[i], buffer[i + 1]);
 			break;
 
-		case 1:
+		case FMT_ASMHEX:
 			if (i == count - 2 && carry == 0)
 			{
 				printf("$%02X,$%02X", buffer[i],
@@ -351,7 +378,7 @@ static void dump_line(u_char * buffer, int count, int format)
 			}
 			break;
 
-		case 2:
+		case FMT_ASMBIN:
 			if (i == count - 2 && carry == 0)
 			{
 				printf("%%%s,%%%s", binary(buffer[i]),
@@ -363,6 +390,13 @@ static void dump_line(u_char * buffer, int count, int format)
 				       binary(buffer[i + 1]));
 			}
 			break;
+
+		case FMT_C:
+			{
+				printf("0x%02X,0x%02X,", buffer[i],
+				       buffer[i + 1]);
+			}
+			break;
 		}
 	}
 
@@ -370,16 +404,20 @@ static void dump_line(u_char * buffer, int count, int format)
 	{
 		switch (format)
 		{
-		case 0:
+		case FMT_STANDARD:
 			printf("%02x", buffer[i]);
 			break;
 
-		case 1:
+		case FMT_ASMHEX:
 			printf("$%02X", buffer[i]);
 			break;
 
-		case 2:
+		case FMT_ASMBIN:
 			printf("%%%s", binary(buffer[i]));
+			break;
+
+		case FMT_C:
+			printf("0x%02X,", buffer[i]);
 			break;
 		}
 		count++;
@@ -389,7 +427,7 @@ static void dump_line(u_char * buffer, int count, int format)
 		/* make spaces available if last line is not full */
 		i = (dumpchunk - count);
 
-		if (format == 1)
+		if (format == FMT_ASMHEX)
 		{
 			printf("   ");
 		}
@@ -397,7 +435,11 @@ static void dump_line(u_char * buffer, int count, int format)
 		{
 			switch (format)
 			{
-			case 1:
+			case FMT_ASMHEX:
+				printf("     ");
+				break;
+
+			case FMT_C:
 				printf("     ");
 				break;
 
@@ -410,14 +452,23 @@ static void dump_line(u_char * buffer, int count, int format)
 
 		while (i--)
 		{
-			if (format == 1)
+			if (format == FMT_ASMHEX)
 			{
 				printf("        ");
+			}
+			else if (format == FMT_C)
+			{
+				printf("          ");
 			}
 			else
 			{
 				printf("     ");
 			}
+		}
+
+		if (format == FMT_C)
+		{
+			printf("  // ");
 		}
 
 		/* print character dump on right side */
@@ -441,10 +492,9 @@ static void dump_line(u_char * buffer, int count, int format)
 	return;
 }
 
-
-static void dump_header(int format)
+static void dump_header(enum dumpformat format)
 {
-	if (format == 0 && displayHeader == 1)
+	if (format == FMT_STANDARD && displayHeader == 1)
 	{
 		printf("\n\n  Addr     0 1  2 3  4 5  6 7  8 9  A B  C D  E F");
 		if (displayASCII == 1)
@@ -462,13 +512,11 @@ static void dump_header(int format)
 	return;
 }
 
-
 static char *binary(char s)
 {
 	static char buffer[9] =
 		{ '0', '0', '0', '0', '0', '0', '0', '0', '\0' };
 	int i;
-
 
 	for (i = 0; i < 8; i++)
 	{
@@ -483,7 +531,6 @@ static char *binary(char s)
 			buffer[i] = '0';
 		}
 	}
-
 
 	return (buffer);
 }
