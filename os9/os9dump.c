@@ -496,14 +496,23 @@ static void dump_header(enum dumpformat format)
 {
 	if (format == FMT_STANDARD && displayHeader == 1)
 	{
-		printf("\n\n  Addr     0 1  2 3  4 5  6 7  8 9  A B  C D  E F");
+		printf("\n\n");
+		if (displayLabel)
+		{
+			printf("  Addr    ");
+		}
+		printf(" 0 1  2 3  4 5  6 7  8 9  A B  C D  E F");
 		if (displayASCII == 1)
 		{
 			printf(" 0 2 4 6 8 A C E");
 		}
 		printf("\n");
 
-		printf("--------  ---- ---- ---- ---- ---- ---- ---- ----");
+		if (displayLabel)
+		{
+			printf("--------  ");
+		}
+		printf("---- ---- ---- ---- ---- ---- ---- ----");
 		if (displayASCII == 1)
 		{
 			printf(" ----------------");
