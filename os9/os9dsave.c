@@ -17,7 +17,7 @@ u_int buffer_size = 32768;
 int singlequotes;
 
 error_code do_dsave(char *pgmname, char *source, char *target, int execute,
-		    int buffsize, int rewrite, int eoltranslate);
+		    int buffsize, int rewrite, int eoltranslate, int basicdetoken);
 static char *ShellEscapePath(char *source, char *src_path_separator,
 			     u_char * direntry_name_buffer);
 static char *EscapePart(char *dest, char *src);
@@ -44,6 +44,7 @@ int os9dsave(int argc, char *argv[])
 	int rewrite = 0;
 	int execute = 0;
 	int eoltranslate = 0;
+	int basicdetoken = 0;
 	char *target = NULL;
 	char *source = NULL;
 
@@ -147,7 +148,7 @@ int os9dsave(int argc, char *argv[])
 	/* do dsave */
 	/* TODO: Possibly use original argv[0] here? */
 	ec = do_dsave("os9", source, target, execute, buffer_size, rewrite,
-		      eoltranslate);
+		      eoltranslate, basicdetoken);
 	if (ec != 0)
 	{
 		fprintf(stderr, "%s: error %d encountered during dsave\n",
@@ -159,7 +160,7 @@ int os9dsave(int argc, char *argv[])
 
 /* this function is also used by the decb utility */
 error_code do_dsave(char *pgmname, char *source, char *target, int execute,
-		    int buffer_size, int rewrite, int eoltranslate)
+		    int buffer_size, int rewrite, int eoltranslate, int basicdetoken)
 {
 	error_code ec = 0;
 	static int level = 0;
@@ -290,7 +291,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 				/* 4. call this function again */
 				do_dsave(pgmname, sourcePathList, newTarget,
 					 execute, buffer_size, rewrite,
-					 eoltranslate);
+					 eoltranslate, basicdetoken);
 
 				/* 5. decrement level indicator */
 				level--;
@@ -321,6 +322,13 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 					if (*ropt)
 						strcat(ropt, " ");
 					strcat(ropt, "-l");
+				}
+
+				if (basicdetoken > 0)
+				{
+					if (*ropt)
+						strcat(ropt, " ");
+					strcat(ropt, "-t");
 				}
 
 				escaped_source =

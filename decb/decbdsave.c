@@ -17,7 +17,7 @@ extern u_int buffer_size;
 
 extern error_code do_dsave(char *pgmname, char *source, char *target,
 			   int execute, int buffsize, int rewrite,
-			   int eoltranslate);
+			   int eoltranslate, int basicdetoken);
 
 /* Help message */
 static char const *const helpMessage[] = {
@@ -27,6 +27,7 @@ static char const *const helpMessage[] = {
 	"     -b=size    size of copy buffer in bytes or K-bytes\n",
 	"     -e         actually execute commands\n",
 	"     -l         perform end of line translation on copy\n",
+	"     -t         perform BASIC token translation\n",
 	"     -r         force rewrite on copy\n",
 	NULL
 };
@@ -41,6 +42,7 @@ int decbdsave(int argc, char *argv[])
 	int rewrite = 0;
 	int execute = 0;
 	int eoltranslate = 0;
+	int basicdetoken = 0;
 	char *target = NULL;
 	char *source = NULL;
 
@@ -77,6 +79,10 @@ int decbdsave(int argc, char *argv[])
 
 				case 'l':
 					eoltranslate = 1;
+					break;
+
+				case 't':
+					basicdetoken = 1;
 					break;
 
 				case 'e':
@@ -138,7 +144,7 @@ int decbdsave(int argc, char *argv[])
 	/* do dsave */
 	/* TODO: Possibly use original argv[0] here? */
 	ec = do_dsave("decb", source, target, execute, buffer_size, rewrite,
-		      eoltranslate);
+		      eoltranslate, basicdetoken);
 	if (ec != 0)
 	{
 		fprintf(stderr, "%s: error %d encountered during dsave\n",
