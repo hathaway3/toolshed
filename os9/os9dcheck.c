@@ -513,6 +513,8 @@ static error_code ParseFDSegList(fd_stats * fd, u_int dd_tot, char *path,
 
 	while (int3(fd->fd_seg[i].lsn) != 0)
 	{
+		u_int mapSector;
+
 		if (i > NUM_SEGS)
 		{
 			i++;
@@ -521,6 +523,8 @@ static error_code ParseFDSegList(fd_stats * fd, u_int dd_tot, char *path,
 
 		theSeg = &(fd->fd_seg[i]);
 		num = int2(theSeg->num);
+
+		mapSector = int3(theSeg->lsn) / 2048;
 
 		if ((int3(theSeg->lsn) + num) > dd_tot)
 		{
@@ -534,6 +538,12 @@ static error_code ParseFDSegList(fd_stats * fd, u_int dd_tot, char *path,
 		{
 			once = 0;
 			curLSN = int3(theSeg->lsn) + j;
+
+			if (curLSN / 2048 != mapSector)
+			{
+				printf("*** FD segment %u of path %s uses multiple allocation map sectors\n", i, path);
+				mapSector = curLSN / 2048;
+			}
 
 			/* check for segment elements out of bounds */
 			if (curLSN > dd_tot)
