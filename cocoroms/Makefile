@@ -13,7 +13,7 @@ ecb_equates.asm: equates.asm bas.asm extbas.asm
 	lwasm --symbol-dump --no-output $^ > $@
 
 disk11.rom: ecb_equates.asm disk.asm
-	lwasm --raw -o $@ $^
+	lwasm --raw --pragma=noindex0tonone -o $@ $^
 
 coco3.rom: equates.asm coco3.asm
 	lwasm --raw -o $@ $^
