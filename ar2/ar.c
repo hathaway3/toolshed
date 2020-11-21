@@ -140,6 +140,7 @@ void delete(FILE *afp);
 void extract(FILE *afp, int flag);
 void table(FILE *fp);
 void fatal(int code, char *msg, char *arg1, int arg2);
+void fataln(int code, char *msg, long arg1, int arg2);
 void help(void);
 void update(FILE *afp);
 int puthdr(FILE *fp, HEADER *hp);
@@ -681,9 +682,9 @@ int gethdr(FILE *fp, HEADER *hp)
 			fatal(1, "file not archive\n", 0, 0);
 
 		if ((hp->a_hid[0] == 0) || (hp->a_hid[0] == 0x1a))
-			fatal(1, "probable XModem padding at $%lX\n", (char *) pos, 0);
+			fataln(1, "probable XModem padding at $%lX\n", pos, 0);
 
-		fatal(1, "file damaged - no header at $%lX\n", (char *) pos, 0);
+		fataln(1, "file damaged - no header at $%lX\n", pos, 0);
 		}
 
 	return (0);
@@ -861,6 +862,17 @@ size_t		n;
  */
 
 void fatal(int code, char *msg, char *arg1, int arg2)
+	{
+	fprintf(stderr, "%s: ", mod);
+	fprintf(stderr, msg, arg1, arg2);
+	exit(code);
+	}
+
+/*
+ * print a fatal error message with number and exit
+ */
+
+void fataln(int code, char *msg, long arg1, int arg2)
 	{
 	fprintf(stderr, "%s: ", mod);
 	fprintf(stderr, msg, arg1, arg2);

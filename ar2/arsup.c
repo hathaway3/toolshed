@@ -214,7 +214,7 @@ void set_fstat(char *pn, FILDES *fs)
 #endif
 
 	struct utimbuf ubuf;
-	ubuf.actime = time((long *) 0);
+	ubuf.actime = time(NULL);
 	ubuf.modtime = o2uDate(fs->fd_date);
 	utime(pn, &ubuf);
 #else

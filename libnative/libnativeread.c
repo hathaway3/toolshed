@@ -77,7 +77,7 @@ error_code _native_readdir(native_path_id path, native_dir_entry * dirent)
 	}
 	else
 	{
-		ec = _findnext((int) path->dirhandle, &dp);
+		ec = _findnext((intptr_t) path->dirhandle, &dp);
 	}
 	if (ec == -1)
 #else

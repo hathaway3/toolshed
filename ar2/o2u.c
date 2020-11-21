@@ -68,7 +68,7 @@ static int	monthLength[12] = {
 
 
 char	*u2oDate(l)
-long	l;
+time_t	l;
 	{
 	static char	buf[5];
 	struct tm	*tp;
@@ -92,8 +92,7 @@ char	*buf;
 	int				day;
 	int				hour;
 	int				minute;
-	long			result;
-	extern long		time();
+	time_t				result;
 
 	int				timezone = 5*60*60;   /* I'm in the Eastern Time zone GMT + 5 */
 
