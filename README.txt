@@ -22,11 +22,14 @@ $ mingw-get install mingw-make
 Enter the unpackaged toolshed directory and run:
 $ make -C build/unix install CC=gcc
 
+== HOW TO BUILD FOR WINDOWS ON UNIX or WSL ==
+
+$ NOTEST=1 make -C build/unix CC="x86_64-w64-mingw32-gcc -Wl,--force-exe-suffix"
 
 == HOW TO BUILD ON UNIX ==
 
-To build cocofuse you will need to have FUSE libraries and header files
-installed. On Debian-based systems:
+To build cocofuse (LINUX only) you will need to have FUSE libraries and
+header files installed. On Debian-based systems:
 $ sudo apt-get install libfuse-dev
 
 Enter the unpackaged toolshed directory and run:
