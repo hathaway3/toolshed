@@ -100,6 +100,9 @@ static void ident_osk(OSK_MODULE_t * mod)
 	}
 	else
 	{
+		calccrc[0] = 0xff;
+		calccrc[1] = 0xff;
+		calccrc[2] = 0xff;
 		_os9_crc_compute((u_char *) mod, module_size-3, calccrc);
 		calccrc[0] ^= 0xff;
 		calccrc[1] ^= 0xff;
@@ -212,6 +215,9 @@ static void ident_os9(OS9_MODULE_t * mod)
 	}
 	else
 	{
+		calccrc[0] = 0xff;
+		calccrc[1] = 0xff;
+		calccrc[2] = 0xff;
 		_os9_crc_compute((u_char *) mod, module_size-3, calccrc);
 		calccrc[0] ^= 0xff;
 		calccrc[1] ^= 0xff;
