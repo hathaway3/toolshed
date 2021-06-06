@@ -85,12 +85,25 @@ static void ident_osk(OSK_MODULE_t * mod)
 	name = (char *) os9_string(&buffer[i]);
 	module_size = int4(mod->size);
 	CRC = &buffer[module_size - 3];
+	u_char calccrc[3] = {0xff, 0xff, 0xff};
+	error_code crcerror = _os9_crc_compute((u_char *) mod, module_size, calccrc);
 
 	printf("Header for :      %s\n", name);
 	printf("Module size:      $%-8X     #%d\n", module_size, module_size);
 	printf("Owner:            %d.%d\n", mod->owner[0], mod->owner[1]);
-	printf("Module CRC :      $%02X%02X%02X       %s CRC\n", CRC[0],
-	       CRC[1], CRC[2], _osk_crc(mod) ? "Good" : "Bad");
+	printf("Module CRC :      $%02X%02X%02X       ", CRC[0],
+	       CRC[1], CRC[2]);
+
+	if (crcerror != 0 )
+	{
+		printf( "Good CRC\n" );
+	}
+	else
+	{
+		printf( "Mismatch calculated: $%02X%02X%02X\n",
+			calccrc[0], calccrc[1], calccrc[2]);
+	}
+
 	printf("Header Parity:    $%04X         Good parity\n",
 	       int2(mod->parity));
 	printf("Edition:          $%-8X     #%d\n", int2(mod->edit),
@@ -163,12 +176,14 @@ static void ident_os9(OS9_MODULE_t * mod)
 	edition = buffer[INT(mod->name) + strlen(name)];
 	typelang = mod->tyla;
 	attrev = mod->atrv;
+	u_char calccrc[3] = {0xff, 0xff, 0xff};
+	error_code crcerror = _os9_crc_compute((u_char *) mod, module_size, calccrc);
 
 	if (shortFlag == 1)
 	{
 		char CRCindicator;
 
-		if (_os9_crc(mod) != 0)
+		if (crcerror != 0)
 		{
 			CRCindicator = '.';
 		}
@@ -184,8 +199,18 @@ static void ident_os9(OS9_MODULE_t * mod)
 
 	printf("Header for : %s\n", name);
 	printf("Module size: $%X  #%d\n", module_size, module_size);
-	printf("Module CRC : $%02X%02X%02X (%s)\n", CRC[0], CRC[1], CRC[2],
-	       _os9_crc(mod) ? "Good" : "Bad");
+	printf("Module CRC : $%02X%02X%02X ", CRC[0], CRC[1], CRC[2]);
+
+	if (crcerror != 0 )
+	{
+		printf( "(Good)\n" );
+	}
+	else
+	{
+		printf( "(Mismatch calculated: $%02X%02X%02X)\n",
+			calccrc[0], calccrc[1], calccrc[2]);
+	}
+
 	printf("Hdr parity : $%02X\n", hdrparity);
 
 	switch ((mod->tyla & TYPE_MASK) >> 4)
