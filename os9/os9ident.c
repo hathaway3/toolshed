@@ -100,6 +100,11 @@ static void ident_osk(OSK_MODULE_t * mod)
 	}
 	else
 	{
+		_os9_crc_compute((u_char *) mod, module_size-3, calccrc);
+		calccrc[0] ^= 0xff;
+		calccrc[1] ^= 0xff;
+		calccrc[2] ^= 0xff;
+
 		printf( "Mismatch calculated: $%02X%02X%02X\n",
 			calccrc[0], calccrc[1], calccrc[2]);
 	}
@@ -207,6 +212,11 @@ static void ident_os9(OS9_MODULE_t * mod)
 	}
 	else
 	{
+		_os9_crc_compute((u_char *) mod, module_size-3, calccrc);
+		calccrc[0] ^= 0xff;
+		calccrc[1] ^= 0xff;
+		calccrc[2] ^= 0xff;
+
 		printf( "(Mismatch calculated: $%02X%02X%02X)\n",
 			calccrc[0], calccrc[1], calccrc[2]);
 	}
