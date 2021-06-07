@@ -93,7 +93,7 @@ int tok_strcmp(const char *str1, char *str2);
 
    This subroutine will de-token a binary BASIC program in in_buffer of size in_size.
    The resulting textual data will be in out_buffer and have a size of out_size
-   
+
    The caller is responsible for free()ing out_buffer
 */
 
@@ -240,7 +240,7 @@ error_code _decb_detoken(unsigned char *in_buffer, int in_size,
 
    This subroutine will en-token a textual BASIC program in in_buffer of size in_size.
    The resulting binary data will be in out_buffer and have a size of out_size
-   
+
    The caller is responsible for free()ing out_buffer
 */
 
@@ -335,6 +335,7 @@ error_code _decb_entoken(unsigned char *in_buffer, int in_size,
 				{
 					(*out_buffer)[out_pos++] = 0x87;	/* PRINT token */
 					in_pos++;
+					i = 0x87;
 				}
 				else
 				{
@@ -465,7 +466,7 @@ error_code _decb_entoken(unsigned char *in_buffer, int in_size,
 
 /* This function will determine is the file in in_buffer is a tokenized
    BASIC file or not.
-   
+
    returns -1 if not.
    returns 0 if it is.
 */
