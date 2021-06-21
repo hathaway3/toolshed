@@ -3732,7 +3732,7 @@ TFSIDE         pshs      x                   Backup X onto stack
 * HDB-DOS Version
 VMAJOR         equ       1
 VMINOR         equ       5
-VREV           equ       0
+VREV           equ       1
 
 
                setdp     0
@@ -4995,12 +4995,12 @@ a@             lda       $01D4
                beq       b@
                bsr       SENDCR
 b@             ldx       #DRVMSG-1           DRIVE=
-               jsr       STRINOUT
+               bsr       DOSTROUT
                clra      
                ldb       <$EB
                jsr       LBDCC
                ldx       #FREMSG-1           FREE=
-               jsr       STRINOUT
+               bsr       DOSTROUT
                bsr       BRIAN
                clra      
                jsr       LBDCC
@@ -5018,7 +5018,29 @@ D@             decb
                puls      pc,b
 SETVAR         ldd       #$1111
                std       <$EC
-               rts       
+RTS1           rts
+
+* Allow "COPY" command to overwrite existing file
+
+AETEST         jsr       >LC68C               Scan dir for filename
+               tst       $973                Already exist?
+               beq       RTS1                No, just return
+ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
+               cmpa      $0D,s
+               bne       a@
+               jmp       LD05C
+a@             lda       <$68                Get BASIC line # MSB
+               inca                          Direct mode ($FF)?
+               bne       d@                  No, just overwrite
+               ldx       #OVRMSG-1           Yes, point to message
+               bsr       DOSTROUT            Print it
+               bsr       GETY                Check for (Y)ES
+               beq       c@                  Yes, overwrite file
+               leas      <$26,s              No, remove temp variables
+               ldx       #ABTMSG-1           "ABORTED" message
+DOSTROUT       jmp       STRINOUT            Print it & return
+c@             jsr       >LCCFD               R.G. See above print Y
+d@             jmp       LC6F5               Kill dest file & return
 
 * Rename drive command syntax: RENAME DRIVE n, "STRING"
 
@@ -5076,35 +5098,12 @@ COPtst         ldx       <$A6                Get basic input pointer
                jmp       LC938               And get filename string
 
 
-* Allow "COPY" command to overwrite existing file
-
-AETEST         jsr       >LC68C               Scan dir for filename
-               tst       $973                Already exist?
-               beq       AE10                No, just return
-ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
-               cmpa      $0D,s
-               bne       a@
-               jmp       LD05C
-a@             lda       <$68                Get BASIC line # MSB
-               inca                          Direct mode ($FF)?
-               bne       d@                  No, just overwrite
-               ldx       #OVRMSG-1           Yes, point to message
-               bsr       b@                  Print it
-               bsr       GETY                Check for (Y)ES
-               beq       c@                  Yes, overwrite file
-               leas      <$26,s              No, remove temp variables
-               ldx       #ABTMSG-1           "ABORTED" message
-b@             jmp       STRINOUT            Print it & return
-c@             jsr       >LCCFD               R.G. See above print Y
-d@             jmp       LC6F5               Kill dest file & return
-
-
 * Get a keypress, beq if it's a "Y"
 
 GETY           jsr       GETKEY              Get a key
                anda      #$FF-$20            Force upper case
                cmpa      #'Y                 Set flag for "Y"
-AE10           rts                           Return
+               rts                           Return
 
 
 * Prompt Messages
@@ -5155,7 +5154,8 @@ NAMBUF         fcc       "AUTOEXEC"          FILENAME
 SIGNON         fcc       "HDB-DOS "
                fcb       VMAJOR+$30,$2E,VMINOR+$30
                IFNE      VREV
-               fcb       VREV
+               fcc       "R"
+               fcb       VREV+$30
                ENDC      
                fcb       $20
                IFDEF     IDE
