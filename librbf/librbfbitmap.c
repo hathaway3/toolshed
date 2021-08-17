@@ -157,9 +157,9 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 
 	while (count < (pd_sas / path->spc))
 	{
-		if (i > pd_tot)
+		if (i == pd_tot)
 		{
-			return -1;
+			return -1;	/* none found */
 		}
 
 		if (!_os9_ckbit(path->bitmap, i++))
@@ -173,13 +173,6 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 			count = 0;
 		}
 	}
-
-
-	if (i > pd_tot)
-	{
-		return 1;	/* none found */
-	}
-
 
 	*cluster = (i - count) * path->spc;
 	*size = count * path->spc;
