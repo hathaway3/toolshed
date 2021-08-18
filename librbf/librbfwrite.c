@@ -234,8 +234,11 @@ static int _os9_extendSegList(os9_path_id path, Fd_seg segptr, int *delta)
 			/* Calculate LSN for new sector */
 			newLSN = int3(segptr[i].lsn) + newNum - 1;
 
-			/* Is it allocated? */
-			if (!_os9_ckbit(path->bitmap, (newLSN / path->spc)))
+			/* Is it allocated? Also check if it is in the same
+			   allocation map sector (due to OS-9 6x09 RBF limitation) */
+			if (newLSN / path->spc / 2048 ==
+			    int3(segptr[i].lsn) / path->spc / 2048
+			    && !_os9_ckbit(path->bitmap, newLSN / path->spc))
 			{
 				/* Hey we got our extra cluster! */
 				_os9_allbit(path->bitmap,

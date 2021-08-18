@@ -132,6 +132,7 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 	unsigned int pd_sas = int1(path->lsn0->pd_sas);
 	unsigned int pd_tot = int3(path->lsn0->dd_tot);
 	u_int i, count;
+	u_int prev_free;
 
 
 	/* Sanity check pd_sas */
@@ -153,6 +154,7 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 
 	/* Now go and find pd_sas number of contiguous clusters */
 
+	prev_free = 0;		/* to reassure compiler */
 	i = count = 0;
 
 	while (count < (pd_sas / path->spc))
@@ -162,16 +164,26 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 			return -1;	/* none found */
 		}
 
-		if (!_os9_ckbit(path->bitmap, i++))
+		/* Check if same allocation map sector (6x09 RBF limitation) */
+
+		if (count != 0 && i / 2048 != prev_free / 2048)
+		{
+			/* Restart counting from here if free */
+			count = 0;
+		}
+
+		if (!_os9_ckbit(path->bitmap, i))
 		{
 			/* Bit is clear */
 
 			count += 1;
+			prev_free = i;
 		}
 		else
 		{
 			count = 0;
 		}
+		i++;
 	}
 
 	*cluster = (i - count) * path->spc;
