@@ -207,10 +207,10 @@ static int _os9_extendSegList(os9_path_id path, Fd_seg segptr, int *delta)
 	int i = 0, newNum, newLSN;
 
 	/* Is segment list empty */
-	if (int3(segptr[i].lsn) != 0)
+	if (int3(segptr[0].lsn) != 0)
 	{
 		/* Find last segment */
-		for (i = 0; i < NUM_SEGS; i++)
+		for (i = 1; i < NUM_SEGS; i++)
 		{
 			if (int3(segptr[i].lsn) == 0)
 			{
@@ -218,12 +218,12 @@ static int _os9_extendSegList(os9_path_id path, Fd_seg segptr, int *delta)
 			}
 		}
 
-		i--;		/* adjust index to point to last segment */
-
 		if (i == NUM_SEGS)
 		{
 			return EOS_SF;
 		}
+
+		i--;		/* adjust index to point to last segment */
 
 		/* Add a cluster to segment length */
 		newNum = int2(segptr[i].num) + path->spc;
