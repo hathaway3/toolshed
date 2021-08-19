@@ -52,6 +52,7 @@
 /* Convenient assertion methods */
 /* TODO: Generate readable error messages for assert_equals or assert_str_equals */
 #define ASSERT_EQUALS(expected, actual) ASSERT((#actual), (expected) == (actual))
+#define ASSERT_NEQUALS(expected, actual) ASSERT((#actual), (expected) != (actual))
 #define ASSERT_STRING_EQUALS(expected, actual) ASSERT((#actual), strcmp((expected),(actual)) == 0)
 
 /* Run a test() function */
@@ -102,7 +103,7 @@ int tt_report(void)
       tt_current_file, tt_passes, tt_fails, tt_passes + tt_fails);
     return -1;
   } else {
-    printf("%c%sPASSED%c%s [%s] (total:%d)\n", 
+    printf("%c%sPASSED%c%s [%s] (total:%d)\n",
       TT_COLOR_CODE, TT_COLOR_GREEN, TT_COLOR_CODE, TT_COLOR_RESET,
       tt_current_file, tt_passes);
     return 0;

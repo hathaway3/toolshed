@@ -118,8 +118,10 @@ void test_os9_write()
 	// test write when file open for read and write
 	buff = "this is a string";
 	size = strlen(buff);
+	u_int capture_size = size;
 	ec = _os9_write(p, buff, &size);
 	ASSERT_EQUALS(ec, 0);
+	ASSERT_EQUALS(capture_size, size);
 
 	// test close of a validly opened file
 	ec = _os9_close(p);
@@ -236,6 +238,113 @@ void test_os9_ss_calls()
 	// TODO: Write tests
 }
 
+void test_os9_file_allocation()
+{
+	os9_path_id p;
+	error_code ec;
+	int i;
+
+	/* Create disk */
+	unsigned int totalSectors, totalBytes;
+	int clusterSize = 0;
+	ec = _os9_format("test_alloc.dsk", 0, 80, 18, 2, 256, &clusterSize, "Test Allo", 8, 8,
+			 1, 1, 0, 0, &totalSectors, &totalBytes);
+
+	/* Record free space */
+	char dname[64];
+	u_int month, day, year;
+	u_int bps, total_sectors, bytes_free, free_sectors,
+		largest_free_block, sectors_per_cluster;
+	u_int largest_count, sector_count;
+	ec = TSRBFFree("test_alloc.dsk", dname, &month, &day, &year, &bps,
+			   &total_sectors, &bytes_free, &free_sectors,
+			   &largest_free_block, &sectors_per_cluster,
+			   &largest_count, &sector_count);
+	ASSERT_EQUALS(ec, 0);
+
+	/* Create 128 384 bytes files */
+	char filename[128];
+	u_int size;
+	u_int bytes_per_file = 256*120+1;
+	u_int end_file = 20;
+
+	for(i=1; i<end_file; i++)
+	{
+		char *buffer = malloc(bytes_per_file);
+		ASSERT_NEQUALS(buffer, 0);
+		memset(buffer, i, bytes_per_file);
+		sprintf(filename, "test_alloc.dsk,test%d.txt", i);
+		ec = _os9_create(&p, filename, FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+		ASSERT_EQUALS(ec, 0);
+		size = bytes_per_file;
+		ec = _os9_write(p, buffer, &size);
+		ASSERT_EQUALS(ec, 0);
+		ASSERT_EQUALS(size, bytes_per_file);
+		ec = _os9_close(p);
+		ASSERT_EQUALS(ec, 0);
+		free(buffer);
+	}
+
+	/* make sure bytes_free does not equal new_bytes_free */
+	u_int new_bytes_free;
+	ec = TSRBFFree("test_alloc.dsk", dname, &month, &day, &year, &bps,
+		   &total_sectors, &new_bytes_free, &free_sectors,
+		   &largest_free_block, &sectors_per_cluster,
+		   &largest_count, &sector_count);
+	ASSERT_EQUALS(ec, 0);
+	ASSERT_NEQUALS(bytes_free, new_bytes_free);
+
+	/* Open all file */
+	for(i=1; i<end_file; i++)
+	{
+		/* read back data and check bytes */
+		char *buffer = malloc(bytes_per_file);
+		ASSERT_NEQUALS(buffer, 0);
+		memset(buffer, i, bytes_per_file);
+		char *buffer2 = malloc(bytes_per_file);
+		ASSERT_NEQUALS(buffer2, 0);
+		sprintf(filename, "test_alloc.dsk,test%d.txt", i);
+		ec = _os9_open(&p, filename, FAM_READ);
+		ASSERT_EQUALS(ec, 0);
+		size = bytes_per_file;
+		ec = _os9_read(p, buffer2, &size);
+		ASSERT_EQUALS(ec, 0);
+		ASSERT_EQUALS(size, bytes_per_file);
+		ASSERT_EQUALS(memcmp(buffer, buffer2, bytes_per_file), 0);
+		ASSERT_EQUALS(ec, 0);
+		free(buffer);
+		free(buffer2);
+
+		/* test for allocation bitmaps spanning two sectors */
+		/* OS-9/6809 can not delete files if this is true */
+		fd_stats fd;
+		ASSERT_EQUALS(read_lsn(p, p->pl_fd_lsn, &fd),256);
+		for(int j=0; j<NUM_SEGS; j++)
+		{
+			if(int3(fd.fd_seg[j].lsn)==0) break;
+			ASSERT_EQUALS(int3(fd.fd_seg[j].lsn)/2048,(int3(fd.fd_seg[j].lsn)+int2(fd.fd_seg[j].num)-1)/2048);
+		}
+
+		ec = _os9_close(p);
+	}
+
+	/* Delete all files */
+	for(i=1; i<end_file; i++)
+	{
+		sprintf(filename, "test_alloc.dsk,test%d.txt", i);
+		ec = _os9_delete(filename);
+		ASSERT_EQUALS(ec, 0);
+	}
+
+	/* compare free bytes again */
+	ec = TSRBFFree("test_alloc.dsk", dname, &month, &day, &year, &bps,
+		   &total_sectors, &new_bytes_free, &free_sectors,
+		   &largest_free_block, &sectors_per_cluster,
+		   &largest_count, &sector_count);
+	ASSERT_EQUALS(ec, 0);
+	ASSERT_EQUALS(bytes_free, new_bytes_free);
+}
+
 int main()
 {
 	RUN(test_os9_format);
@@ -249,6 +358,7 @@ int main()
 	RUN(test_os9_rename);
 	RUN(test_os9_ss_calls);
 	RUN(test_os9_gs_calls);
+	RUN(test_os9_file_allocation);
 
 	return TEST_REPORT();
 }
