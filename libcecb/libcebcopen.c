@@ -10,6 +10,7 @@ double cecb_threshold = 0.1;
 double cecb_frequency = 0;
 _wave_parity cecb_wave_parity = AUTO;
 long cecb_start_sample = 0;
+int cecb_suggest_mc10 = 0;
 
 static error_code parse_header(cecb_path_id path);
 static error_code validate_pathlist(cecb_path_id path, char *pathlist);
@@ -125,7 +126,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 		      ((*path)->wav_data_start + (*path)->wav_data_length),
 		      SEEK_SET);
 	}
-	else if ((*path)->tape_type == CAS)
+	else if (((*path)->tape_type == CAS) || ((*path)->tape_type == C10))
 	{
 		fseek((*path)->fd, 0, SEEK_END);
 		(*path)->cas_start_byte = ftell((*path)->fd);
@@ -334,7 +335,7 @@ error_code _cecb_open(cecb_path_id * path, char *pathlist, int mode)
 			{
 				/* File found, save the place of the start of data */
 
-				if ((*path)->tape_type == CAS)
+				if (((*path)->tape_type == CAS) || ((*path)->tape_type == C10))
 				{
 					(*path)->cas_start_byte =
 						(*path)->cas_current_byte;
@@ -439,6 +440,11 @@ static error_code parse_header(cecb_path_id path)
 
 	if (strendcasecmp(path->imgfile, CAS_FILE_EXTENSION) == 0)
 		ec = _cecb_parse_cas(path);
+	else if (strendcasecmp(path->imgfile, C10_FILE_EXTENSION) == 0)
+	{
+		ec = _cecb_parse_cas(path);
+		path->tape_type = C10;
+	}
 	else
 		ec = _cecb_parse_riff(path);
 

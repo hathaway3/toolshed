@@ -20,11 +20,14 @@ static char const *const helpMessage[] = {
 	"cecb from Toolshed " TOOLSHED_VERSION "\n",
 	"Syntax: cecb {[<opts>]} <sub command> {[<opts>]}\n",
 	"Usage:  Cassette BASIC File Tools Executive\n",
+	"        Works with WAV, CAS cand C10 files\n",
 	"Options:\n",
 	"     -t <%>    = Set threshold to remove background noise (for WAV files).\n",
-	"     -f <n>    = Set bit delineation frequency (for WAV files).\n",
+	"     -f <n>    = Set FSK delineation frequency (for WAV files).\n",
 	"     -p <e|o>  = Set even or odd WAV file parity (for WAV files).\n",
-	"     -s <n>    = Start at sample/bit n in WAV/CAS file.\n",
+	"     -s <n>    = Start at sample/bit n in WAV/CAS/C10 file.\n",
+	"     -z        = suggest MC10 mode.\n",
+	"                 MC10 type WAV files and use Microcolor BASIC tokens.\n",
 	"\n",
 	"     % is a decimal number between 0 and 1.\n",
 	NULL
@@ -133,6 +136,10 @@ int main(int argc, char *argv[])
 					}
 					break;
 
+				case 'z':
+					cecb_suggest_mc10 =
+						1;
+					break;
 				}
 			}
 		}

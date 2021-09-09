@@ -67,7 +67,7 @@ error_code _cecb_parse_cas(cecb_path_id path)
 	path->cas_start_bit = path->cas_current_bit =
 		0x01 << (path->play_at % 8);
 
-//      printf( "%d, %x\n", path->cas_start_byte, path->cas_start_bit );
+    //printf( "%ld, %x\n", path->cas_start_byte, path->cas_start_bit );
 
 	fseek(path->fd, path->cas_start_byte, SEEK_SET);
 

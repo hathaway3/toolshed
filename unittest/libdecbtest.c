@@ -201,6 +201,7 @@ void test_decb_rename()
 
 int main()
 {
+	remove("test.dsk");
 	RUN(test_decb_dskini);
 	RUN(test_decb_create);
 	RUN(test_decb_read);
@@ -208,6 +209,7 @@ int main()
 	RUN(test_decb_open_and_read);
 	RUN(test_decb_delete);
 	RUN(test_decb_rename);
+	remove("test.dsk");
 
 	return TEST_REPORT();
 }

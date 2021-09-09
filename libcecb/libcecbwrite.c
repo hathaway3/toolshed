@@ -93,7 +93,7 @@ error_code _cecb_write_leader(cecb_path_id path)
 
 error_code _cecb_write_silence(cecb_path_id path, double length)
 {
-	if (path->tape_type == CAS)
+	if ((path->tape_type == CAS) || (path->tape_type == C10))
 	{
 		char *buffer;
 		int size;
@@ -139,7 +139,7 @@ static error_code write_byte(cecb_path_id path, unsigned char byte)
 {
 	int bytes_written;
 
-	if (path->tape_type == CAS)
+	if ((path->tape_type == CAS) || (path->tape_type == C10))
 	{
 		_cecb_write_cas_data(path, (char *) &byte, 1);
 	}
@@ -161,7 +161,7 @@ static error_code write_buffer(cecb_path_id path, unsigned char *buffer,
 {
 	int bytes_written;
 
-	if (path->tape_type == CAS)
+	if ((path->tape_type == CAS) || (path->tape_type == C10))
 	{
 		_cecb_write_cas_data(path, (char *) buffer, length);
 	}

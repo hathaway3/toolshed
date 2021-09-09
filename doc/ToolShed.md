@@ -49,6 +49,13 @@ ToolShed v2.2
   * [KILL](#kill) - Remove files from a Disk BASIC image
   * [LIST](#list_decb) - Display the contents of a file
   * [RENAME](#rename_decb) - Give a file a new filename
+* [cecb](#cecb) - Manipulate Color BASIC and Micro Color BASIC cassette files
+  * [BULKERASE](#bulkerase) - Create a container for casette data
+  * [DIR](#dir_cecb) - Display the directory of a Cassette BASIC image
+  * [FSTAT](#fstat_cecb) - Display the file descriptor for a file
+  * [DUMP](#dump_cecb) - Display the contents of a binary file
+  * [LIST](#list_cecb) - Display the contents of a file
+  * [COPY](#copy_cecb) - Copy one or more files to a casette container
 * [ar2](#ar2)
 * [dis68](#dis68)
 
@@ -68,9 +75,9 @@ If you have performed assembly language programming on the CoCo before, you're p
 
 ToolShed started out life in the mid-to-late 1990s as a 6809 cross-assembler under Linux developed by Alan DeKok and Boisy Pitre. Specifically designed for assembling the source base to NitrOS-9, the assembler was expanded to include support for the 6309. Later, additional tools to read disk images from OS-9 and Disk BASIC images were created and added to the shed. Now, the tool shed has now been expanded to include a number of useful software tools that can assist greatly in the software development process.
 
-### os9 & decb
+### os9, decb & cecb
 
-The main task of the os9 and decb tools is to allow the manipulation, inspection and copying of files from disk images to your PC's file system, and vice versa. The os9 tool recognizes disk images that contain data in the RBF file format created under OS-9 or NitrOS-9, while the decb tool recognizes disk images formatted under Disk BASIC for the Color Computer.
+The main task of the these tools is to allow the manipulation, inspection and copying of files from disk and cassette images to your PC's file system, and vice versa. The os9 tool recognizes disk images that contain data in the RBF file format created under OS-9 or NitrOS-9, while the decb tool recognizes disk images formatted under Disk BASIC for the Color Computer. The cecb tool recognizes cassette data in the wave, CAS, and C10 formats, for both Color BASIC and Micro Color BASIC.
 
 ### rma & rlink
 
@@ -1019,7 +1026,7 @@ fstat display detailed information about a file.
 	  File size          : 3769 bytes
 	  First granule      : 31
 	  Last sector        : 185 bytes
-	  FAT chain          : [31:2304] [28:1465] 
+	  FAT chain          : [31:2304] [28:1465]
 
 ---
 
@@ -1096,6 +1103,218 @@ This command is intended for Disk BASIC disk image files only.
 #### Description
 
 The rename command renames a file with a new filename.
+
+---
+
+<h2 id="cecb">cecb</h2>
+
+The following pages document the commands built into the cecb tool. Its interface is similar to that of the os9 tool discussed in previous pages.
+
+Issuing the cecb command without any parameters will provide a list of available subcommands. Issuing a subcommand without any parameters will display help on using the subcommand.
+
+Use cecb to copy files to and from Color BASIC and Micro Color BASIC formatted cassette images to your host file system. While many commands will work fine with host file systems, some commands are designed to only be run on a BASIC cassette image or file within that image. The Scope section makes it clear in what context the command should be run.
+
+Cecb can work with WAV, CAS, and C10 cassette file containers.
+
+#### Syntax and Scope
+
+    cecb {[<opts>]} <subcommand>
+
+This command is intended for BASIC cassette and disk image files only.
+
+#### Options
+<table>
+<tr><td>-t [%]</td><td>Set threshold to remove background noise (for WAV files).</td></tr>
+<tr><td>-f [n]</td><td>Set FSK delineation frequency (for WAV files).</td></tr>
+<tr><td>-p [e|o]</td><td>Set even or odd WAV file parity (for WAV files).</td></tr>
+<tr><td>-s [n]</td><td>Start at sample/bit n in WAV/CAS/C10 file.</td></tr>
+<tr><td>-z</td><td>suggest MC10 mode.</td></tr>
+</table>
+% is a decimal number between 0 and 1.
+
+The MC10 mode give the command hints on when to use MC10 characteristics. It uses different audio wave forms in WAV files. It also uses MC10 (and MCX128) BASIC tokens.
+
+The C10 format defaults to MC10 formats. The WAV and CAS default to CoCo formats.
+
+---
+<h3 id="bulkerase">BULKERASE - Create a cassette image of a given characteristics.</h3>
+
+#### Syntax and Scope
+
+    bulkerase {[<opts>]} <file> {[<...>]} {[<opts>]}
+
+This command is intended to work on the host file system only.
+
+#### Options
+<table>
+<tr><td>-s[num]</td><td>Sample rate of WAV file (11025, 22050, 44100, etc. Default: 22050).</td></tr>
+<tr><td>-b[num]</td><td>Bits per sample of WAV files (8 or 16, default: 8).</td></tr>
+<tr><td>-l[num]</td><td>Length of silence to record in WAV file. (default: 0.5 seconds).</td></tr>
+</table>
+#### Description
+
+The bulkerase command creates a file on the host file system which itself is an empty Cassette BASIC image. This image can then be used to hold files.
+
+#### Examples
+
+To create an empty image, type:
+
+    cecb bulkerase test.wav
+    Creating WAV file: test.wav
+          Sample Rate: 22050
+      Bits Per Sample: 8
+       Silence Length: 0.500000
+
+---
+
+<h3 id="dir_cecb">DIR - Display the directory of a Cassette BASIC image</h3>
+
+#### Syntax and Scope
+
+    dir {[<opts>]} {<dir> [<...>]} {[<opts>]}
+
+This command is intended for Cassette BASIC images only.
+
+#### Description
+
+The dir command displays the directory of a Disk BASIC disk image or the host file system.
+
+#### Examples
+
+Displaying an extended directory
+
+    cecb dir test.wav,
+      HELLO    0 B
+
+---
+<h3 id="fstat_cecb">FSTAT - Display the file descriptor for a file</h3>
+
+#### Syntax and Scope
+
+    fstat {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+This command is intended for Cassette and Disk BASIC disk image files only.
+
+#### Description
+
+fstat display detailed information about a file.
+
+#### Example
+	cecb fstat test.wav,HELLO
+	File Information for test.wav,HELLO
+	  File type            : BASIC Program
+	  Data type            : Binary
+	  Gap type             : No
+	  ML Load Address      : 0 (0x0000)
+	  ML Execution Address : 22 (0x0016)
+				 File Size : 22 bytes (0x0016)
+
+---
+
+<h3 id="dump_cecb">DUMP - Display the contents of a binary file</h3>
+
+#### Syntax and Scope
+
+    dump {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+This command will work on Disk BASIC, RBF disk image files and Cassette files as well as host files.
+
+#### Options
+<table>
+<tr><td>-a</td><td>dump output in assembler format (hex)</td></tr>
+<tr><td>-b</td><td>dump output in assembler format (binary)</td></tr>
+<tr><td>-c</td><td>don't display ASCII character data</td></tr>
+<tr><td>-h</td><td>don't display header</td></tr>
+<tr><td>-l</td><td>don't display line label/count</td></tr>
+</table>
+#### Description
+
+The dump command allows you to see the contents of any file, including binary files. It does this by displaying the data in hexadecimal format and providing cues such as offset labels and headers so that it is easy to reference the location of a specific byte. By default, the output of a typical dump will look like this:
+
+      Addr     0 1  2 3  4 5  6 7  8 9  A B  C D  E F 0 2 4 6 8 A C E
+    --------  ---- ---- ---- ---- ---- ---- ---- ---- ----------------
+    00000000  0002 7612 004f 0001 0000 0200 00ff 5e12 ..v..O........^.
+    00000010  0200 1200 0000 0000 0000 5805 0513 004c ..........X....L
+    00000020  6576 656c 2049 4920 546f 6f6c f300 0000 evel II Tools...
+    00000030  0000 0000 0000 0000 0000 0000 0000 0001 ................
+    00000040  0003 2001 0028 0200 0012 0012 0308 0058 .. ..(.........X
+    00000050  0000 0000 0000 0000 0000 0000 0079 3600 .............y6.
+    00000060  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    00000070  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    00000080  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    00000090  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000a0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000b0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000c0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000d0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000e0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+    000000f0  0000 0000 0000 0000 0000 0000 0000 0000 ................
+
+Note that the address of the offset on the left column increases by 16 ($10) bytes each line, and the header above shows the position of the byte into that 16 byte line. An additional piece of information provided is the ASCII character table on the right that shows the ASCII representation of the characters on that line.
+
+Additional command line options are provided to omit certain parts of the dump output, including the header and ASCII data. Also, the -a and -b options are provided to allow dumping of a file's contents into a format digestible by certain assemblers.
+
+---
+
+<h3 id="list_cecb">LIST - Display the contents of a file</h3>
+
+#### Syntax and Scope
+
+    list {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+This command is intended for Disk BASIC disk image files.
+
+#### Options
+<table>
+<tr><td>-t</td><td>perform BASIC token translation</td></tr>
+<tr><td>-s</td><td>perform S-Record encoding of binary</td></tr>
+</table>
+
+The list command displays the contents of text files. It can list ASCII text files, as well as both ASCII and tokenized BASIC files.
+
+#### Examples
+    cecb list -t games.cas,START
+    10 CLS
+    20 PRINT "START GAME"
+    30 LOADM "GAME"
+    40 EXEC
+
+---
+
+<h3 id="copy_cecb">COPY - Copy one or more files to a target image</h3>
+
+#### Syntax and Scope
+
+    copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}
+
+This command will work on Disk BASIC, RBF disk image files and Cassette image as well as host files.
+
+#### Options
+<table>
+<tr><td>-[0-3]</td><td>file type (when copying to a cassette or disk BASIC image)</td></tr>
+<tr><td></td><td>0 = BASIC program</td></tr>
+<tr><td></td><td>1 = BASIC data file</td></tr>
+<tr><td></td><td>2 = machine-language program</td></tr>
+<tr><td></td><td>3 = text editor source file</td></tr>
+<tr><td>-[a|b]</td><td>data type (a = ASCII, b = binary)</td></tr>
+<tr><td>-l</td><td>perform end of line translation</td></tr>
+<tr><td>-r</td><td>rewrite if file exists</td></tr>
+<tr><td>-t</td><td>perform BASIC token translation</td></tr>
+<tr><td>-c</td><td>perform segment concatenation on machine language loadables</td></tr>
+</table>
+#### Description
+
+The copy command will create an exact copy of a file on either a Disk BASIC disk image or on the host file system. The -l option performs end of line translation when copying between the host file system and the Disk BASIC disk image. You should only use the -l option on text files, not binary files. If a file already exists on the destination disk image or file system, an error will be returned. If you want to force the copy, use the -r option.
+
+#### Examples
+
+Copying a file from a Disk BASIC disk image to the host:
+
+    cecb copy cecb.wav,TEST test.bas
+    Copying a BASIC file from the host to a Disk BASIC disk image with tokenization:
+    cecb copy myprog.bas -t cecb.wav,MYPROG
+    Copying a text file from the host to a cassette BASIC image:
+    cecb copy -l -3 -a file.txt cecb.wav,FILE
 
 ---
 

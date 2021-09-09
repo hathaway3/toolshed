@@ -207,7 +207,7 @@ error_code _cecb_read_bits(cecb_path_id path, int count,
 {
 	error_code ec;
 
-	if (path->tape_type == CAS)
+	if ((path->tape_type == CAS) || (path->tape_type == C10))
 		ec = _cecb_read_bits_cas(path, count, result);
 	else if (path->tape_type == WAV)
 		ec = _cecb_read_bits_wav(path, count, result);

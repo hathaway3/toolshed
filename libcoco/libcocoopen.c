@@ -239,6 +239,16 @@ error_code _coco_identify_image(char *pathlist, _path_type * type)
 		return ec;
 	}
 
+	/* 2c. Check for .c10 file extension. */
+
+	if (strendcasecmp(p, C10_FILE_EXTENSION) == 0)
+	{
+		*type = CECB;
+
+		free(tmppathlist);
+		return ec;
+	}
+
 	/* 3. Determine if this is an OS-9, DECB or CECB image. */
 
 	fp = fopen(tmppathlist, "rb");

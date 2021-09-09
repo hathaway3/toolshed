@@ -347,6 +347,9 @@ void test_os9_file_allocation()
 
 int main()
 {
+	remove("test.dsk");
+	remove("test_alloc.dsk");
+
 	RUN(test_os9_format);
 	RUN(test_os9_create);
 	RUN(test_os9_read);
@@ -359,6 +362,9 @@ int main()
 	RUN(test_os9_ss_calls);
 	RUN(test_os9_gs_calls);
 	RUN(test_os9_file_allocation);
+
+	remove("test.dsk");
+	remove("test_alloc.dsk");
 
 	return TEST_REPORT();
 }

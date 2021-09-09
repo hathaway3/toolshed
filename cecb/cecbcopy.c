@@ -326,7 +326,7 @@ static error_code CopyCECBFile(char *srcfile, char *dstfile, int eolTranslate,
 	int mode = FAM_NOCREATE | FAM_WRITE;
 	u_char *buffer = NULL;
 	u_int buffer_size;
-	_path_type path_type;
+	_path_type dst_path_type, src_path_type;
 	coco_file_stat fstat;
 
 	/* 1. Open a path to the srcfile. */
@@ -341,6 +341,7 @@ static error_code CopyCECBFile(char *srcfile, char *dstfile, int eolTranslate,
 
 	/* 2. Apply meta data */
 
+	_coco_gs_pathtype(path, &src_path_type);
 	_coco_gs_fd(path, &fstat);
 
 	if ((file_type == -1) && (tokTranslate == 1))
@@ -420,9 +421,9 @@ static error_code CopyCECBFile(char *srcfile, char *dstfile, int eolTranslate,
 			return -1;
 	}
 
-	_coco_identify_image(dstfile, &path_type);
+	_coco_identify_image(dstfile, &dst_path_type);
 
-	if ((path_type == CECB) && (gap == 0x00) && (file_type == 2)
+	if ((dst_path_type == CECB) && (gap == 0x00) && (file_type == 2)
 	    && (data_type == 0))
 	{
 		/* only one segment allowed */
@@ -503,33 +504,31 @@ static error_code CopyCECBFile(char *srcfile, char *dstfile, int eolTranslate,
 
 	if (tokTranslate != 0)
 	{
-		if (tokTranslate == 1)	/* entokenize */
+		u_char *xx_tokenize_buffer;
+		u_int xx_tokenize_size;
+
+		if (tokTranslate == 1) /* entokenize */
 		{
-			unsigned char *entokenize_buffer;
-			u_int entokenize_size;
-
-			/* Tokenized file */
-			ec = _decb_entoken(buffer, buffer_size,
-					   &entokenize_buffer,
-					   &entokenize_size,
-					   destpath->type == DECB);
-
-			if (ec == 0)
+			if (cecb_suggest_mc10 || (src_path_type == CECB && path->path.cecb->tape_type == C10))
 			{
-				free(buffer);
-				buffer = entokenize_buffer;
-				buffer_size = entokenize_size;
+				/* Tokenized file */
+				ec = _cecb_entoken(buffer, buffer_size,
+						   &xx_tokenize_buffer,
+						   &xx_tokenize_size,
+						   destpath->type == DECB);
+		   }
+		   else
+		   {
+				ec = _decb_entoken(buffer, buffer_size,
+						   &xx_tokenize_buffer,
+						   &xx_tokenize_size,
+						   destpath->type == DECB);
+		   }
 
-				eolTranslate = 0;
-			}
-			else
-				return -1;
+			eolTranslate = 0;
 		}
-		else		/* detokenize */
+		else /* detokenize */
 		{
-			u_char *detokenize_buffer;
-			u_int detokenize_size;
-
 			if (buffer[0] == 0xff)
 			{
 				/* skip past disk flag and file size */
@@ -537,20 +536,28 @@ static error_code CopyCECBFile(char *srcfile, char *dstfile, int eolTranslate,
 				buffer_size -= 3;
 			}
 
-			ec = _decb_detoken(buffer, buffer_size,
-					   (char **) &detokenize_buffer,
-					   &detokenize_size);
-
-			if (ec == 0)
+			if (cecb_suggest_mc10 || (src_path_type == CECB && path->path.cecb->tape_type == C10))
 			{
-				free(buffer);
-				buffer = detokenize_buffer;
-				buffer_size = detokenize_size;
+				ec = _cecb_detoken(buffer, buffer_size,
+							(char **) &xx_tokenize_buffer,
+							&xx_tokenize_size);
 			}
 			else
-				return -1;
-
+			{
+				ec = _decb_detoken(buffer, buffer_size,
+						   (char **) &xx_tokenize_buffer,
+						   &xx_tokenize_size);
+			}
 		}
+
+		if (ec == 0)
+		{
+			free(buffer);
+			buffer = xx_tokenize_buffer;
+			buffer_size = xx_tokenize_size;
+		}
+		else
+			return ec;
 	}
 
 	if (eolTranslate == 1)

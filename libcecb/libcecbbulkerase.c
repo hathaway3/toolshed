@@ -43,6 +43,9 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample,
 	if (strendcasecmp(path, CAS_FILE_EXTENSION) == 0)
 		return 0;
 
+	if (strendcasecmp(path, C10_FILE_EXTENSION) == 0)
+		return 0;
+
 	bytes_per_sample = bits_per_sample / 8;
 	silent_samples_count = sample_rate * silence_length;
 	silent_samples_bytes = silent_samples_count * bytes_per_sample;
