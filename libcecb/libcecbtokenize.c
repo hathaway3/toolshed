@@ -275,9 +275,9 @@ error_code _cecb_entoken(unsigned char *in_buffer, int in_size,
 				/* Check for PRINT abbreviation */
 				if (in_buffer[in_pos] == '?')
 				{
-					(*out_buffer)[out_pos++] = 0x87;	/* PRINT token */
+					(*out_buffer)[out_pos++] = 0x86;	/* PRINT token */
 					in_pos++;
-					i = 0x87;
+					i = 0x86;
 				}
 				else
 				{
