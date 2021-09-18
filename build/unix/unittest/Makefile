@@ -3,7 +3,7 @@ include ../rules.mak
 
 vpath %.c ../../../unittest
 
-LDFLAGS	+= -L../libtoolshed -L../libcecb -L../libcoco -L../libnative -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -ldecb -lcecb -lrbf -lmisc -lnative -lsys -lm
+LDFLAGS	+= -L../libtoolshed -L../libcecb -L../libcoco -L../libnative -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lmisc -lnative -lsys -lm
 
 testall: librbftest libdecbtest libcecbtest
 ifeq (,$(NOTEST))
