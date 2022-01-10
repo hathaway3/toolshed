@@ -115,11 +115,13 @@ error_code _decb_detoken(unsigned char *in_buffer, int in_size,
 		file_size = in_buffer[in_pos++] << 8;
 		file_size += in_buffer[in_pos++];
 
-		if (file_size != (in_size - 3))
+		if (file_size > (in_size - 3))
 		{
 			/* Error adjusted internal BASIC file size does not match buffer size */
 			return EOS_SN;
 		}
+
+		file_size = (in_size - 3);
 	}
 
 	*out_buffer = malloc(BLOCK_QUANTUM);
@@ -490,7 +492,7 @@ error_code _decb_detect_tokenized(unsigned char *in_buffer, u_int in_size)
 	file_size = in_buffer[1] << 8;
 	file_size += in_buffer[2];
 
-	if (file_size != (in_size - 3))
+	if (file_size > (in_size - 3))
 	{
 		/* Error adjusted internal BASIC file size does not match buffer size */
 		return EOS_SN;
