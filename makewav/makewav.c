@@ -208,10 +208,22 @@ void Build_Sinusoidal_Buffer(unsigned char *buffer, int length)
 	}
 }
 
+int Send_Leader(float secs, FILE *output)
+{
+	int count;
+	/* Leader */
+	count = fwrite_audio_silence(sample_rate * secs, output);	/* seconds of silence */
+	count += fwrite_audio_repeat_byte(128, 0x55, output);	/* leader */
+	return count;
+}
+    
+
 int main(int argc, char **argv)
 {
 	char linebuf[256];
 	int j;
+	float pause = 0.0;
+	int group = 1;
 
 	/* Initialize globals */
 	seconds = 2;
@@ -267,11 +279,17 @@ int main(int argc, char **argv)
 			" -d<val>    Start address (default: 0x%04x)\n",
 			start_address);
 		fprintf(stderr,
+			" -g<val>    Group <val> data blocks (default: %d)\n",
+			group);
+		fprintf(stderr,
 			" -e<val>    Execution address (default: 0x%04x)\n",
 			exec_address);
 		fprintf(stderr,
 			" -o<string> Output file name for WAV file (default: %s)\n",
 			out_filename);
+		fprintf(stderr,
+			" -p<val>    Pause val seconds between each data block (default: %f)\n",
+			pause);
 		fprintf(stderr,
 			" -k         Output in CAS format instead of WAV\n");
 		fprintf(stderr,
@@ -338,6 +356,16 @@ int main(int argc, char **argv)
 			case 'e':
 				exec_address =
 					strtoul(&(argv[j][2]), NULL, 0);
+				break;
+			case 'p':
+				pause =
+				        atof(&argv[j][2]);
+				break;
+			case 'g':
+				group =
+					strtoul(&argv[j][2], NULL, 0);
+				if (group < 1)
+					fprintf(stderr, "-g group must be bigger than 1\n");
 				break;
 			case 'k':
 				cas = 1;
@@ -649,11 +677,7 @@ int main(int argc, char **argv)
 	/* Color BASIC and Micro Color BASIC */
 
 	if (!cas)
-	{
-		/* Leader */
-		sample_count += fwrite_audio_silence(sample_rate * seconds, output);	/* seconds of silence */
-		sample_count += fwrite_audio_repeat_byte(128, 0x55, output);	/* leader */
-	}
+		sample_count += Send_Leader(seconds, output);
 
 	/* Header block */
 	unsigned char checksum =
@@ -677,12 +701,8 @@ int main(int argc, char **argv)
 	sample_count += fwrite_audio_byte(checksum, output);	/* checksum */
 	sample_count += fwrite_audio_byte('\x55', output);	/* End of block ID */
 
-	if (!cas)
-	{
-		/* Leader for data blocks */
-		sample_count += fwrite_audio_silence(sample_rate / 2, output);	/* half second of silence */
-		sample_count += fwrite_audio_repeat_byte(128, 0x55, output);	/* leader */
-	}
+	if (!cas && pause == 0)
+		sample_count += Send_Leader(.5, output);
 
 	/* Full data blocks */
 	int full_blocks = total_length / 0xff;
@@ -695,6 +715,8 @@ int main(int argc, char **argv)
 			Checksum_Buffer((unsigned char *) &(buffer[i * 0xff]),
 					0xff);
 
+		if (!cas && pause && (i % group == 0))
+		        sample_count += Send_Leader(pause, output);
 		sample_count += fwrite_audio_silence((double) sample_rate * 0.003, output);	/* .003 seconds of silence */
 
 		sample_count += fwrite_audio("\x55\x3c\x01\xff", 4, output);	/* Block header, data block and length */
@@ -714,7 +736,9 @@ int main(int argc, char **argv)
 					last_block_size);
 
 		sample_count += fwrite_audio_silence((double) sample_rate * 0.003, output);	/* .003 seconds of silence */
-
+		if (!cas && pause)
+		        sample_count += Send_Leader(pause, output);
+		
 		sample_count += fwrite_audio("\x55\x3c\x01", 3, output);	/* Block header, data block and length */
 		sample_count += fwrite_audio_byte(last_block_size, output);	/* Block Length */
 		sample_count += fwrite_audio(&(buffer[0xff * full_blocks]), last_block_size, output);	/* data */
@@ -724,6 +748,8 @@ int main(int argc, char **argv)
 
 	/* EOF block */
 	sample_count += fwrite_audio_silence((double) sample_rate * 0.003, output);	/* .003 seconds of silence */
+	if (!cas && pause && (i % group == 0))
+		sample_count += Send_Leader(pause, output);
 	sample_count += fwrite_audio("\x55\x3c\xff\x00\xff\x55", 6, output);
 	sample_count += fwrite_audio_silence(sample_rate * 2, output);	/* 2 seconds of silence */
 
