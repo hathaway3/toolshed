@@ -9,62 +9,104 @@
 
 #include <toolshed.h>
 
+const char *OES_SUC_str = "SUCCESS!";
+const char *EOS_FNA_str = "the file's permissions make it inaccessible to you";
+const char *EOS_EOF_str = "input past end-of-file";
+const char *EOS_FAE_str = "file already exists";
+const char *EOS_BPNAM_str = "badly formed pathname";
+const char *EOS_PNNF_str = "pathname not found";
+const char *EOS_WRITE_str = "error writing to file";
+const char *EOS_DF_str = "disk is filled to capacity";
+const char *EOS_PADROM_str = "file is larger than pad size";
+const char *EOS_WT_str = "attempt to read an incompatible media";
+const char *EOS_MF_str = "memory full";
+const char *EOS_CRC_str = "CRC error";
+const char *EOS_UNKN_str = "unknown error";
+const char *EOS_IA_str = "illegal filename";
+const char *EOS_IC_str = "illegal change to directory file";
+const char *EOS_PTHFUL_str = "The file cannot be opened because the system path table is currently full";
+const char *EOS_BMODE_str = "attempt to perform I/O function of which the device or file is incapable";
+const char *EOS_SF_str = "file is too fragmented to be expanded further";
+const char *EOS_SE_str = "physical seek to non-existant sector";
 
-void TSReportError(error_code te, char *errorstr)
+const char *TSReportError(error_code te)
 {
 	switch (te)
 	{
 	case 0:
-		strcpy(errorstr, "SUCCESS!");
+		return OES_SUC_str;
 		break;
 
 	case EOS_FNA:
-		strcpy(errorstr,
-		       "the file's permissions make it inaccessible to you");
+		return EOS_FNA_str;
 		break;
 
 	case EOS_EOF:
-		strcpy(errorstr, "input past end-of-file");
+		return EOS_EOF_str;
 		break;
 
 	case EOS_FAE:
-		strcpy(errorstr, "file already exists");
+		return EOS_FAE_str;
 		break;
 
 	case EOS_BPNAM:
-		strcpy(errorstr, "badly formed pathname");
+		return EOS_BPNAM_str;
 		break;
 
 	case EOS_PNNF:
-		strcpy(errorstr, "pathname not found");
+		return EOS_PNNF_str;
 		break;
 
 	case EOS_WRITE:
-		strcpy(errorstr, "error writing to file");
+		return EOS_WRITE_str;
 		break;
 
 	case EOS_DF:
-		strcpy(errorstr, "disk is filled to capacity");
+		return EOS_DF_str;
 		break;
 
 	case EOS_PADROM:
-		strcpy(errorstr, "file is larger than pad size");
+		return EOS_PADROM_str;
 		break;
 
 	case EOS_WT:
-		strcpy(errorstr, "attempt to read an incompatible media");
+		return EOS_WT_str;
 		break;
 
 	case EOS_MF:
-		strcpy(errorstr, "memory full");
+		return EOS_MF_str;
 		break;
 
 	case EOS_CRC:
-		strcpy(errorstr, "CRC error");
+		return EOS_CRC_str;
+		break;
+
+	case EOS_IA:
+		return EOS_IA_str;
+		break;
+
+	case EOS_IC:
+		return EOS_IC_str;
+		break;
+
+	case EOS_PTHFUL:
+		return EOS_PTHFUL_str;
+		break;
+
+	case EOS_BMODE:
+		return EOS_BMODE_str;
+		break;
+
+	case EOS_SF:
+		return EOS_SF_str;
+		break;
+
+	case EOS_SE:
+		return EOS_SE_str;
 		break;
 
 	default:
-		strcpy(errorstr, "unknown error");
+		return EOS_UNKN_str;
 		break;
 	}
 }

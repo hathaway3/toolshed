@@ -100,7 +100,6 @@ int decblist(int argc, char *argv[])
 
 	if (ec != 0)
 	{
-		_coco_close(path);
 		printf("Error %d opening %s\n", ec, p);
 
 		return (ec);

@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <cocotypes.h>
 #include <cocopath.h>
+#include <toolshed.h>
 
 
 static void show_os9_help(char const *const *helpMessage);
@@ -95,6 +96,11 @@ int main(int argc, char *argv[])
 	else
 	{
 		ec = do_command(argc - i, &argv[i]);
+	}
+
+	if (ec != 0 )
+	{
+		fprintf(stderr, "Error: %d - %s\n", ec, TSReportError(ec));
 	}
 
 	return (ec);

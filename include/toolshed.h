@@ -15,7 +15,7 @@ extern "C" {
 #define EOS_PADROM		257
 
 
-void TSReportError(error_code te, char *errorstr);
+const char *TSReportError(error_code te);
 
 error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart);
 int TSDirectory(char *pathlist);

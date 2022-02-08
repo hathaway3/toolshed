@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <toolshed.h>
 
 #include <util.h>
 #include <cecbpath.h>
@@ -158,6 +159,11 @@ int main(int argc, char *argv[])
 	else
 	{
 		ec = do_command(argc - i, &argv[i]);
+	}
+
+	if (ec != 0 )
+	{
+		fprintf(stderr, "Error: %d - %s\n", ec, TSReportError(ec));
 	}
 
 	return (ec);

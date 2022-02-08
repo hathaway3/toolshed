@@ -147,12 +147,9 @@ int os9attr(int argc, char *argv[])
 				/* No attribute options were specified */
 				if ((ec = TSRBFAttrGet(p, &attr, attrs)) != 0)
 				{
-					char errorstr[TS_MAXSTR];
-
-					TSReportError(ec, errorstr);
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
-						argv[0], ec, p, errorstr);
+						argv[0], ec, p, TSReportError(ec));
 				}
 				else
 				{
@@ -170,12 +167,9 @@ int os9attr(int argc, char *argv[])
 						  attrResetMask, &attr,
 						  attrs)) != 0)
 				{
-					char errorstr[TS_MAXSTR];
-
-					TSReportError(ec, errorstr);
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
-						argv[0], ec, p, errorstr);
+						argv[0], ec, p, TSReportError(ec));
 				}
 				else if (quiet == 0)
 				{

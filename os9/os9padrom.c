@@ -119,11 +119,8 @@ int os9padrom(int argc, char **argv)
 					       padAtStart);
 				if (tse != 0)
 				{
-					char errorstr[TS_MAXSTR];
-
-					TSReportError(tse, errorstr);
 					fprintf(stderr, "%s: %s\n", argv[0],
-						errorstr);
+						TSReportError(ec));
 				}
 			}
 		}

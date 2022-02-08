@@ -286,12 +286,9 @@ int os9copy(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			char errorstr[TS_MAXSTR];
-
-			TSReportError(ec, errorstr);
 			fprintf(stderr,
 				"%s: error %d on file '%s' to '%s': %s\n",
-				argv[0], ec, argv[j], df, errorstr);
+				argv[0], ec, argv[j], df, TSReportError(ec));
 		}
 	}
 
