@@ -29,7 +29,7 @@ int StrToInt(char *s)
 		{
 			int c;
 
-			c = toupper(s[i]);
+			c = toupper((unsigned char)s[i]);
 			if (c >= 'A' && c <= 'F')
 			{
 				c -= 7;

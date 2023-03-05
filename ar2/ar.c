@@ -249,7 +249,7 @@ void proc_opt(char *p)
 				n = atoi(p);
 				lz1_config(n);
 				compt = (n << 4) | COMP3;
-				while (*p && isdigit(*p))
+				while (*p && isdigit((unsigned char)*p))
 					++p;				/* eat number					*/
 				break;
 

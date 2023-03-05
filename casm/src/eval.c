@@ -464,12 +464,12 @@ static bool GetEvalTerm(EnvContext *ctx,
 	}
 	
 	/* hex constant - allow $... and 0x... types */
-	else if('$' == *ctx->m_Ptr || ('0' == *ctx->m_Ptr && 'x' == tolower(ctx->m_Ptr[1]))) {
+	else if('$' == *ctx->m_Ptr || ('0' == *ctx->m_Ptr && 'x' == tolower((unsigned char)ctx->m_Ptr[1]))) {
 		ctx->m_Ptr++;
 		while(true == IsHexDecimal(*ctx->m_Ptr)) {
 			val *= 16;
 			if(*ctx->m_Ptr > '9') {
-				val += 10 + (tolower(*ctx->m_Ptr++) - 'a');
+				val += 10 + (tolower((unsigned char)*ctx->m_Ptr++) - 'a');
 			} else {
 				val += ((*ctx->m_Ptr++) - '0');
 			}

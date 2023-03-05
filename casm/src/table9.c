@@ -577,7 +577,7 @@ const Mneumonic *mne_look(EnvContext *ctx, const char *str)
 	int pchr;
 	char chr;
 
-	chr = (char)tolower(*str);
+	chr = (char)tolower((unsigned char)*str);
 
 	/* Search machine mnemonics first */
 	if((pchr = opcodemap[(u_char)chr]) != -1) {

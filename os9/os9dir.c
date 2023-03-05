@@ -267,7 +267,7 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 				/* print escaped filename */
 				for (int i = 0; i < strlen(filename); i++)
 				{
-					if (isprint(filename[i]))
+					if (isprint((unsigned char)filename[i]))
 					{
 						putchar(filename[i]);
 					}

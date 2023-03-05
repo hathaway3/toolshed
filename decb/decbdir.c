@@ -194,7 +194,7 @@ static int do_dir(char **argv, char *p)
 
 		for (i = 0; i < 8; i++)
 		{
-			if (isprint(de.filename[i]))
+			if (isprint((unsigned char)de.filename[i]))
 			{
 				putchar(de.filename[i]);
 			}
@@ -210,7 +210,7 @@ static int do_dir(char **argv, char *p)
 
 		for (i = 0; i < 3; i++)
 		{
-			if (isprint(de.file_extension[i]))
+			if (isprint((unsigned char)de.file_extension[i]))
 			{
 				putchar(de.file_extension[i]);
 			}

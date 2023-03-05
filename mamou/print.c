@@ -160,7 +160,7 @@ void print_line(assembler *as, int override, char infochar, int counter)
 
 		for (i = 0; i < strlen(as->line.Op); i++)
 		{
-			as->line.Op[i] = toupper(as->line.Op[i]);
+			as->line.Op[i] = toupper((unsigned char)as->line.Op[i]);
 		}
 	}
 

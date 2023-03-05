@@ -25,7 +25,7 @@ error_code _os9_prsnam(const char *filename)
 			return (EOS_BPNAM);
 		}
 		if (!
-		    (isalnum(*a) || *a == '_' || *a == '.' || *a == '-'
+		    (isalnum((unsigned char)*a) || *a == '_' || *a == '.' || *a == '-'
 		     || *a == ' ' || *a == '$'))
 		{
 			return EOS_BPNAM;
@@ -78,7 +78,7 @@ error_code _cecb_prsnam(const char *filename)
 	{
 		for (i = 0; i < strlen(filename); i++)
 		{
-			if (isgraph(filename[i]) != 0)
+			if (isgraph((unsigned char)filename[i]) != 0)
 				ec = EOS_BPNAM;
 		}
 	}

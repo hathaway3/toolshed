@@ -603,11 +603,11 @@ static int htoi(char *s)
 	if ('0' == *s)
 		++s;
 
-	if (('X' == toupper(*s)) || ('$' == *s))
+	if (('X' == toupper((unsigned char)*s)) || ('$' == *s))
 		++s;
 
-	while (isxdigit(ch = *s++))
-		x = (x << 4) + toupper(ch) - (ch > '9' ? '7' : '0');
+	while (isxdigit((unsigned char)(ch = *s++)))
+		x = (x << 4) + toupper((unsigned char)ch) - (ch > '9' ? '7' : '0');
 
 	return (x);
 }

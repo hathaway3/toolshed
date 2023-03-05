@@ -95,7 +95,7 @@ int main(int argc, char **argv)
             switch (argv[j][1])
             {
 				case 'm':
-					switch (tolower(argv[j][2]))
+					switch (tolower((unsigned char)argv[j][2]))
 					{
 						case '9':
 							as.o_asm_mode = ASM_OS9;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
                 case 'e':
                     /* 6309 extended instruction mode */
                     as.o_cpuclass = CPU_H6309;
-					if (tolower(argv[j][2]) == 'e') as.o_cpuclass = CPU_X9;
+					if (tolower((unsigned char)argv[j][2]) == 'e') as.o_cpuclass = CPU_X9;
 						break;	
 					
                 case 'I':
@@ -195,20 +195,20 @@ int main(int argc, char **argv)
 					
                 case 'l':
                     /* List file */
-                    if (tolower(argv[j][2]) == 's')
+                    if (tolower((unsigned char)argv[j][2]) == 's')
                     {
                         as.o_format_only = 1;
                         as.o_pagewidth = 256;
                     }
-                    if (tolower(argv[j][2]) == 't')
+                    if (tolower((unsigned char)argv[j][2]) == 't')
                     {
                         as.tabbed = 1;
                     }
-                    if (tolower(argv[j][2]) == 'n')
+                    if (tolower((unsigned char)argv[j][2]) == 'n')
                     {
                         as.newstyle = 1;
                     }
-                    if (tolower(argv[j][2]) == 'u')
+                    if (tolower((unsigned char)argv[j][2]) == 'u')
                     {
                         as.pseudoUppercase = 1;
                     }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 				
                 case 's':
                     /* Symbol table dump */
-                     if (tolower(argv[j][2]) == 'a')
+                     if (tolower((unsigned char)argv[j][2]) == 'a')
                      {
                         as.o_show_symbol_table = 2;
                      }
@@ -254,15 +254,15 @@ int main(int argc, char **argv)
 					
                 case 't':
                     /* Object type */
-                    if (tolower(argv[j][2]) == 'b')
+                    if (tolower((unsigned char)argv[j][2]) == 'b')
                     {
                         as.output_type = OUTPUT_BINARY;
                     }
-					else if (tolower(argv[j][2]) == 'h')
+					else if (tolower((unsigned char)argv[j][2]) == 'h')
                     {
                         as.output_type = OUTPUT_HEX;
                     }
-					else if (tolower(argv[j][2]) == 's')
+					else if (tolower((unsigned char)argv[j][2]) == 's')
                     {
                         as.output_type = OUTPUT_SRECORD;
                     }
@@ -698,7 +698,7 @@ void mamou_parse_line(assembler *as, char *input_line)
 	}
 	
 	/* 3. Check to see if this is a blank line. */
-	while (isspace(*ptrfrm)) ptrfrm++;
+	while (isspace((unsigned char)*ptrfrm)) ptrfrm++;
 	
 	if (*ptrfrm == '\n' || *ptrfrm == EOS)
 	{

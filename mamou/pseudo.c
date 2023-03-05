@@ -1179,7 +1179,7 @@ int _opt(assembler *as)
 	}
 
 	/* Parse the option */
-	switch (tolower(*Opt))
+	switch (tolower((unsigned char)*Opt))
 	{
 		case 'c':	/* conditional assembly in listing */
 			as->o_show_cond = opt_state;

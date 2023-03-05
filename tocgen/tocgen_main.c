@@ -114,7 +114,7 @@ static int get_num(char **line)
 	char *numptr;
 
 	numptr = *line;
-	while (isdigit(**line))
+	while (isdigit((unsigned char)**line))
 	{
 		(*line)++;
 	}
@@ -129,7 +129,7 @@ static int get_num(char **line)
 
 static char *skipspace(char *line)
 {
-	while (isspace(*line))
+	while (isspace((unsigned char)*line))
 		line++;
 
 	return line;
@@ -138,7 +138,7 @@ static char *skipspace(char *line)
 
 static int getVol(char **line)
 {
-	if (tolower(**line) != 'v')
+	if (tolower((unsigned char)**line) != 'v')
 	{
 		return -1;
 	}
@@ -152,7 +152,7 @@ static int parse_line(char *line, struct volLine *v)
 {
 	v->vcount = 0;
 
-	if (tolower(*line) != 'd')
+	if (tolower((unsigned char)*line) != 'd')
 	{
 		return -1;
 	}
@@ -160,7 +160,7 @@ static int parse_line(char *line, struct volLine *v)
 	v->disk = get_num(&line);
 	line = skipspace(line);
 
-	if (tolower(*line) != 's')
+	if (tolower((unsigned char)*line) != 's')
 	{
 		return -1;
 	}

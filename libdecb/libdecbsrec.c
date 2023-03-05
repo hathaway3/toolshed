@@ -17,13 +17,13 @@ static inline int digittoint(int c)
 /* implemented based on OSX man page */
 {
 	/* if not 0-9, a-f, or A-F then return 0 */
-	if (!isxdigit(c))
+	if (!isxdigit((unsigned char)c))
 		return 0;
 
-	if (isdigit(c))
+	if (isdigit((unsigned char)c))
 		return c - '0';
 
-	if (isupper(c))
+	if (isupper((unsigned char)c))
 		return c - 'A' + 10;
 
 	/* not 0-9, not A-F, must be a-f */

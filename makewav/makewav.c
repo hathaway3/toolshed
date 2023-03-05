@@ -27,13 +27,13 @@
 static inline int digittoint(int c)
 {
 	/* if not 0-9, a-f, or A-F then return 0 */
-	if (!isxdigit(c))
+	if (!isxdigit((unsigned char)c))
 		return 0;
 
-	if (isdigit(c))
+	if (isdigit((unsigned char)c))
 		return c - '0';
 
-	if (isupper(c))
+	if (isupper((unsigned char)c))
 		return c - 'A' + 10;
 
 	/* not 0-9, not A-F, must be a-f */
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 	{
 		if (*argv[j] == '-')
 		{
-			switch (tolower(argv[j][1]))
+			switch (tolower((unsigned char)argv[j][1]))
 			{
 			case 'l':
 				seconds = strtol(&(argv[j][2]), NULL, 0);

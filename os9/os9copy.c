@@ -65,7 +65,7 @@ int os9copy(int argc, char *argv[])
 						p++;
 					}
 					q = p + strlen(p) - 1;
-					if (toupper(*q) == 'K')
+					if (toupper((unsigned char)*q) == 'K')
 					{
 						*q = '\0';
 						buffer_size = atoi(p) * 1024;

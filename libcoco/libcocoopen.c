@@ -221,7 +221,7 @@ error_code _coco_identify_image(char *pathlist, _path_type * type)
 	/* 2a. Check for a colon followed by number in path part */
 
 	path = strtok(NULL, "");
-	if (path && (colon = strchr(path, ':')) && isdigit(colon[1]))
+	if (path && (colon = strchr(path, ':')) && isdigit((unsigned char)colon[1]))
 	{
 		*type = DECB;
 
