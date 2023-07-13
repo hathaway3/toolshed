@@ -3753,30 +3753,30 @@ BASBFR         equ       $2DD
 
 * Static Storage                             (Reusing 9 last bytes of original USR table, after stubs)
                IFDEF     DRAGON
-               org       $13F
+SS             equ       $13F
                ELSE
-               org       $149
+SS             equ       $149
                ENDC
 
-INTFLG         rmb       1                   FlexiKey variable
-NCYLS          rmb       2                   Device cylinder count (IDE)
-NHEADS         rmb       1                   Device head count (IDE)
-NSECTS         rmb       1                   Device sector count (IDE)
-HDFLAG         rmb       1                   Hard drive active flag
-DRVSEL         rmb       1                   LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
+INTFLG         equ       SS                  FlexiKey variable
+NCYLS          equ       SS+1                Device cylinder count (IDE)
+NHEADS         equ       SS+3                Device head count (IDE)
+NSECTS         equ       SS+4                Device sector count (IDE)
+HDFLAG         equ       SS+5                Hard drive active flag
+DRVSEL         equ       SS+6                LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
 RETRY          equ       DRVSEL              DriveWire uses this location as a retry counter
-MAXDRV         rmb       1                   Highest drive number
-IDNUM          rmb       1                   Device number (SCSI 0-7) (IDE 0-1)
+MAXDRV         equ       SS+7                Highest drive number
+IDNUM          equ       SS+8                Device number (SCSI 0-7) (IDE 0-1)
 
 
 * Dynamic Storage
-               org       $F3
+DS             equ       $F3
 
-VCMD           rmb       1                   SCSI/IDE unit command
-VAD0           rmb       1                   L.U.N. / sector (hi-byte)
-VAD1           rmb       2                   Sector (lo-word)
-VBLKS          rmb       2                   Block count / options
-VEXT           rmb       4                   Reserved 10 byte SCSI commands
+VCMD           equ       DS                  SCSI/IDE unit command
+VAD0           equ       DS+1                L.U.N. / sector (hi-byte)
+VAD1           equ       DS+2                Sector (lo-word)
+VBLKS          equ       DS+4                Block count / options
+VEXT           equ       DS+6                Reserved 10 byte SCSI commands
 
 
 * HARD DISK DRIVER
