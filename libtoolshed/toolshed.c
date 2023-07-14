@@ -680,12 +680,17 @@ EOL_Type DetermineEOLType(char *buffer, int size)
 			break;
 		}
 
+		/* Note we could have a buffer starting with NL (0x0A)
+		 * even if it is a CR,NL (0x0D0A) file */
 		if (buffer[i] == 0x0A)
 		{
 			/* We have unix line endings. */
 			eol = EOL_UNIX;
 
-			break;
+			if (i > 0)
+				break;
+			else
+				continue;
 		}
 
 		if (buffer[i] == 0x0D)
