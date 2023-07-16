@@ -161,16 +161,17 @@ enum {
 	CPU_X9=2
 };
 
+struct _assembler;
 
 struct h6309_opcode
 {
 	char		*mnemonic;			/* name */
 	char		class;				/* class */
-	int			opcode;				/* base opcode */
+	int 		opcode;				/* base opcode */
 	char		cycles;				/* base # of cycles (6809) */
 	char		plus_delta_6309;	/* +/- cycles to adjust for 6309 */
 	char		cpuclass;			/* processor class (CPU_* above) */
-	int			(*func)();			/* function */
+	int 		(*func)(struct _assembler *, int);	/* function */
 	rma_sect	permissible;		/* which RMA sections this opcode is allowed in */
 };
 
@@ -189,7 +190,7 @@ struct pseudo_opcode
 	char			*pseudo;        /* its name */
 	pseudo_class	class;
 	pseudo_info		info;
-	int				(*func)();		/* function */
+	int 			(*func)(struct _assembler *);	/* function */
 	rma_sect		permissible;	/* which RMA sections this opcode is allowed in */
 };
 
