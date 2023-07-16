@@ -490,13 +490,6 @@ void NativeToCoCo(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 	case EOL_UNIX:
 		/* Change all occurences of 0x0A to 0x0D */
 
-		for (i = 0; i < size; i++)
-		{
-			if (buffer[i] == 0x0A)
-			{
-				buffer[i] = 0x0D;
-			}
-		}
 		*newBuffer = (char *) malloc(size);
 		if (*newBuffer == NULL)
 		{
@@ -506,6 +499,14 @@ void NativeToCoCo(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 		memcpy(*newBuffer, buffer, size);
 
 		*newSize = size;
+
+		for (i = 0; i < size; i++)
+		{
+			if ((*newBuffer)[i] == 0x0A)
+			{
+				(*newBuffer)[i] = 0x0D;
+			}
+		}
 
 		break;
 
@@ -632,14 +633,6 @@ void CoCoToNative(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 
 	/* Change all occurences of 0x0D to 0x0A */
 
-	for (i = 0; i < size; i++)
-	{
-		if (buffer[i] == 0x0D)
-		{
-			buffer[i] = 0x0A;
-		}
-	}
-
 	*newBuffer = (char *) malloc(size);
 	if (*newBuffer == NULL)
 	{
@@ -649,6 +642,14 @@ void CoCoToNative(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 	memcpy(*newBuffer, buffer, size);
 
 	*newSize = size;
+
+	for (i = 0; i < size; i++)
+	{
+		if ((*newBuffer)[i] == 0x0D)
+		{
+			(*newBuffer)[i] = 0x0A;
+		}
+	}
 #endif
 
 
