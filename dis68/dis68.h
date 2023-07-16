@@ -22,8 +22,8 @@ extern u_int	ppc, pcl, ldat;
 extern u_short	dat, dat1, opcode[6];
 extern FILE		*cfp;
 extern char		mnebf[80], str[80];
-extern void		(*modetbl[])();
-extern void		(*spaddtbl[])();
+extern void		(*modetbl[])(int);
+extern void		(*spaddtbl[])(void);
 
 int		_errmsg(int code, char *fmt, ...);
 

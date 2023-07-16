@@ -175,8 +175,7 @@ static TNode *talloc()
 	return (p);
 }
 
-static int lcomp(x, y)
-     u_int x, y;
+static int lcomp(u_int x, u_int y)
 {
 	if (x == y)
 		return (0);
