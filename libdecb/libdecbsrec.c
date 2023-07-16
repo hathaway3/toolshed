@@ -121,16 +121,22 @@ error_code _decb_srec_encode(unsigned char *in_buffer, int in_size,
 
 	if (type == POSTAMBLE)
 	{
+		int postvar = 0;
 		checksum = 0xff;
 		count = 0;
-		length = in_buffer[in_buffer_position++] << 8;
-		length += in_buffer[in_buffer_position++];
+		postvar = in_buffer[in_buffer_position++] << 8;
+		postvar += in_buffer[in_buffer_position++];
 		address = in_buffer[in_buffer_position++] << 8;
 		address += in_buffer[in_buffer_position++];
 
 		checksum -= count + 0x03;
 		checksum -= (address >> 8) & 0xff;
 		checksum -= (address >> 0) & 0xff;
+
+		if (postvar != 0)
+			fprintf(stderr,
+				"ignoring non-null post-amble word: %04x\n",
+				postvar);
 
 		if ((ec =
 		     _decb_buffer_sprintf(out_size, out_buffer, &buffer_size,

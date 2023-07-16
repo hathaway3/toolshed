@@ -213,7 +213,7 @@ error_code _decb_extract_first_segment(u_char * buffer, u_int buffer_size,
 	error_code ec = 0;
 	int amble, first;
 	u_int buffer_position;
-	u_int post_amble_size;
+	u_int post_amble_var;
 
 	first = 0;
 	buffer_position = 0;
@@ -249,12 +249,18 @@ error_code _decb_extract_first_segment(u_char * buffer, u_int buffer_size,
 		}
 		else if (amble == POSTAMBLE)
 		{
-			post_amble_size = buffer[buffer_position++] << 8;
-			post_amble_size += buffer[buffer_position++];
+			post_amble_var = buffer[buffer_position++] << 8;
+			post_amble_var += buffer[buffer_position++];
 
 			*exec_address = buffer[buffer_position++] << 8;
 			*exec_address += buffer[buffer_position++];
 
+			if (post_amble_var != 0)
+			{
+				fprintf(stderr,
+					"ignoring non-null post-amble word %04x\n",
+					post_amble_var);
+			}
 			return ec;
 		}
 	}
