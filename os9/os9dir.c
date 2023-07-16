@@ -337,6 +337,9 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 		}
 	}
 
+	/* presumably used for debugging */
+	(void) depth;
+
 	_os9_close(path);
 	qDeleteLastNode(q_recursion);
 

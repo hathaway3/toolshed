@@ -344,6 +344,9 @@ error_code _decb_srec_decode(unsigned char *in_buffer, int in_size,
 		checksum = digittoint(in_buffer[in_buffer_position++]);
 		checksum <<= 4;
 		checksum += digittoint(in_buffer[in_buffer_position++]);
+
+		/* TODO check checksum */
+		(void) checksum;
 	}
 
 	(*out_buffer)[out_buffer_position++] = POSTAMBLE;

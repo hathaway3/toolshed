@@ -379,6 +379,9 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 		}
 	}
 
+	/* presumably used for debugging */
+	(void) level;
+
 	_coco_close(sourcePath);
 
 	return (ec);

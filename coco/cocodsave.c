@@ -256,6 +256,9 @@ static error_code do_dsave(char *source, char *target, int execute,
 		}
 	}
 
+	/* presumably used for debugging */
+	(void) level;
+
 	_os9_close(sourcePath);
 
 	return (ec);
