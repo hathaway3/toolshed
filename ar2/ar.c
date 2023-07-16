@@ -133,12 +133,15 @@
 # define tolower ck_tolower
 #endif
 
+FILE *spl_open(HEADER *hp);
 void copy_from(FILE *ifp, FILE *ofp, HEADER *hp);
+long copy_to(FILE *ofp, FILE *ifp, HEADER *hp);
 void proc_opt(char *p);
 void proc_cmd(char command, FILE *afp);
 void delete(FILE *afp);
 void extract(FILE *afp, int flag);
 void table(FILE *fp);
+char *emalloc(size_t);
 void fatal(int code, char *msg, char *arg1, int arg2);
 void fataln(int code, char *msg, long arg1, int arg2);
 void help(void);
@@ -159,11 +162,8 @@ int		rmflag = 0;				/* don't rm file after save			*/
 int		zflag = FALSE;			/* true if names come from stdin	*/
 /*page*/
 
-char	*emalloc(size_t);
 
-int main(argc, argv)
-int		argc;
-char	**argv;
+int main(int argc, char **argv)
 	{
 	char	command, *p = NULL, lc_suf[SUFSIZ + 1];
 	int		n, i;
@@ -321,7 +321,7 @@ void proc_cmd(char command, FILE *afp)
 
 void delete(FILE *afp)
 	{
-	long	archive_size, ftell(), get_fsize();
+	long	archive_size;
 	FN		*fnp;
 	HEADER	header;
 	int		found;
@@ -386,7 +386,6 @@ void extract(FILE *afp, int flag)
 	FILE	*ofp;						/* assume just listing			*/
 	HEADER	header;
 	FN		*fnp;
-	FILE	*spl_open();
 
 	if (fnhead == (FN *) NULL)
 		stash_name("*");				/* fake for special case		*/
@@ -433,7 +432,6 @@ void table(FILE *fp)
 	{
 	HEADER	header;
 	FN		*fnp;
-	long c4tol();
 	static char	*attrs[8] =
 		{"---", "--r", "-w-", "-wr", "e--", "e-r", "ew-", "ewr"};
 
@@ -473,7 +471,7 @@ void update(FILE *afp)
 	HEADER	header;
 	FN		*fnp;
 	int		saved = 0;
-	long	bytes, head_pos, tail_pos, copy_to(), c4tol();
+	long	bytes, head_pos, tail_pos;
 
 	while ((gethdr(afp, &header)) != EOF)
 		{
@@ -712,13 +710,11 @@ int puthdr(FILE *fp, HEADER *hp)
  * here we will recreate a tree that was collapsed into the archive file
  */
 
-FILE	*spl_open(hp)
-HEADER	*hp;
+FILE *spl_open(HEADER *hp)
 	{
 	char	buf[FNSIZ + 3];
 	FILE	*ofp;
 	char	*p;
-	long	c4tol();
 
 	p = hp->a_name;
 	while ((p = strchr(p, '/')))
@@ -794,9 +790,7 @@ void copy_from(FILE *ifp, FILE *ofp, HEADER *hp)
  * copy an file to an archive
  */
 
-long	copy_to(ofp, ifp, hp)
-FILE	*ofp, *ifp;
-HEADER	*hp;
+long copy_to(FILE *ofp, FILE *ifp, HEADER *hp)
 	{
 	long	bytes = 0;
 	int		byt;
@@ -845,8 +839,7 @@ HEADER	*hp;
  * get memory from the system or die trying
  */
 
-char	*emalloc(n)
-size_t		n;
+char *emalloc(size_t n)
 	{
 	char	*p;
 
@@ -884,7 +877,7 @@ void fataln(int code, char *msg, long arg1, int arg2)
  * provide usage info for this command
  */
 
-static char	*hlpmsg[] = {
+static char *hlpmsg[] = {
 	"ar2 from Toolshed " TOOLSHED_VERSION "\n",
 	"Ar V2.02 - archive file manager\n",
 	"Usage:  ar2 -<cmd>[<modifier>] archive [file .. ]\n",

@@ -135,6 +135,7 @@ int get_names(int ac, char **av, int updating);
 int gethdr(FILE *fp, HEADER *hp);
 int patmatch(char *p, char *s, int f);
 void set_fsize(int pn, long size);
+long get_fsize(int pn);
 int stash_name(char *p);
 void set_fstat(char *pn, FILDES *fs);
 #ifdef SYSV
@@ -147,4 +148,5 @@ int notdot(char *p);
 int readlong(FILE *fp, long *lp);
 int writelong(FILE *fp, long l);
 int assureDir(char *path);
+long c4tol(char *s);
 

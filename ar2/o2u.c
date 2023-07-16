@@ -62,13 +62,12 @@ static MODE_MAP modeMap[] =
         { 0x40, 0x0       }         /* S_ISHARE  */
         };
 
-static int	monthLength[12] = {
+static int monthLength[12] = {
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
         };
 
 
-char	*u2oDate(l)
-time_t	l;
+char *u2oDate(time_t l)
 	{
 	static char	buf[5];
 	struct tm	*tp;
@@ -83,8 +82,7 @@ time_t	l;
 	}
 
 
-long	o2uDate(buf)
-char	*buf;
+long o2uDate(char *buf)
 	{
 	register int	i;
 	int				year;
@@ -180,8 +178,7 @@ char	*buf;
 	}
 
 
-char	u2oFmode(flags)
-short	flags;
+char u2oFmode(short flags)
 	{
 	char			os9Flag = 0;
 	register int	i;
@@ -200,8 +197,7 @@ short	flags;
 	}
 
 
-short	o2uFmode(flags)
-char	flags;
+short o2uFmode(char flags)
 	{
 	short			unixFlag = 0;
 	register int	i;

@@ -89,8 +89,7 @@
  */
 
 #ifdef BRAINDEAD
-ck_tolower(ch)
-char	ch;
+ck_tolower(char ch)
 	{
 	if (isupper(ch))
 		tolower(ch);
@@ -99,8 +98,7 @@ char	ch;
 	}
 
 
-ck_toupper(ch)
-char	ch;
+ck_toupper(char ch)
 	{
 	if (islower(ch))
 		toupper(ch);
@@ -118,8 +116,7 @@ char	ch;
  *   back to a long.
  */
 
-long	c4tol(s)
-char	*s;
+long c4tol(char *s)
 	{
 	long	x = 0;
 
@@ -234,8 +231,7 @@ void set_fstat(char *pn, FILDES *fs)
  * get the file size
  */
 
-long	get_fsize(pn)
-int		pn;
+long get_fsize(int pn)
 	{
 #ifdef SYSV
 	struct stat	stbuf;
