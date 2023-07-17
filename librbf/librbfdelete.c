@@ -298,12 +298,16 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 	os9_path_id path;
 	fd_stats fdbuf;
 	Fd_seg seg;
+	unsigned int spc;
 	int i;
 	int ec = 0;
 
 
 	ec = _os9_open(&path, filePath, FAM_READ);
 	ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
+
+	spc = path->spc;
+
 	ec = _os9_close(path);
 
 	seg = fdbuf.fd_seg;
@@ -315,8 +319,8 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 			break;
 		}
 
-		ec = _os9_delbit(bitmap, int3(seg[i].lsn) / path->spc,
-				 int2(seg[i].num) / path->spc);
+		ec = _os9_delbit(bitmap, int3(seg[i].lsn) / spc,
+				 int2(seg[i].num) / spc);
 
 		if (ec != 0)
 		{
