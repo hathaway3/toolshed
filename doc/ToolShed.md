@@ -14,6 +14,7 @@ ToolShed v2.2
   * [Disk Extraction Under Windows/DOS](#de_win)
   * [Disk Extraction Under Linux](#de_linux)
   * [Pathname Elements](#path_elements)
+  * [Support for HDB-DOS](#de_hdb_dos)
 * [rma, rlink and rdump](#rma)
 * [os9](#os9) - Manipulate OS-9 formatted disk images
   * [ATTR](#attr_os9) - Display or modify file attributes
@@ -37,6 +38,7 @@ ToolShed v2.2
   * [PADROM](#padrom) - Pad a file to a specific length
   * [RENAME](#rename_os9) - Give a file a new filename
 * [decb](#decb) - Manipulate RSDOS formatted disk images
+  * [Options](#decb_exec_option) - The DECB executive's option
   * [ATTR](#attr_decb) - Display or modify file attributes
   * [COPY](#copy_decb) - Copy one or more files to a target directory
   * [DIR](#dir_decb) - Display the directory of a Disk BASIC image
@@ -177,6 +179,22 @@ will display the extended root directory on the specified disk image. Similarly:
     os9 dir . -e
 
 will display the extended directory on the current directory of the host file system (the -e option behaves similar to ls -l on Unix-based systems).
+
+<h3 id="de_hdb_dos">Support for HDB-DOS</h3>
+
+Toolshed supports specialized path symbols for HDB-DOS hard disk images.
+
+The colon allows you to select which disk image is active:
+
+    decb copy disk.dsk,NEW.DAT:3 disk.dsk,OLD.DAT:23
+
+This command will copy "NEW.DAT" on the fourth disk image in disk.dsk to "OLD.DAT" on the 24th disk image on disk.dsk. The disk image count starts at zero.
+
+Another feature of HDB-DOS is an offset to be used for the first disk image. This allows HDB-DOS to share a hard disk with OS-9. Use the '+' to specify an offset.
+
+    DECB list -t hd.img,NEW.BAS:3+1348276
+
+The number after the plus is the offset. It can be expressed in decimal or hexadecimal form. Prepend the number with '0x' to use hexadecimal.
 
 ---
 
@@ -797,6 +815,19 @@ The following pages document the commands built into the decb tool. Its interfac
 Issuing the decb command without any parameters will provide a list of available subcommands. Issuing a subcommand without any parameters will display help on using the subcommand.
 
 Use decb to copy files to and from Disk BASIC formatted disk images to your host file system. While many commands will work fine host file systems, some commands are designed to only be run on a Disk BASIC disk image or file within that image. The Scope section makes it clear in what context the command should be run.
+
+<h3 id="decb_exec_option">The DECB executive's option</h3>
+
+The DECB executive has one option specified before the sub-command:
+
+<table>
+<tr><td>-g<num></td><td>Granule count in FAT (used when writing)</td></tr>
+<tr><td></td><td>68: 35 track disk (default)</td></tr>
+<tr><td></td><td>78: 40 track disk</td></tr>
+<tr><td></td><td>156: 80 track disk</td></tr>
+</table>
+
+This allows you to specify the number of granules available when writing to a disk image.
 
 ---
 

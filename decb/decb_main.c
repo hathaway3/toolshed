@@ -21,7 +21,11 @@ static char const *const helpMessage[] = {
 	"decb from Toolshed " TOOLSHED_VERSION "\n",
 	"Syntax: decb {[<opts>]} <command> {[<opts>]}\n",
 	"Usage:  Disk BASIC File Tools Executive\n",
-	"Options:\n",
+	"Executive Options:\n",
+	"   -g<num>  Granule count in FAT (used when writing)\n",
+	"                  68: 35 track disk (default)\n",
+	"                  78: 40 track disk\n",
+	"                 156: 80 track disk\n",
 	NULL
 };
 
@@ -66,6 +70,11 @@ int main(int argc, char *argv[])
 			{
 				switch (*p)
 				{
+				case 'g':
+					decb_granule_count = atoi(p + 1);
+					while (*(p + 1) != '\0') p++;
+					break;
+				
 				case 'h':
 				case '?':
 					show_decb_help(helpMessage);

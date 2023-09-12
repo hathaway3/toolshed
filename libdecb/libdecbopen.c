@@ -70,6 +70,8 @@ static int term_pd(decb_path_id path);
 static int validate_pathlist(decb_path_id * path, char *pathlist);
 static int _decb_cmp(decb_dir_entry * entry, char *name);
 
+int decb_granule_count;
+
 extern error_code find_free_granule(decb_path_id path, int *granule,
 				    int next_to);
 
@@ -132,8 +134,7 @@ error_code _decb_create(decb_path_id * path, char *pathlist, int mode,
 
 
 	(*path)->disk_offset = 161280 * (*path)->drive;
-	if ((*path)->hdbdos_offset != -1)
-		(*path)->disk_offset += (*path)->hdbdos_offset;
+	(*path)->disk_offset += (*path)->hdbdos_offset;
 
 
 	/* 4. At this point, sector and granule function will work - Load FAT */
@@ -149,7 +150,7 @@ error_code _decb_create(decb_path_id * path, char *pathlist, int mode,
 
 		for (i = 0; i < 256; i++)
 		{
-			if ((*path)->hdbdos_offset != -1 && i > 67)
+			if (i >= (*path)->granule_count)
 				break;
 
 			if ((*path)->FAT[i] == 0xFF)
@@ -419,8 +420,7 @@ error_code _decb_open(decb_path_id * path, char *pathlist, int mode)
 
 
 	(*path)->disk_offset = 161280 * (*path)->drive;
-	if ((*path)->hdbdos_offset != -1)
-		(*path)->disk_offset += (*path)->hdbdos_offset;
+	(*path)->disk_offset += (*path)->hdbdos_offset;
 
 
 	/* 6. At this point, sector and granule function will work - Load FAT */
@@ -567,6 +567,7 @@ static int validate_pathlist(decb_path_id * path, char *pathlist)
 		q = strchr(p, ':');
 		if (q != NULL)
 		{
+			/* Parse HDB-DOS 'colon' parameters */
 			/* (*path)->filename = strndup(p, q - p); */
 			(*path)->filename = malloc(q - p + 1);
 			memcpy((*path)->filename, p, q - p);
@@ -590,8 +591,14 @@ static int validate_pathlist(decb_path_id * path, char *pathlist)
 			{
 				(*path)->hdbdos_offset = 0;
 			}
+			
+			if ((*path)->granule_count != 63)
+			{
+				(*path)->granule_count = 63;
+				fprintf(stderr, "HDB-DOS enabled. Forcing 63 granules per disk.\n");
+			}	
 		}
-		else
+		else /* no HDB-DOS 'colon' found in path name */
 		{
 			int len = strlen(p);
 			if (len <= 12)
@@ -602,7 +609,6 @@ static int validate_pathlist(decb_path_id * path, char *pathlist)
 			{
 				ec = EOS_BPNAM;
 			}
-			(*path)->hdbdos_offset = -1;
 		}
 
 #if 0
@@ -645,7 +651,18 @@ static int init_pd(decb_path_id * path, int mode)
 	(*path)->mode = mode;
 
 
-	/* 3. Return. */
+	/* 3. set up defaults */
+	
+	if (decb_granule_count == 0)
+	{
+		(*path)->granule_count = 68;
+	}
+	else
+	{
+		(*path)->granule_count = decb_granule_count;
+	}
+	
+	/* 4. Return. */
 
 	return 0;
 }

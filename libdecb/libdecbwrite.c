@@ -234,7 +234,7 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
 	memcpy(tmp_FAT, path->FAT, 256);
 
 
-	/* 1. Compute maximum size of file with current granules allocated. */
+	/* 2. Compute maximum size of file with current granules allocated. */
 
 	while (path->FAT[curr_granule] < 0xC0)
 	{
@@ -253,7 +253,7 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
 
 		do
 		{
-			/* 1. We're gonna have to find a free granule. */
+			/* 3. We're gonna have to find a free granule. */
 
 			if (find_free_granule
 			    (path, &new_granule, curr_granule) != 0)
@@ -275,7 +275,7 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
 	}
 
 	{
-		/* 1. The new size will fit in the currently allocated granules,
+		/* 4. The new size will fit in the currently allocated granules,
 		 *    so we'll just extend the last granule entry.
 		 */
 
@@ -284,7 +284,7 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
 				    2304);
 
 
-		/* 2. Reset the last granule's sector size. */
+		/* 5. Reset the last granule's sector size. */
 
 		if (expand_size % 256 == 0)
 		{
@@ -310,70 +310,64 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
  *
  * The 'next_to' parameter lets this function attempt to find a granule
  * either ahead of or behind the next_to.
+ *
+ * This algorithm matchs what the DECB ROM does.
  */
 
 error_code find_free_granule(decb_path_id path, int *granule, int next_to)
 {
-	int t_next_to = next_to + 1;
-
-
-	*granule = 0;
-
-	/* 1. Validate next_to. */
-
-	if (t_next_to > 255)
+	int counter = 0, direction = 0, save_granule;
+	
+	/* 1. start checking at the start of a track. */
+	*granule = next_to & (~1);
+	
+	while (counter < path->granule_count)
 	{
-		return EOS_DF;
-	}
-
-	if (path->hdbdos_offset != -1 && next_to > 67)
-	{
-		return EOS_DF;
-	}
-
-
-	/* 2. Start search from next_to to last_granule. */
-
-	while (path->FAT[t_next_to] != 0x00)
-	{
-		if (path->hdbdos_offset != -1 && t_next_to > 67)
-			break;
-
-		if (path->FAT[t_next_to] == 0xFF)
+		if (path->FAT[*granule] == 0xff)
 		{
-			/* 1. Found one!  Return it. */
-
-			*granule = t_next_to;
-
+			/* done, we found one */
 			return 0;
 		}
 
-		t_next_to++;
-	}
-
-
-	/* 3. Now try searching from t_nexto - 1 to 0. */
-
-	if (next_to > 0)
-	{
-		t_next_to = next_to - 1;
-
-
-		while (t_next_to >= 0)
+		counter += 1;
+		*granule += 1;
+	
+		if (*granule & 0x01)
 		{
-			if (path->FAT[t_next_to] == 0xFF)
+			/* 2. Go check granule at end of track. */
+			continue;
+		}
+		
+		save_granule = *granule;
+		
+		/* 3. Back up and reverse direction */
+		*granule -= 2;
+		direction = ~direction;
+		
+		if (direction)
+		{
+			*granule -= counter;
+			
+			if (*granule < 0)
 			{
-				/* 1. Found one!  Return it. */
-
-				*granule = t_next_to;
-
-				return 0;
+				/* 4. If underflow, try previous granule in other direction */
+				*granule = save_granule;
+				direction = ~direction;
 			}
-
-			t_next_to--;
+		}
+		else
+		{
+			*granule += counter;
+			
+			if (*granule >= path->granule_count)
+			{
+				/* 5. If overflow, try previous granule (minus 4), in other direction */
+				*granule = save_granule;
+				*granule -= 4;
+				direction = ~direction;
+			}
 		}
 	}
-
 
 	return EOS_DF;
 }

@@ -46,6 +46,8 @@ void _int1(unsigned int a, u_char *b);
 unsigned short swap_short(unsigned short in);
 unsigned int swap_int(unsigned int in);
 
+extern int decb_granule_count;
+
 /* Read multibyte values stored in little endian format in file */
 size_t fread_le_char( unsigned char *ptr, FILE *stream );
 size_t fread_le_short( unsigned short *ptr, FILE *stream );
