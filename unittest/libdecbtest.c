@@ -78,6 +78,35 @@ void test_decb_create()
 			  "test.dsk,file_doesnt_exist_and_is_much_longer_than_rbf_limit_of_8_characters/and_this_is_an_even_longer_name_than_the_8_character_limit_in9_rbf_because_it_has_more_characters",
 			  FAM_READ, 0, 1);
 	ASSERT_EQUALS(ec, EOS_BPNAM);
+	
+	// Test filling up a disk. File 0 to 67 should succeed.
+	// File 68 should fail
+	ec = _decb_dskini("filldisk.dsk", 35, "FILL", 1, 256, 0);
+	ASSERT_EQUALS(ec, 0);
+
+	for (int i=0; i<69; i++)
+	{
+		char path[256];
+		
+		snprintf(path, 255, "filldisk.dsk,TEST%d.BIN", i);
+
+		ec = _decb_create(&p, path, FAM_READ | FAM_WRITE, 0,
+				  1);
+		if (i==68)
+		{
+			ASSERT_EQUALS(ec, EOS_DF);
+		}
+		else
+		{
+			ASSERT_EQUALS(ec, 0);
+		}
+		
+		if (i!=68)
+		{
+			ec = _decb_close(p);
+			ASSERT_EQUALS(ec, 0);
+		}
+	}
 }
 
 void test_decb_read()
@@ -135,6 +164,84 @@ void test_decb_write()
 	// test close of a validly opened file
 	ec = _decb_close(p);
 	ASSERT_EQUALS(ec, 0);
+	
+	// Test filling up a disk with one file.
+	ec = _decb_dskini("filldisk.dsk", 35, "FILL", 1, 256, 0);
+	ASSERT_EQUALS(ec, 0);
+
+	ec = _decb_create(&p, "filldisk.dsk,test.bin", FAM_READ | FAM_WRITE, 0,
+			  1);
+	ASSERT_EQUALS(ec, 0);
+	
+	size_t buffer_alloc = 68*2304;
+	unsigned int buffer_size = buffer_alloc;
+	unsigned char *buffer = calloc(1, buffer_size);
+	ASSERT_NEQUALS(buffer, 0);
+	
+	for( int i=0; i<buffer_alloc; i++)
+	{
+		buffer[i] = i;
+	}
+	
+	ec = _decb_write(p, buffer, &buffer_size);
+	ASSERT_EQUALS(ec, 0);
+	ASSERT_EQUALS(buffer_size, buffer_alloc);
+
+	ec = _decb_close(p);
+	ASSERT_EQUALS(ec, 0);
+
+	// Try adding one more file to a full disk. Should fail.
+	ec = _decb_create(&p, "filldisk.dsk,test1.bin", FAM_READ | FAM_WRITE, 0,
+			  1);
+	ASSERT_EQUALS(ec, EOS_DF);
+	
+	free(buffer);
+	
+	// Nearly fill a test disk
+	
+	ec = _decb_dskini("filldisk.dsk", 35, "FILL", 1, 256, 0);
+	ASSERT_EQUALS(ec, 0);
+
+	buffer_alloc = 67*2304;
+	buffer_size = buffer_alloc;
+	buffer = calloc(1, buffer_size);
+	ASSERT_NEQUALS(buffer, 0);
+	
+	for( int i=0; i<buffer_alloc; i++)
+	{
+		buffer[i] = i;
+	}
+	
+	ec = _decb_create(&p, "filldisk.dsk,test.bin", FAM_READ | FAM_WRITE, 0,
+			  1);
+	ASSERT_EQUALS(ec, 0);
+
+	ec = _decb_write(p, buffer, &buffer_size);
+	ASSERT_EQUALS(ec, 0);
+	ASSERT_EQUALS(buffer_size, buffer_alloc);
+
+	ec = _decb_close(p);
+	ASSERT_EQUALS(ec, 0);
+
+	// Try adding one more file to a nearly full disk. Should fail, file too big.
+	ec = _decb_create(&p, "filldisk.dsk,test1.bin", FAM_READ | FAM_WRITE, 0,
+			  1);
+	ASSERT_EQUALS(ec, 0);
+	
+	buffer_alloc = 2304 + 1;
+	buffer_size = buffer_alloc;
+	ec = _decb_write(p, buffer, &buffer_size);
+	ASSERT_EQUALS(EOS_DF, ec);
+	ASSERT_EQUALS(0, buffer_size);
+
+	ec = _decb_close(p);
+	ASSERT_EQUALS(ec, 0);
+	
+	// Now delete the dangling file
+	ec = _decb_kill("filldisk.dsk,test1.bin");
+	ASSERT_EQUALS(ec, 0);
+
+	free(buffer);
 }
 
 void test_decb_open_and_read()
@@ -202,6 +309,7 @@ void test_decb_rename()
 int main()
 {
 	remove("test.dsk");
+	remove("filldisk.dsk");
 	RUN(test_decb_dskini);
 	RUN(test_decb_create);
 	RUN(test_decb_read);
@@ -209,7 +317,6 @@ int main()
 	RUN(test_decb_open_and_read);
 	RUN(test_decb_delete);
 	RUN(test_decb_rename);
-	remove("test.dsk");
 
 	return TEST_REPORT();
 }

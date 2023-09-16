@@ -47,12 +47,13 @@
 #include <stdlib.h>
 
 /* Main assertion method */
+#define ASSERTV(msg, value, expression) if (!tt_assert_v(__FILE__, __LINE__, (msg), value, (#expression), (expression) ? 1 : 0)) return
 #define ASSERT(msg, expression) if (!tt_assert(__FILE__, __LINE__, (msg), (#expression), (expression) ? 1 : 0)) return
 
 /* Convenient assertion methods */
 /* TODO: Generate readable error messages for assert_equals or assert_str_equals */
-#define ASSERT_EQUALS(expected, actual) ASSERT((#actual), (expected) == (actual))
-#define ASSERT_NEQUALS(expected, actual) ASSERT((#actual), (expected) != (actual))
+#define ASSERT_EQUALS(expected, actual) ASSERTV((#actual), actual, (expected) == (actual))
+#define ASSERT_NEQUALS(expected, actual) ASSERTV((#actual), actual, (expected) != (actual))
 #define ASSERT_STRING_EQUALS(expected, actual) ASSERT((#actual), strcmp((expected),(actual)) == 0)
 
 /* Run a test() function */
@@ -68,6 +69,7 @@ int tt_passes = 0;
 int tt_fails = 0;
 int tt_current_test_failed = 0;
 const char* tt_current_msg = NULL;
+long tt_current_value = 0;
 const char* tt_current_expression = NULL;
 const char* tt_current_file = NULL;
 int tt_current_line = 0;
@@ -77,8 +79,8 @@ void tt_execute(const char* name, void (*test_function)())
   tt_current_test_failed = 0;
   test_function();
   if (tt_current_test_failed) {
-    printf("failure: %s:%d: In test %s():\n    %s (%s)\n",
-      tt_current_file, tt_current_line, name, tt_current_msg, tt_current_expression);
+    printf("failure: %s:%d: In test %s():\n    %s (%ld) (%s)\n",
+      tt_current_file, tt_current_line, name, tt_current_msg, tt_current_value, tt_current_expression);
     tt_fails++;
   } else {
     tt_passes++;
@@ -88,6 +90,18 @@ void tt_execute(const char* name, void (*test_function)())
 int tt_assert(const char* file, int line, const char* msg, const char* expression, int pass)
 {
   tt_current_msg = msg;
+  tt_current_value = 0;
+  tt_current_expression = expression;
+  tt_current_file = file;
+  tt_current_line = line;
+  tt_current_test_failed = !pass;
+  return pass;
+}
+
+int tt_assert_v(const char* file, int line, const char* msg, long value, const char* expression, int pass)
+{
+  tt_current_msg = msg;
+  tt_current_value = value;
   tt_current_expression = expression;
   tt_current_file = file;
   tt_current_line = line;
