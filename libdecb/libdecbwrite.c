@@ -69,6 +69,7 @@ error_code _decb_write(decb_path_id path, void *buffer, u_int * size)
 
 		if (ec != 0)
 		{
+			*size = 0;
 			return ec;
 		}
 	}

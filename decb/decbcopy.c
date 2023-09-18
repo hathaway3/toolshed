@@ -449,9 +449,24 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 			ec = _coco_write(destpath, buffer, &buffer_size);
 		}
 
+		if (ec == EOS_DF)
+		{
+			/* Delete file, and return disk full */
+			_coco_close(destpath);
+			
+			ec = _coco_delete(dstfile);
+			
+			if( ec != 0 )
+			{
+				fprintf(stderr, "File write failed, then file delete failed.\n");
+			}
+			
+			return EOS_DF;
+		}
+		
 		if (ec != 0)
 		{
-			return -1;
+			return ec;
 		}
 
 

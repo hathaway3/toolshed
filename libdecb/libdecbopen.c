@@ -592,10 +592,11 @@ static int validate_pathlist(decb_path_id * path, char *pathlist)
 				(*path)->hdbdos_offset = 0;
 			}
 			
-			if ((*path)->granule_count != 63)
+			if ((*path)->granule_count != 68)
 			{
-				(*path)->granule_count = 63;
-				fprintf(stderr, "HDB-DOS enabled. Forcing 63 granules per disk.\n");
+				fprintf(stderr, "HDB-DOS enabled. Forcing 68 granules per disk. (%d)\n",
+					(*path)->granule_count);
+				(*path)->granule_count = 68;
 			}	
 		}
 		else /* no HDB-DOS 'colon' found in path name */
