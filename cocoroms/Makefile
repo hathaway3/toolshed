@@ -19,7 +19,7 @@ coco3.rom: equates.asm coco3.asm
 	lwasm --raw -o $@ $^
 
 checksum:
-	md5sum -c --quiet --ignore-missing md5sums.txt
+	md5 *.rom >md5sums-new.txt
 
 clean:
-	-rm -f bas13.rom cb_equates.asm ecb_equates.asm extbas11.rom disk11.rom coco3.rom
+	-rm -f bas13.rom cb_equates.asm ecb_equates.asm extbas11.rom disk11.rom coco3.rom md5sums-new.txt
