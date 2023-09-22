@@ -41,21 +41,6 @@ void test_cecb_create()
 	error_code ec;
 	unsigned int size;
 
-	// Try to make a file with a name too long
-	ec = _cecb_create(&p_wav, "test.wav,TOOLONGFILENAME",
-			  FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
-	ASSERT_EQUALS(ec, EOS_BPNAM);
-
-	// Try to make a file with a name too long
-	ec = _cecb_create(&p_cas, "test.cas,TOOLONGFILENAME",
-			  FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
-	ASSERT_EQUALS(ec, EOS_BPNAM);
-
-	// Try to make a file with a name too long
-	ec = _cecb_create(&p_c10, "test.c10,TOOLONGFILENAME",
-			  FAM_READ | FAM_WRITE, 1, 255, 0, 0x55, 0x65);
-	ASSERT_EQUALS(ec, EOS_BPNAM);
-
 	// Open file written in previous written
 	ec = _cecb_create(&p_wav, "test.wav,FILE", FAM_READ | FAM_WRITE, 1,
 			  255, 0, 0x55, 0x65);

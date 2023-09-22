@@ -271,12 +271,12 @@ int cecbcopy(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d\n", argv[0], ec);
+			fprintf(stderr, "%s: `%s`: error %d\n", argv[0], df, ec);
 		}
 	}
 
 
-	return 0;
+	return ec;
 }
 
 

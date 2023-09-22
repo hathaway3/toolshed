@@ -490,11 +490,6 @@ static error_code validate_pathlist(cecb_path_id path, char *pathlist)
 
 		p++;
 
-		if (strlen(p) > 8)
-		{
-			ec = EOS_BPNAM;
-		}
-
 		strncpy(path->filename, p, 8);
 
 		/* Space fill remaining characters */
