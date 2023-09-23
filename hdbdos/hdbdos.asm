@@ -536,7 +536,11 @@ LC0C2          tfr       A,B                 COPY ACCA TO ACCB
 *	LDX	#LC139-1	POINT X TO DISK BASIC COPYRIGHT MESSAGE
                ldx       #LC139-1            COPYRIGHT MESSAGE - 1
 LC0DC          jsr       STRINOUT            PRINT COPYRIGHT MESSAGE TO SCREEN
+               IFNE      MEGAMINIMPI
+               ldx       #DKWMST2             GET DISK BASIC WARM START ADDRESS
+               ELSE
                ldx       #DKWMST             GET DISK BASIC WARM START ADDRESS
+               ENDC
                stx       RSTVEC              SAVE IT IN RESET VECTOR
 *	JMP	>LA0E2	JUMP BACK TO BASIC
                jmp       >HDINIT
@@ -3732,7 +3736,7 @@ TFSIDE         pshs      x                   Backup X onto stack
 * HDB-DOS Version
 VMAJOR         equ       1
 VMINOR         equ       5
-VREV           equ       1
+VREV           equ       0
 
 
                setdp     0
@@ -3753,30 +3757,30 @@ BASBFR         equ       $2DD
 
 * Static Storage                             (Reusing 9 last bytes of original USR table, after stubs)
                IFDEF     DRAGON
-SS             equ       $13F
+               org       $13F
                ELSE
-SS             equ       $149
+               org       $149
                ENDC
 
-INTFLG         equ       SS                  FlexiKey variable
-NCYLS          equ       SS+1                Device cylinder count (IDE)
-NHEADS         equ       SS+3                Device head count (IDE)
-NSECTS         equ       SS+4                Device sector count (IDE)
-HDFLAG         equ       SS+5                Hard drive active flag
-DRVSEL         equ       SS+6                LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
+INTFLG         rmb       1                   FlexiKey variable
+NCYLS          rmb       2                   Device cylinder count (IDE)
+NHEADS         rmb       1                   Device head count (IDE)
+NSECTS         rmb       1                   Device sector count (IDE)
+HDFLAG         rmb       1                   Hard drive active flag
+DRVSEL         rmb       1                   LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
 RETRY          equ       DRVSEL              DriveWire uses this location as a retry counter
-MAXDRV         equ       SS+7                Highest drive number
-IDNUM          equ       SS+8                Device number (SCSI 0-7) (IDE 0-1)
+MAXDRV         rmb       1                   Highest drive number
+IDNUM          rmb       1                   Device number (SCSI 0-7) (IDE 0-1)
 
 
 * Dynamic Storage
-DS             equ       $F3
+               org       $F3
 
-VCMD           equ       DS                  SCSI/IDE unit command
-VAD0           equ       DS+1                L.U.N. / sector (hi-byte)
-VAD1           equ       DS+2                Sector (lo-word)
-VBLKS          equ       DS+4                Block count / options
-VEXT           equ       DS+6                Reserved 10 byte SCSI commands
+VCMD           rmb       1                   SCSI/IDE unit command
+VAD0           rmb       1                   L.U.N. / sector (hi-byte)
+VAD1           rmb       2                   Sector (lo-word)
+VBLKS          rmb       2                   Block count / options
+VEXT           rmb       4                   Reserved 10 byte SCSI commands
 
 
 * HARD DISK DRIVER
@@ -3909,6 +3913,10 @@ FPGAWiFiLp
                lda       $FF6D               Load the data off of the input buffer
                bra       FPGAWiFiLp          and now loop back to check if we have cleared it all
 FPGAWiFiLpEnd
+               ENDC
+
+               IFNE MEGAMINIMPI
+               jsr  DWInit
                ENDC
 
 * Turbo Mode for DW4
@@ -4995,12 +5003,12 @@ a@             lda       $01D4
                beq       b@
                bsr       SENDCR
 b@             ldx       #DRVMSG-1           DRIVE=
-               bsr       DOSTROUT
+               jsr       STRINOUT
                clra      
                ldb       <$EB
                jsr       LBDCC
                ldx       #FREMSG-1           FREE=
-               bsr       DOSTROUT
+               jsr       STRINOUT
                bsr       BRIAN
                clra      
                jsr       LBDCC
@@ -5018,29 +5026,7 @@ D@             decb
                puls      pc,b
 SETVAR         ldd       #$1111
                std       <$EC
-RTS1           rts
-
-* Allow "COPY" command to overwrite existing file
-
-AETEST         jsr       >LC68C               Scan dir for filename
-               tst       $973                Already exist?
-               beq       RTS1                No, just return
-ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
-               cmpa      $0D,s
-               bne       a@
-               jmp       LD05C
-a@             lda       <$68                Get BASIC line # MSB
-               inca                          Direct mode ($FF)?
-               bne       d@                  No, just overwrite
-               ldx       #OVRMSG-1           Yes, point to message
-               bsr       DOSTROUT            Print it
-               bsr       GETY                Check for (Y)ES
-               beq       c@                  Yes, overwrite file
-               leas      <$26,s              No, remove temp variables
-               ldx       #ABTMSG-1           "ABORTED" message
-DOSTROUT       jmp       STRINOUT            Print it & return
-c@             jsr       >LCCFD               R.G. See above print Y
-d@             jmp       LC6F5               Kill dest file & return
+               rts       
 
 * Rename drive command syntax: RENAME DRIVE n, "STRING"
 
@@ -5098,12 +5084,35 @@ COPtst         ldx       <$A6                Get basic input pointer
                jmp       LC938               And get filename string
 
 
+* Allow "COPY" command to overwrite existing file
+
+AETEST         jsr       >LC68C               Scan dir for filename
+               tst       $973                Already exist?
+               beq       AE10                No, just return
+ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
+               cmpa      $0D,s
+               bne       a@
+               jmp       LD05C
+a@             lda       <$68                Get BASIC line # MSB
+               inca                          Direct mode ($FF)?
+               bne       d@                  No, just overwrite
+               ldx       #OVRMSG-1           Yes, point to message
+               bsr       b@                  Print it
+               bsr       GETY                Check for (Y)ES
+               beq       c@                  Yes, overwrite file
+               leas      <$26,s              No, remove temp variables
+               ldx       #ABTMSG-1           "ABORTED" message
+b@             jmp       STRINOUT            Print it & return
+c@             jsr       >LCCFD               R.G. See above print Y
+d@             jmp       LC6F5               Kill dest file & return
+
+
 * Get a keypress, beq if it's a "Y"
 
 GETY           jsr       GETKEY              Get a key
                anda      #$FF-$20            Force upper case
                cmpa      #'Y                 Set flag for "Y"
-               rts                           Return
+AE10           rts                           Return
 
 
 * Prompt Messages
@@ -5154,8 +5163,7 @@ NAMBUF         fcc       "AUTOEXEC"          FILENAME
 SIGNON         fcc       "HDB-DOS "
                fcb       VMAJOR+$30,$2E,VMINOR+$30
                IFNE      VREV
-               fcc       "R"
-               fcb       VREV+$30
+               fcb       VREV
                ENDC      
                fcb       $20
                IFDEF     IDE
@@ -5353,10 +5361,16 @@ MOVBLK         ldx       #BASBFR             Point to BASIC buffer
 DOMORE         ldb       ,x+                 Get a byte
                stb       ,y+                 Put a byte
                bne       DOMORE              If not end (0) flag get more
-               rts                           ALL	Done, return
+               rts               
+ IFNE MEGAMINIMPI
+ use dwinit.asm
+
+DKWMST2       nop                            WARM START INDICATOR
+              jsr        DWInit
+              jmp        DKWMST
+ ENDC
+
 ZZLAST         equ       *-1                 Cannot be > $DFFF!
-
-
 
                fill      $39,MAGICDG+$2000-*
 
