@@ -51,7 +51,7 @@ char *strlwr(char *str)
 	save = str;
 
 	while(*str) {
-		*str = tolower(*str);
+		*str = tolower((unsigned char)*str);
 		str++;
 	}
 
@@ -62,14 +62,14 @@ char *strlwr(char *str)
 int stricmp(const char *src, const char *dst)
 {
 	while(0 != *src && 0 != *dst) {
-		if(tolower(*src) != tolower(*dst)) {
+		if(tolower((unsigned char)*src) != tolower((unsigned char)*dst)) {
 			break;
 		}
 		src++;
 		dst++;
 	}
 
-	return tolower(*src) - tolower(*dst);
+	return tolower((unsigned char)*src) - tolower((unsigned char)*dst);
 }
 
 int strnicmp(const char *src, const char *dst, size_t sz)
@@ -80,7 +80,7 @@ int strnicmp(const char *src, const char *dst, size_t sz)
 
 
 	while(0 != *src && 0 != *dst && sz > 0) {
-		if(tolower(*src) != tolower(*dst)) {
+		if(tolower((unsigned char)*src) != tolower((unsigned char)*dst)) {
 			break;
 		}
 		src++;
@@ -88,7 +88,7 @@ int strnicmp(const char *src, const char *dst, size_t sz)
 		sz--;
 	}
 
-	return tolower(*src) - tolower(*dst);
+	return tolower((unsigned char)*src) - tolower((unsigned char)*dst);
 }
 #endif
 
@@ -114,7 +114,7 @@ static bool any(const char c, const char *str)
 bool head(const char *str1, const char *str2)
 {
 	while(*str1 != EOS && *str2 != EOS) {
-		if(tolower(*str1) != tolower(*str2) ) {
+		if(tolower((unsigned char)*str1) != tolower((unsigned char)*str2) ) {
 			break;
 		}
 		str1++;

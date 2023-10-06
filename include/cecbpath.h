@@ -13,6 +13,7 @@ extern "C" {
 
 #define CAS_FILE_EXTENSION ".cas"
 #define WAV_FILE_EXTENSION ".wav"
+#define C10_FILE_EXTENSION ".c10"
 
 #include "util.h"
 
@@ -76,7 +77,7 @@ typedef struct
 	int		ml_exec_address;
 } cecb_file_stat, *Cecb_file_stat;
 
-typedef enum { NONE=0, CAS, WAV } _tape_type;
+typedef enum { NONE=0, CAS, C10, WAV } _tape_type;
 typedef enum { AUTO=0, ODD, EVEN } _wave_parity;
 
 #define WAV_SAMPLE_MUL (path->wav_bits_per_sample == 8 ? 1 : 2)
@@ -85,7 +86,7 @@ typedef struct _cecb_path_id
 {
 	int				mode;					/* access mode */
 	_tape_type		tape_type;				/* true for WAV files, false for CAS files */
-	char			imgfile[512];			/* pointer to image file */
+	char			*imgfile;				/* pointer to image file */
 	char			filename[8];			/* Filename requested */
 	cecb_dir_entry  dir_entry;
 	unsigned int	filepos;				/* file position */
@@ -123,6 +124,7 @@ typedef struct _cecb_path_id
 	FILE			*fd;					/* file path pointer */
 } *cecb_path_id;
 
+error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample, double silence_length);
 error_code _cecb_create(cecb_path_id *path, char *pathlist, int mode, int file_type, int data_type, int gap, int ml_load_address, int ml_exec_address);
 error_code _cecb_open(cecb_path_id *path, char *pathlist, int mode );
 error_code _cecb_close(cecb_path_id path);
@@ -150,12 +152,16 @@ int _cecb_write_wav_audio(cecb_path_id path, char *buffer, int total_length);
 int _cecb_write_wav_audio_repeat_byte(cecb_path_id path, int length, char byte);
 int _cecb_write_wav_repeat_byte(cecb_path_id path, int length, char byte);
 int _cecb_write_wav_repeat_short(cecb_path_id path, int length, short bytes);
+error_code _cecb_detoken(unsigned char *in_buffer, int in_size, char **out_buffer, u_int * out_size);
+error_code _cecb_entoken(unsigned char *in_buffer, int in_size, unsigned char **out_buffer, u_int * out_size, int path_type);
 
 /* WAV and CAS global settings copied by _cecb_open and _cecb_create */
 extern double cecb_threshold;
 extern double cecb_frequency;
 extern _wave_parity cecb_wave_parity;
 extern long cecb_start_sample;
+extern int cecb_suggest_mc10;
+
 
 #include <cocopath.h>
 

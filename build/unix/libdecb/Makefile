@@ -3,7 +3,7 @@ include ../rules.mak
 
 vpath %.c ../../../libdecb
 
-CFLAGS	+= -g -I../../../include -Wall
+CFLAGS	+= -I../../../include -Wall
 
 %.a:
 	$(AR) -r $@ $^
@@ -11,7 +11,7 @@ CFLAGS	+= -g -I../../../include -Wall
 
 libdecb.a:	libdecbgs.o libdecbkill.o libdecbopen.o libdecbread.o libdecbrename.o \
             libdecbseek.o libdecbss.o libdecbread.o libdecbwrite.o libdecbtokenize.o \
-            libdecbbinconcat.o libdecbsrec.o
+            libdecbbinconcat.o libdecbsrec.o libdecbdskini.o
 
 clean:
 	$(RM) *.o *.a

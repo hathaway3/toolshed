@@ -8,7 +8,8 @@ CFLAGS	+= -I../../../include
 	ar -r $@ $^
 	ranlib $@
 
-libcecb.a:	libcecbwrite.o libcecbwav.o libcecbread.o libcecbgs.o libcecbcas.o libcebcopen.o
+libcecb.a:	libcecbbulkerase.o libcecbwrite.o libcecbwav.o libcecbread.o \
+					libcecbgs.o libcecbcas.o libcebcopen.o libcecbtokenize.o
 
 clean:
 	rm -f *.o *.a

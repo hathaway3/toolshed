@@ -3,65 +3,111 @@
  ********************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#ifdef WIN32
+#include <direct.h>
+#endif
 
 #include <toolshed.h>
 
+const char *OES_SUC_str = "SUCCESS!";
+const char *EOS_FNA_str = "the file's permissions make it inaccessible to you";
+const char *EOS_EOF_str = "input past end-of-file";
+const char *EOS_FAE_str = "file already exists";
+const char *EOS_BPNAM_str = "badly formed pathname";
+const char *EOS_PNNF_str = "pathname not found";
+const char *EOS_WRITE_str = "error writing to file";
+const char *EOS_DF_str = "disk is filled to capacity";
+const char *EOS_PADROM_str = "file is larger than pad size";
+const char *EOS_WT_str = "attempt to read an incompatible media";
+const char *EOS_MF_str = "memory full";
+const char *EOS_CRC_str = "CRC error";
+const char *EOS_UNKN_str = "unknown error";
+const char *EOS_IA_str = "illegal filename";
+const char *EOS_IC_str = "illegal change to directory file";
+const char *EOS_PTHFUL_str = "The file cannot be opened because the system path table is currently full";
+const char *EOS_BMODE_str = "attempt to perform I/O function of which the device or file is incapable";
+const char *EOS_SF_str = "file is too fragmented to be expanded further";
+const char *EOS_SE_str = "physical seek to non-existant sector";
 
-void TSReportError(error_code te, char *errorstr)
+const char *TSReportError(error_code te)
 {
 	switch (te)
 	{
-		case 0:
-			strcpy(errorstr, "SUCCESS!");
-			break;
+	case 0:
+		return OES_SUC_str;
+		break;
 
-		case EOS_FNA:
-			strcpy(errorstr, "the file's permissions make it inaccessible to you");
-			break;
+	case EOS_FNA:
+		return EOS_FNA_str;
+		break;
 
-		case EOS_EOF:
-			strcpy(errorstr, "input past end-of-file");
-			break;
+	case EOS_EOF:
+		return EOS_EOF_str;
+		break;
 
-		case EOS_FAE:
-			strcpy(errorstr, "file already exists");
-			break;
+	case EOS_FAE:
+		return EOS_FAE_str;
+		break;
 
-		case EOS_BPNAM:
-			strcpy(errorstr, "badly formed pathname");
-			break;
+	case EOS_BPNAM:
+		return EOS_BPNAM_str;
+		break;
 
-		case EOS_PNNF:
-			strcpy(errorstr, "pathname not found");
-			break;
+	case EOS_PNNF:
+		return EOS_PNNF_str;
+		break;
 
-		case EOS_WRITE:
-			strcpy(errorstr, "error writing to file");
-			break;
+	case EOS_WRITE:
+		return EOS_WRITE_str;
+		break;
 
-		case EOS_DF:
-			strcpy(errorstr, "disk is filled to capacity");
-			break;
+	case EOS_DF:
+		return EOS_DF_str;
+		break;
 
-		case EOS_PADROM:
-			strcpy(errorstr, "file is larger than pad size");
-			break;
+	case EOS_PADROM:
+		return EOS_PADROM_str;
+		break;
 
-		case EOS_WT:
-			strcpy( errorstr, "attempt to read an incompatible media");
-			break;
+	case EOS_WT:
+		return EOS_WT_str;
+		break;
 
-		case EOS_MF:
-			strcpy( errorstr, "memory full");
-			break;
+	case EOS_MF:
+		return EOS_MF_str;
+		break;
 
-		case EOS_CRC:
-			strcpy( errorstr, "CRC error" );
-			break;
+	case EOS_CRC:
+		return EOS_CRC_str;
+		break;
 
-		default:
-			strcpy(errorstr, "unknown error");
-			break;
+	case EOS_IA:
+		return EOS_IA_str;
+		break;
+
+	case EOS_IC:
+		return EOS_IC_str;
+		break;
+
+	case EOS_PTHFUL:
+		return EOS_PTHFUL_str;
+		break;
+
+	case EOS_BMODE:
+		return EOS_BMODE_str;
+		break;
+
+	case EOS_SF:
+		return EOS_SF_str;
+		break;
+
+	case EOS_SE:
+		return EOS_SE_str;
+		break;
+
+	default:
+		return EOS_UNKN_str;
+		break;
 	}
 }
 
@@ -83,69 +129,69 @@ int TSIsDirectory(char *pathlist)
 
 error_code TSRename(char *pathlist, char *new_name)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
-    ec = _coco_rename(pathlist, new_name);
+	ec = _coco_rename(pathlist, new_name);
 
-    return ec;
+	return ec;
 }
 
 
 
 error_code TSDelete(char *pathlist)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
-    ec = _coco_delete(pathlist);
+	ec = _coco_delete(pathlist);
 
 	if (ec != 0)
 	{
 		ec = _coco_delete_directory(pathlist);
 	}
 
-    return ec;
+	return ec;
 }
 
 
 
 error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart)
 {
-    error_code	ec = 0;
-    coco_path_id path;
-    int j;
-    u_int fileSize;
+	error_code ec = 0;
+	coco_path_id path;
+	int j;
+	u_int fileSize;
 
 
-    ec = _coco_open(&path, pathlist, FAM_READ | FAM_WRITE);
+	ec = _coco_open(&path, pathlist, FAM_READ | FAM_WRITE);
 
-    if (ec != 0)
-    {
-        return ec;
-    }
+	if (ec != 0)
+	{
+		return ec;
+	}
 
 
-    ec = _coco_gs_size(path, &fileSize);
+	ec = _coco_gs_size(path, &fileSize);
 
-    if (ec != 0)
-    {
-        _coco_close(path);
+	if (ec != 0)
+	{
+		_coco_close(path);
 
-        return ec;
-    }
+		return ec;
+	}
 
-    if (padSize == fileSize)
-    {
-        _coco_close(path);
+	if (padSize == fileSize)
+	{
+		_coco_close(path);
 
-	return 0;
-    }
+		return 0;
+	}
 
-    if (padSize < fileSize)
-    {
-        _coco_close(path);
+	if (padSize < fileSize)
+	{
+		_coco_close(path);
 
-        return EOS_PADROM;
-    }
+		return EOS_PADROM;
+	}
 
 	if (padAtStart == 0)
 	{
@@ -185,36 +231,40 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart)
 			}
 
 			free(contents);
-			contents=NULL;
+			contents = NULL;
 		}
 	}
 
-    _coco_close(path);
+	_coco_close(path);
 
 
-    return 0;
+	return 0;
 }
 
 
 
 error_code TSRBFAttrGet(char *p, char *attr, char *strattr)
 {
-    error_code	ec = 0;
-    os9_path_id path;
+	error_code ec = 0;
+	os9_path_id path;
 
-    /* open a path to the device */
-    ec = _os9_open(&path, p, FAM_READ);
+	/* open a path to the device */
+	ec = _os9_open(&path, p, FAM_READ);
 
-    if (ec != 0)
-    {
-        return(ec);
-    }
+	if (ec != 0)
+	{
+		ec = _os9_open(&path, p, FAM_READ | FAM_DIR);
+		if (ec != 0)
+		{
+			return (ec);
+		}
+	}
 
-    {
-        fd_stats fdbuf;
-        int size = sizeof(fdbuf);
+	{
+		fd_stats fdbuf;
+		int size = sizeof(fdbuf);
 
-        _os9_gs_fd(path, size, &fdbuf);
+		_os9_gs_fd(path, size, &fdbuf);
 
 		*attr = fdbuf.fd_att;
 
@@ -224,43 +274,48 @@ error_code TSRBFAttrGet(char *p, char *attr, char *strattr)
 		}
 	}
 
-    _os9_close(path);
+	_os9_close(path);
 
-    return(0);
+	return (0);
 }
 
 
 
-error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask, char *attr, char *strattr)
+error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask,
+			char *attr, char *strattr)
 {
-    error_code	ec = 0;
-    os9_path_id path;
+	error_code ec = 0;
+	os9_path_id path;
 
-    /* open a path to the device */
-    ec = _os9_open(&path, file, FAM_WRITE);
+	/* open a path to the device */
+	ec = _os9_open(&path, file, FAM_WRITE);
 
-    if (ec != 0)
-    {
-        return(ec);
-    }
+	if (ec != 0)
+	{
+		ec = _os9_open(&path, file, FAM_WRITE | FAM_DIR);
+		if (ec != 0)
+		{
+			return (ec);
+		}
+	}
 
-    {
-        fd_stats fdbuf;
-        int size = sizeof(fdbuf);
+	{
+		fd_stats fdbuf;
+		int size = sizeof(fdbuf);
 
-        ec = _os9_gs_fd(path, size, &fdbuf);
+		ec = _os9_gs_fd(path, size, &fdbuf);
 
-        if (attrSetMask != 0)
-        {
-            fdbuf.fd_att |= attrSetMask;
-        }
+		if (attrSetMask != 0)
+		{
+			fdbuf.fd_att |= attrSetMask;
+		}
 
-        if (attrResetMask != 0)
-        {
-            fdbuf.fd_att &= ~attrResetMask;
-        }
+		if (attrResetMask != 0)
+		{
+			fdbuf.fd_att &= ~attrResetMask;
+		}
 
-        ec = _os9_ss_fd(path, size, &fdbuf);
+		ec = _os9_ss_fd(path, size, &fdbuf);
 
 		*attr = fdbuf.fd_att;
 
@@ -270,15 +325,15 @@ error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask, char *at
 		}
 	}
 
-    _os9_close(path);
+	_os9_close(path);
 
-    return(0);
+	return (0);
 }
 
 
 error_code TSMoveFile(char *srcfile, char *dstfile)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 	char buff[512];
 
 	/* determine if srcfile is a directory, delete the make */
@@ -287,8 +342,7 @@ error_code TSMoveFile(char *srcfile, char *dstfile)
 		TSMakeDirectory(dstfile);
 		TSDelete(srcfile);
 	}
-	else
-	if (TSCopyFile(srcfile, dstfile, 0, 1, 0, 0, buff, 512) == 0)
+	else if (TSCopyFile(srcfile, dstfile, 0, 1, 0, 0, buff, 512) == 0)
 	{
 		TSDelete(srcfile);
 	}
@@ -297,116 +351,123 @@ error_code TSMoveFile(char *srcfile, char *dstfile)
 }
 
 
-error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate, int rewrite, int owner, int owner_set, char *buffer, u_int buffer_size)
+error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
+		      int rewrite, int owner, int owner_set, char *buffer,
+		      u_int buffer_size)
 {
-    error_code	ec = 0;
-    coco_path_id path;
-    coco_path_id destpath;
-    coco_file_stat	fdesc;
-    int		mode = FAM_NOCREATE | FAM_WRITE;
+	error_code ec = 0;
+	coco_path_id path;
+	coco_path_id destpath;
+	coco_file_stat fdesc;
+	int mode = FAM_NOCREATE | FAM_WRITE;
 	coco_file_stat fstat;
 
 
-    /* 1. Set mode based on rewrite. */
+	/* 1. Set mode based on rewrite. */
 
-    if (rewrite == 1)
-    {
-        mode &= ~FAM_NOCREATE;
-    }
-
-
-    /* 2. Open a path to the srcfile. */
-
-    ec = _coco_open(&path, srcfile, FAM_READ);
-
-    if (ec != 0)
+	if (rewrite == 1)
 	{
-        return ec;
+		mode &= ~FAM_NOCREATE;
 	}
 
 
-    /* 3. Attempt to create the destfile. */
+	/* 2. Open a path to the srcfile. */
+
+	ec = _coco_open(&path, srcfile, FAM_READ);
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+
+	/* 3. Attempt to create the destfile. */
 
 	fstat.perms = FAP_PREAD | FAP_READ | FAP_WRITE;
-    ec = _coco_create(&destpath, dstfile, mode, &fstat);
+	ec = _coco_create(&destpath, dstfile, mode, &fstat);
 
-    if (ec != 0)
-    {
-        _coco_close(path);
+	if (ec != 0)
+	{
+		_coco_close(path);
 
-        return ec;
-    }
-
-
-    while (_coco_gs_eof(path) == 0)
-    {
-        char *newBuffer;
-        u_int newSize;
-        u_int size = buffer_size;
-
-        ec = _coco_read(path, buffer, &size);
-
-        if (ec != 0)
-        {
-            break;
-        }
-
-        if (eolTranslate == 1)
-        {
-            if (path->type == NATIVE && destpath->type != NATIVE)
-            {
-                /* source is native, destination is OS-9 or DECB */
-
-                NativeToCoCo(buffer, size, &newBuffer, &newSize);
-
-                ec = _coco_write(destpath, newBuffer, &newSize);
-
-                free(newBuffer);
-		newBuffer=NULL;
-            }
-            else if (path->type != NATIVE && destpath->type == NATIVE)
-            {
-                /* source is OS-9 or DECB, destination is native */
-
-                CoCoToNative(buffer, size, &newBuffer, &newSize);
-
-                ec = _coco_write(destpath, newBuffer, &newSize);
-
-                free(newBuffer);
-		newBuffer=NULL;
-            }
-        }
-        else
-        {
-            /* One-to-one writing of the data -- no translation needed. */
-
-            ec = _coco_write(destpath, buffer, &size);
-        }
-
-        if (ec != 0)
-        {
-            break;
-        }
-    }
+		return ec;
+	}
 
 
-    /* Copy meta data from file descriptor of source to destination */
+	while (_coco_gs_eof(path) == 0)
+	{
+		char *newBuffer;
+		u_int newSize;
+		u_int size = buffer_size;
 
-    _coco_gs_fd(path, &fdesc);
+		ec = _coco_read(path, buffer, &size);
 
-	if ( (owner_set == 1) || (path->type == NATIVE) )
+		if (ec != 0)
+		{
+			break;
+		}
+
+		if (eolTranslate == 1)
+		{
+			if (path->type == NATIVE && destpath->type != NATIVE)
+			{
+				/* source is native, destination is OS-9 or DECB */
+
+				NativeToCoCo(buffer, size, &newBuffer,
+					     &newSize);
+
+				ec = _coco_write(destpath, newBuffer,
+						 &newSize);
+
+				free(newBuffer);
+				newBuffer = NULL;
+			}
+			else if (path->type != NATIVE
+				 && destpath->type == NATIVE)
+			{
+				/* source is OS-9 or DECB, destination is native */
+
+				CoCoToNative(buffer, size, &newBuffer,
+					     &newSize);
+
+				ec = _coco_write(destpath, newBuffer,
+						 &newSize);
+
+				free(newBuffer);
+				newBuffer = NULL;
+			}
+		}
+		else
+		{
+			/* One-to-one writing of the data -- no translation needed. */
+
+			ec = _coco_write(destpath, buffer, &size);
+		}
+
+		if (ec != 0)
+		{
+			break;
+		}
+	}
+
+
+	/* Copy meta data from file descriptor of source to destination */
+
+	_coco_gs_fd(path, &fdesc);
+
+	if ((owner_set == 1) || (path->type == NATIVE))
 	{
 		fdesc.user_id = owner % 65536;
 		fdesc.group_id = owner / 65536;
 	}
 
-    _coco_ss_fd(destpath, &fdesc);
+	_coco_ss_fd(destpath, &fdesc);
 
-    _coco_close(path);
-    _coco_close(destpath);
+	_coco_close(path);
+	_coco_close(destpath);
 
 
-    return ec;
+	return ec;
 }
 
 
@@ -416,182 +477,183 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate, int rewrit
  * The caller must free the returned buffer in 'newBuffer' once
  * finished with the buffer.
  */
-void NativeToCoCo(char *buffer, int size, char **newBuffer, u_int *newSize)
+void NativeToCoCo(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
-    EOL_Type	eolMethod;
-    int		i;
+	EOL_Type eolMethod;
+	int i;
 
 
-    eolMethod = DetermineEOLType(buffer, size);
+	eolMethod = DetermineEOLType(buffer, size);
 
-    switch (eolMethod)
-    {
-        case EOL_UNIX:
-            /* Change all occurences of 0x0A to 0x0D */
+	switch (eolMethod)
+	{
+	case EOL_UNIX:
+		/* Change all occurences of 0x0A to 0x0D */
 
-            for(i = 0; i < size; i++)
-            {
-                if (buffer[i] == 0x0A)
-                {
-                    buffer[i] = 0x0D;
-                }
-            }
-            *newBuffer = (char *)malloc(size);
-            if (*newBuffer == NULL)
-            {
-                return;
-            }
+		*newBuffer = (char *) malloc(size);
+		if (*newBuffer == NULL)
+		{
+			return;
+		}
 
-            memcpy(*newBuffer, buffer, size);
+		memcpy(*newBuffer, buffer, size);
 
-            *newSize = size;
+		*newSize = size;
 
-            break;
+		for (i = 0; i < size; i++)
+		{
+			if ((*newBuffer)[i] == 0x0A)
+			{
+				(*newBuffer)[i] = 0x0D;
+			}
+		}
 
-        case EOL_DOS:
-            /* Things are a bit more involved here. */
+		break;
 
-            /* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
+	case EOL_DOS:
+		/* Things are a bit more involved here. */
 
-            {
-                int dosEOLCount = 0;
-                char *newP;
-                int i;
+		/* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
 
-
-                /* 1. First we count up the number of 0x0A line endings. */
-
-                for (i = 0; i < size; i++)
-                {
-                    if (buffer[i] == 0x0A)
-                    {
-                        dosEOLCount++;
-                    }
-                }
+		{
+			u_int dosEOLCount = 0;
+			char *newP;
+			int i;
 
 
-                /* 2. Now we allocate a buffer to hold the current size -
-                    'dosEOLCount' bytes.
-                */
+			/* 1. First we count up the number of 0x0A line endings. */
 
-                *newSize = size - dosEOLCount;
-
-                *newBuffer = (char *)malloc(*newSize);
-
-                if (*newBuffer == NULL)
-                {
-                    return;
-                }
-
-                newP = *newBuffer;
-
-                for (i = 0; i < size; i++)
-                {
-                    if (buffer[i] != 0x0A)
-                    {
-                        *newP = buffer[i];
-                        newP++;
-                    }
-                }
-            }
-            break;
-
-        default:
-            /* No eols, binary copy */
-
-            *newBuffer = (char *)malloc(size);
-            if (*newBuffer == NULL)
-            {
-                return;
-            }
-
-            memcpy(*newBuffer, buffer, size);
-
-            *newSize = size;
-
-    }
+			for (i = 0; i < size; i++)
+			{
+				if (buffer[i] == 0x0A)
+				{
+					dosEOLCount++;
+				}
+			}
 
 
-    return;
+			/* 2. Now we allocate a buffer to hold the current size -
+			   'dosEOLCount' bytes.
+			 */
+
+			*newSize = size - dosEOLCount;
+
+			*newBuffer = (char *) malloc(*newSize);
+
+			if (*newBuffer == NULL)
+			{
+				return;
+			}
+
+			newP = *newBuffer;
+
+			for (i = 0; i < size; i++)
+			{
+				if (buffer[i] != 0x0A)
+				{
+					*newP = buffer[i];
+					newP++;
+				}
+			}
+		}
+		break;
+
+	default:
+		/* No eols, binary copy */
+
+		*newBuffer = (char *) malloc(size);
+		if (*newBuffer == NULL)
+		{
+			return;
+		}
+
+		memcpy(*newBuffer, buffer, size);
+
+		*newSize = size;
+
+	}
+
+
+	return;
 }
 
 
-void CoCoToNative(char *buffer, int size, char **newBuffer, u_int *newSize)
+void CoCoToNative(char *buffer, u_int size, char **newBuffer, u_int * newSize)
 {
 #ifdef WIN32
-    int dosEOLCount = 0;
-    char *newP;
-    int		i;
+	u_int dosEOLCount = 0;
+	char *newP;
+	int i;
 
 
-    /* Things are a bit more involved here. */
+	/* Things are a bit more involved here. */
 
-    /* We will add 0x0As after all 0x0Ds. */
-
-
-    /* 1. First we count up the number of 0x0D OS-9 line endings. */
-
-    for (i = 0; i < size; i++)
-    {
-        if (buffer[i] == 0x0D)
-        {
-            dosEOLCount++;
-        }
-    }
+	/* We will add 0x0As after all 0x0Ds. */
 
 
-    /* 2. Now we allocate a buffer to hold the current size +
-        'dosEOLCount' bytes.
-    */
+	/* 1. First we count up the number of 0x0D OS-9 line endings. */
 
-    *newSize = size + dosEOLCount;
-    *newBuffer = (char *)malloc(*newSize);
+	for (i = 0; i < size; i++)
+	{
+		if (buffer[i] == 0x0D)
+		{
+			dosEOLCount++;
+		}
+	}
 
-    if (*newBuffer == NULL)
-    {
-        return;
-    }
 
-    newP = *newBuffer;
+	/* 2. Now we allocate a buffer to hold the current size +
+	   'dosEOLCount' bytes.
+	 */
 
-    for (i = 0; i < size; i++)
-    {
-        *newP = buffer[i];
-        newP++;
+	*newSize = size + dosEOLCount;
+	*newBuffer = (char *) malloc(*newSize);
 
-        if (buffer[i] == 0x0D)
-        {
-            *newP = 0x0A;
-            newP++;
-        }
-    }
+	if (*newBuffer == NULL)
+	{
+		return;
+	}
+
+	newP = *newBuffer;
+
+	for (i = 0; i < size; i++)
+	{
+		*newP = buffer[i];
+		newP++;
+
+		if (buffer[i] == 0x0D)
+		{
+			*newP = 0x0A;
+			newP++;
+		}
+	}
 #else
-    int		i;
+	int i;
 
 
-    /* Change all occurences of 0x0D to 0x0A */
+	/* Change all occurences of 0x0D to 0x0A */
 
-    for(i = 0; i < size; i++)
-    {
-        if (buffer[i] == 0x0D)
-        {
-            buffer[i] = 0x0A;
-        }
-    }
+	*newBuffer = (char *) malloc(size);
+	if (*newBuffer == NULL)
+	{
+		return;
+	}
 
-    *newBuffer = (char *)malloc(size);
-    if (*newBuffer == NULL)
-    {
-        return;
-    }
+	memcpy(*newBuffer, buffer, size);
 
-    memcpy(*newBuffer, buffer, size);
+	*newSize = size;
 
-    *newSize = size;
+	for (i = 0; i < size; i++)
+	{
+		if ((*newBuffer)[i] == 0x0D)
+		{
+			(*newBuffer)[i] = 0x0A;
+		}
+	}
 #endif
 
 
-    return;
+	return;
 }
 
 
@@ -602,63 +664,55 @@ void CoCoToNative(char *buffer, int size, char **newBuffer, u_int *newSize)
  */
 EOL_Type DetermineEOLType(char *buffer, int size)
 {
-    EOL_Type eol = 0;
-    int i;
+	EOL_Type eol = 0;
+	int i;
 
 
-    /* Scan to determine EOL ending type */
+	/* Scan to determine EOL ending type */
 
-    for (i = 0; i < size; i++)
-    {
-        if (i < size - 1 && (buffer[i] == 0x0D && buffer[i + 1] == 0x0A))
-        {
-            /* We have DOS/Windows line endings (0D0A)... */
-            eol = EOL_DOS;
+	for (i = 0; i < size; i++)
+	{
+		if (i < size - 1
+		    && (buffer[i] == 0x0D && buffer[i + 1] == 0x0A))
+		{
+			/* We have DOS/Windows line endings (0D0A)... */
+			eol = EOL_DOS;
 
-            break;
-        }
+			break;
+		}
 
-        if (buffer[i] == 0x0A)
-        {
-            /* We have unix line endings. */
-            eol = EOL_UNIX;
+		/* Note we could have a buffer starting with NL (0x0A)
+		 * even if it is a CR,NL (0x0D0A) file */
+		if (buffer[i] == 0x0A)
+		{
+			/* We have unix line endings. */
+			eol = EOL_UNIX;
 
-            break;
-        }
+			if (i > 0)
+				break;
+			else
+				continue;
+		}
 
-        if (buffer[i] == 0x0D)
-        {
-            /* We have OS-9 line endings. */
-            eol = EOL_OS9;
+		if (buffer[i] == 0x0D)
+		{
+			/* We have OS-9 line endings. */
+			eol = EOL_OS9;
 
-            break;
-        }
-    }
+			break;
+		}
+	}
 
 
-    return eol;
+	return eol;
 }
 
 
-#ifdef	WIN32
-#define	_S_IRGRP	0x0020	/* RG, made this up */
-#define	_S_IXGRP	0x0008	/* ditto */
-#define	_S_IROTH	0x0004	/* ditto */
-#define	_S_IXOTH	0x0001	/* ditto */
-#define	S_IRGRP		_S_IRGRP	/* ditto */
-#define	S_IXGRP		_S_IXGRP	/* ditto */
-#define	S_IROTH		_S_IROTH	/* ditto */
-#define	S_IXOTH		_S_IXOTH	/* ditto */
-#define MKDIR(D,P) mkdir((D))
-#else
-#define MKDIR(D,P) mkdir(D,P)
-#endif
-
 int TSMakeDirectory(char *p)
 {
-	error_code		ec = 0;
-	char			*subPath;
-	int			i = 0, length = strlen(p);
+	error_code ec = 0;
+	char *subPath;
+	int i = 0, length = strlen(p);
 
 
 	/* 1. Determine if there is an OS-9 pathlist. */
@@ -666,8 +720,12 @@ int TSMakeDirectory(char *p)
 	if (strchr(p, ',') == NULL)
 	{
 		/* 1. Call the native file system makdir */
-		ec = MKDIR(p, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-		/* ec = mkdir(p); */
+#ifndef WIN32
+		ec = mkdir(p,
+			   S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#else
+		ec = _mkdir(p);
+#endif
 	}
 	else
 	{
@@ -708,27 +766,29 @@ int TSMakeDirectory(char *p)
 			}
 
 			i++;
-		} while (i <= length);
+		}
+		while (i <= length);
 
 		free(subPath);
 	}
 
 
-    return ec;
+	return ec;
 }
 
 
 
-error_code TSDECBFree(char *pathlist, u_int *free_granules)
+error_code TSDECBFree(char *pathlist, u_int * free_granules)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
-	char decbpathlist[256];
+	char *decbpathlist;
 	decb_path_id path;
 
 
 	/* 1. Make a copy of the pathlist. */
 
+	decbpathlist = malloc(strlen(pathlist) + 2);
 	strcpy(decbpathlist, pathlist);
 
 
@@ -744,6 +804,8 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 
 	ec = _decb_open(&path, decbpathlist, FAM_READ);
 
+	free(decbpathlist);
+
 	if (ec != 0)
 	{
 		return ec;
@@ -754,6 +816,9 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 	*free_granules = 0;
 	for (i = 0; i < 256; i++)
 	{
+		if (i >= path->granule_count)
+			break;
+
 		if (path->FAT[i] == 0xFF)
 		{
 			(*free_granules)++;
@@ -772,9 +837,13 @@ error_code TSDECBFree(char *pathlist, u_int *free_granules)
 }
 
 
-error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day, u_int *year, u_int *bps, u_int *total_sectors, u_int *bytes_free, u_int *free_sectors, u_int *largest_free_block, u_int *sectors_per_cluster, u_int *largest_count, u_int *sector_count)
+error_code TSRBFFree(char *file, char *dname, u_int * month, u_int * day,
+		     u_int * year, u_int * bps, u_int * total_sectors,
+		     u_int * bytes_free, u_int * free_sectors,
+		     u_int * largest_free_block, u_int * sectors_per_cluster,
+		     u_int * largest_count, u_int * sector_count)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	int i;
 	char os9pathlist[256];
 	os9_path_id path;
@@ -807,7 +876,7 @@ error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day, u_int *y
 	ec = _os9_open(&path, os9pathlist, FAM_READ);
 	if (ec != 0)
 	{
-		return(ec);
+		return (ec);
 	}
 
 	*bps = path->bps;
@@ -829,7 +898,8 @@ error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day, u_int *y
 	for (i = 0; i < bytes_in_bitmap * 8; i++)
 	{
 		cluster_count++;
-		if (cluster_count > total_clusters) break;
+		if (cluster_count > total_clusters)
+			break;
 
 		if (_os9_ckbit(path->bitmap, i))
 		{
@@ -860,14 +930,14 @@ error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day, u_int *y
 
 	*bytes_free = *free_sectors * *bps;
 
-	strcpy(dname, (char *)sector0.dd_nam);
-	OS9StringToCString((u_char *)dname);
+	strcpy(dname, (char *) sector0.dd_nam);
+	OS9StringToCString((u_char *) dname);
 
 	*month = sector0.dd_dat[1];
-	*day   = sector0.dd_dat[2];
-	*year  = sector0.dd_dat[0] + 1900;
+	*day = sector0.dd_dat[2];
+	*year = sector0.dd_dat[0] + 1900;
 
 	_os9_close(path);
 
-	return(0);
+	return (0);
 }

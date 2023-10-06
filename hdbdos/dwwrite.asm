@@ -31,6 +31,43 @@ loop@     tst       $FF53              ; check status register
 
           ELSE
 
+          IFNE SY6551N
+          IFNDEF    SY6551B
+SY6551B   EQU       $FF68             ; Set base address for future use
+          ENDC
+          IFNDEF    SYDATA
+SYDATA    EQU       SY6551B
+          ENDC
+          IFNDEF    SYCONT
+SYCONT    EQU       SY6551B+3
+          ENDC
+          IFNDEF    SYCOMM
+SYCOMM    EQU       SY6551B+2
+          ENDC
+          IFNDEF    SYSTAT
+SYSTAT    EQU       SY6551B+1
+          ENDC
+          IFNDEF    SYCONSET
+SYCONSET  EQU       $10               ; Default baud rate 115200
+          ENDC
+DWWrite   pshs      d,cc              ; preserve registers
+          IFEQ      NOINTMASK
+          orcc      #IntMasks         ; mask interrupts
+          ENDC
+          lda       #SYCONSET         ; Set baud to 115K
+          sta       SYCONT            ; write the info to control register
+          lda       #$0B              ; Set no parity, no irq
+          sta       SYCOMM            ; write the info to command register
+txByte
+          lda       SYSTAT            ; read status register to check
+          anda      #$10              ; if transmit buffer is empty
+          beq       txByte            ; if not loop back and check again
+          lda       ,x+               ; load byte from buffer
+          sta       SYDATA            ; and write it to data register
+          leay      -1,y              ; decrement byte counter
+          bne       txByte            ; loop if more to send
+          puls      cc,d,pc           ; restore registers and return
+          ELSE
           IFNE JMCPBCK
 DWWrite   pshs      d,cc              ; preserve registers
           IFEQ      NOINTMASK
@@ -46,26 +83,44 @@ txByte
 
           ELSE
           IFNE BECKER
+          IFNDEF    BECKBASE
+BECKBASE  EQU       $FF41            ; Set base address for future use
+          ENDC
+          IFNDEF    BECKDATA
+BECKDATA  EQU       BECKBASE+1          ; Set Becker Port Data Address Location
+          ENDC
+          IFNDEF    BECKSTAT
+BECKSTAT  EQU       BECKBASE            ; Sete Becker Port Status Register Address Location
+          ENDC
 DWWrite   pshs      d,cc              ; preserve registers
           IFEQ      NOINTMASK
           orcc      #IntMasks           ; mask interrupts
           ENDC
 txByte
           lda       ,x+
-          sta       $FF42
+          sta       BECKDATA
           leay      -1,y                ; decrement byte counter
           bne       txByte              ; loop if more to send
 
           puls      cc,d,pc           ; restore registers and return
           ELSE
           IFNE BECKERTO
+          IFNDEF    BECKBASE
+BECKBASE  EQU       $FF41            ; Set base address for future use
+          ENDC
+          IFNDEF    BECKDATA
+BECKDATA  EQU       BECKBASE+1          ; Set Becker Port Data Address Location
+          ENDC
+          IFNDEF    BECKSTAT
+BECKSTAT  EQU       BECKBASE            ; Sete Becker Port Status Register Address Location
+          ENDC
 DWWrite   pshs      d,cc              ; preserve registers
           IFEQ      NOINTMASK
           orcc      #IntMasks           ; mask interrupts
           ENDC
 txByte
           lda       ,x+
-          sta       $FF42
+          sta       BECKDATA
           leay      -1,y                ; decrement byte counter
           bne       txByte              ; loop if more to send
 
@@ -74,8 +129,9 @@ txByte
           ENDC
           ENDC
           ENDC
+          ENDC
 
-          IFEQ BECKER+JMCPBCK+ARDUINO+BECKERTO
+          IFEQ BECKER+JMCPBCK+ARDUINO+BECKERTO+SY6551N
           IFNE BAUD38400
 *******************************************************
 * 38400 bps using 6809 code and timimg

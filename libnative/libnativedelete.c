@@ -16,17 +16,17 @@
 
 error_code _native_delete(char *pathlist)
 {
-    error_code	ec = 0;
-	
-	
-    ec = unlink(pathlist);
-	
-    if (ec != 0)
+	error_code ec = 0;
+
+
+	ec = unlink(pathlist);
+
+	if (ec != 0)
 	{
 		ec = errno;
 	}
-	
-	
+
+
 	return ec;
 }
 
@@ -34,17 +34,17 @@ error_code _native_delete(char *pathlist)
 
 error_code _native_delete_directory(char *pathlist)
 {
-    error_code	ec = 0;
-	
-	
-    ec = rmdir(pathlist);
-	
-    if (ec != 0)
+	error_code ec = 0;
+
+
+	ec = rmdir(pathlist);
+
+	if (ec != 0)
 	{
 		ec = errno;
 	}
-	
-	
+
+
 	return ec;
 }
 
@@ -52,18 +52,18 @@ error_code _native_delete_directory(char *pathlist)
 
 error_code _native_truncate(char *pathlist, off_t length)
 {
-    error_code	ec = 0;
-	
-	
+	error_code ec = 0;
+
+
 #if !defined(WIN32)
 	ec = truncate(pathlist, length);
 #endif
 
-    if (ec != 0)
+	if (ec != 0)
 	{
 		ec = errno;
 	}
-	
-	
+
+
 	return ec;
 }

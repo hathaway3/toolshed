@@ -96,6 +96,16 @@ FATS           equ       $800
 
 SKIP2          equ       $8C
 
+               IFDEF     SDC
+RBLK	          equ       $2             read a block opcode
+WBLK           equ       $3             write a block opcode
+DATAADDR       equ       $FF40          hardware address
+TDELAY         equ       $0             bootup delay
+SCSIRESET      equ       $0             offset to control address
+MAXDN          equ       $2             Max Two drives
+               ENDC
+
+
                IFDEF     DW
 Vi.PkSz        equ       0
 V.SCF          equ       0
@@ -3722,7 +3732,7 @@ TFSIDE         pshs      x                   Backup X onto stack
 * HDB-DOS Version
 VMAJOR         equ       1
 VMINOR         equ       5
-VREV           equ       0
+VREV           equ       1
 
 
                setdp     0
@@ -3743,30 +3753,30 @@ BASBFR         equ       $2DD
 
 * Static Storage                             (Reusing 9 last bytes of original USR table, after stubs)
                IFDEF     DRAGON
-               org       $13F
+SS             equ       $13F
                ELSE
-               org       $149
+SS             equ       $149
                ENDC
 
-INTFLG         rmb       1                   FlexiKey variable
-NCYLS          rmb       2                   Device cylinder count (IDE)
-NHEADS         rmb       1                   Device head count (IDE)
-NSECTS         rmb       1                   Device sector count (IDE)
-HDFLAG         rmb       1                   Hard drive active flag
-DRVSEL         rmb       1                   LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
+INTFLG         equ       SS                  FlexiKey variable
+NCYLS          equ       SS+1                Device cylinder count (IDE)
+NHEADS         equ       SS+3                Device head count (IDE)
+NSECTS         equ       SS+4                Device sector count (IDE)
+HDFLAG         equ       SS+5                Hard drive active flag
+DRVSEL         equ       SS+6                LUN (SCSI), Master/Slave (IDE) or Drive Number (DW)
 RETRY          equ       DRVSEL              DriveWire uses this location as a retry counter
-MAXDRV         rmb       1                   Highest drive number
-IDNUM          rmb       1                   Device number (SCSI 0-7) (IDE 0-1)
+MAXDRV         equ       SS+7                Highest drive number
+IDNUM          equ       SS+8                Device number (SCSI 0-7) (IDE 0-1)
 
 
 * Dynamic Storage
-               org       $F3
+DS             equ       $F3
 
-VCMD           rmb       1                   SCSI/IDE unit command
-VAD0           rmb       1                   L.U.N. / sector (hi-byte)
-VAD1           rmb       2                   Sector (lo-word)
-VBLKS          rmb       2                   Block count / options
-VEXT           rmb       4                   Reserved 10 byte SCSI commands
+VCMD           equ       DS                  SCSI/IDE unit command
+VAD0           equ       DS+1                L.U.N. / sector (hi-byte)
+VAD1           equ       DS+2                Sector (lo-word)
+VBLKS          equ       DS+4                Block count / options
+VEXT           equ       DS+6                Reserved 10 byte SCSI commands
 
 
 * HARD DISK DRIVER
@@ -3888,6 +3898,19 @@ CtlrOk         lbsr      GETMAX              Compute maximum no. of drives
                IFDEF     DW
                lbsr      GETMAX              Compute maximum no. of drives
 
+* Set Baud Rate for CoCO3FPGA WiFi Becker Port 2 and clear out input buffer
+               IFDEF     CoCo3FPGAWiFi
+               lda       #$00                Here we are loading default value to set baud rate
+               sta       $FF6C               Store the baud rate setup value into status register
+FPGAWiFiLp
+               lda       $FF6C               Load status register so we can get ready to check it
+               bita      #$02                Now lets check to see if there is data to clear out
+               bne       FPGAWiFiLpEnd       If not then bypass loop
+               lda       $FF6D               Load the data off of the input buffer
+               bra       FPGAWiFiLp          and now loop back to check if we have cleared it all
+FPGAWiFiLpEnd
+               ENDC
+
 * Turbo Mode for DW4
                IFDEF     DW4
                lda       #$E6                turbo notification command
@@ -3932,6 +3955,15 @@ CtlrOk         lbsr      GETMAX              Compute maximum no. of drives
                sta       $FF52
                lda       #$2C
                sta       $FF53
+               ENDC
+
+* setup SDC
+               IFDEF     SDC
+               lda       DEFID
+               sta       IDNUM
+               lbsr      GETMAX
+               tst       <DCSTAT
+               bne       FAIL
                ENDC
 
 ITSOK          jsr       >BEEP               Send a beep
@@ -4121,6 +4153,15 @@ DISKIO         pshs      d,x,y,u             Save registers
 
 FINIS          puls      u,y,x,d,pc          Done, restore & return
 
+
+****************************************
+* SDC START HERE
+****************************************
+
+*  CoCoSDC
+               IFDEF     SDC
+               use       sdc.asm
+               ENDC
 
 ****************************************
 * SCSI/IDE/DW START HERE
@@ -4769,6 +4810,38 @@ DSET05         jsr       EVALEXPB            Evaluate argument
                bra       IOERR
 GOBACK         rts       
 
+               IFDEF     SDC
+*
+*  Puts the size in sectors of IDNUM's capacity
+*  into VAD0, and VAD1, set's x to #VCMD
+*  the common code then calcs and sets MAXDRV from this.
+*
+GETMAX         clr       <DCSTAT
+                                             ; save query size command to SDC
+               lda       #$43                ; put controller into..
+               sta       CTRLATCH            ;   Command Mode
+               exg       a,a                 ; wait for at least 4 us
+               lbsr      wait                ; wait till not busy
+               lbcs      oops
+               lda       #'Q                 ; apply query size command
+               sta       PREG1
+               lda       IDNUM               ; the current drive no
+               ora       #0xc0               ; do a extended command
+               sta       CMDREG
+               exg       a,a                 ; wait for at least 8 us
+               exg       a,a
+               lbsr      wait	               ; wait for command to complete
+               lbcs      oops                ; Time-out error!	     
+                                             ; set return packet in VCMD from SDC's reponse 
+               ldx       #VCMD
+               lda       PREG1               ; get high byte of size 
+               sta       1,x                 ; store it in VCMD
+               ldd       PREG2               ; get low word of size
+               std       2,x                 ; store it in VCMD
+               clr       CTRLATCH            ; set sdc back to regular mode
+               exg       a,a                 ; wait at least 4 us
+               ENDC
+
                IFDEF     DW
 GETMAX         clr       <DCSTAT
                ldx       #VCMD
@@ -4922,12 +4995,12 @@ a@             lda       $01D4
                beq       b@
                bsr       SENDCR
 b@             ldx       #DRVMSG-1           DRIVE=
-               jsr       STRINOUT
+               bsr       DOSTROUT
                clra      
                ldb       <$EB
                jsr       LBDCC
                ldx       #FREMSG-1           FREE=
-               jsr       STRINOUT
+               bsr       DOSTROUT
                bsr       BRIAN
                clra      
                jsr       LBDCC
@@ -4945,7 +5018,29 @@ D@             decb
                puls      pc,b
 SETVAR         ldd       #$1111
                std       <$EC
-               rts       
+RTS1           rts
+
+* Allow "COPY" command to overwrite existing file
+
+AETEST         jsr       >LC68C               Scan dir for filename
+               tst       $973                Already exist?
+               beq       RTS1                No, just return
+ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
+               cmpa      $0D,s
+               bne       a@
+               jmp       LD05C
+a@             lda       <$68                Get BASIC line # MSB
+               inca                          Direct mode ($FF)?
+               bne       d@                  No, just overwrite
+               ldx       #OVRMSG-1           Yes, point to message
+               bsr       DOSTROUT            Print it
+               bsr       GETY                Check for (Y)ES
+               beq       c@                  Yes, overwrite file
+               leas      <$26,s              No, remove temp variables
+               ldx       #ABTMSG-1           "ABORTED" message
+DOSTROUT       jmp       STRINOUT            Print it & return
+c@             jsr       >LCCFD               R.G. See above print Y
+d@             jmp       LC6F5               Kill dest file & return
 
 * Rename drive command syntax: RENAME DRIVE n, "STRING"
 
@@ -5003,35 +5098,12 @@ COPtst         ldx       <$A6                Get basic input pointer
                jmp       LC938               And get filename string
 
 
-* Allow "COPY" command to overwrite existing file
-
-AETEST         jsr       >LC68C               Scan dir for filename
-               tst       $973                Already exist?
-               beq       AE10                No, just return
-ASK            lda       <$1A,s              R.G. stack holds data for COPY $1A=26 is part of Source Name
-               cmpa      $0D,s
-               bne       a@
-               jmp       LD05C
-a@             lda       <$68                Get BASIC line # MSB
-               inca                          Direct mode ($FF)?
-               bne       d@                  No, just overwrite
-               ldx       #OVRMSG-1           Yes, point to message
-               bsr       b@                  Print it
-               bsr       GETY                Check for (Y)ES
-               beq       c@                  Yes, overwrite file
-               leas      <$26,s              No, remove temp variables
-               ldx       #ABTMSG-1           "ABORTED" message
-b@             jmp       STRINOUT            Print it & return
-c@             jsr       >LCCFD               R.G. See above print Y
-d@             jmp       LC6F5               Kill dest file & return
-
-
 * Get a keypress, beq if it's a "Y"
 
 GETY           jsr       GETKEY              Get a key
                anda      #$FF-$20            Force upper case
                cmpa      #'Y                 Set flag for "Y"
-AE10           rts                           Return
+               rts                           Return
 
 
 * Prompt Messages
@@ -5082,7 +5154,8 @@ NAMBUF         fcc       "AUTOEXEC"          FILENAME
 SIGNON         fcc       "HDB-DOS "
                fcb       VMAJOR+$30,$2E,VMINOR+$30
                IFNE      VREV
-               fcb       VREV
+               fcc       "R"
+               fcb       VREV+$30
                ENDC      
                fcb       $20
                IFDEF     IDE
@@ -5095,7 +5168,10 @@ SIGNON         fcc       "HDB-DOS "
                ENDC      
                IFDEF     TC3
                fcc       "TC^3"
-               ENDC      
+               ENDC
+               IFDEF     SDC
+               fcc       "CoCoSDC"
+               ENDC
                IFDEF     KENTON
                fcc       "KENTON"
                ENDC      
@@ -5124,7 +5200,11 @@ SIGNON         fcc       "HDB-DOS "
                IFDEF     JMCPBCK
                fcc       "J&M CP COCO "
                ELSE
+               IFDEF     SY6551N
+               fcc       "SY6551 COCO "
+               ELSE
                fcc       "DW3 COCO "
+               ENDC
                ENDC
                ENDC
                ENDC

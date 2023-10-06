@@ -15,12 +15,12 @@
 /* globals */
 static u_int buffer_size = 32768;
 
-static error_code do_dsave(char *source, char *target, int execute, int buffsize, int rewrite);
-static int DoFunc(int (*func)( int, char *[]), char *command);
+static error_code do_dsave(char *source, char *target, int execute,
+			   int buffsize, int rewrite);
+static int DoFunc(int (*func)(int, char *[]), char *command);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: dsave {[<opts>]} {[<source>]} <target> {[<opts>]}\n",
 	"Usage: Copy the contents of a directory or device.\n",
 	"Options:\n",
@@ -33,15 +33,15 @@ static char const * const helpMessage[] =
 
 int os9dsave(int argc, char *argv[])
 {
-	error_code	ec = 0;
-	char		*p = NULL, *q;
-	int		i;
-	int		count = 0;
-	int		rewrite = 0;
-	int		execute = 0;
-	char		*target = NULL;
-	char		*source = NULL;
-	
+	error_code ec = 0;
+	char *p = NULL, *q;
+	int i;
+	int count = 0;
+	int rewrite = 0;
+	int execute = 0;
+	char *target = NULL;
+	char *source = NULL;
+
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
 	{
@@ -49,60 +49,62 @@ int os9dsave(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case 'b':
-						if (*(++p) == '=')
-						{
-							p++;
-						}
-						q = p + strlen(p) - 1;
-						if (toupper(*q) == 'K')
-						{
-							*q = '0';
-							buffer_size = atoi(p) * 1024;
-						}
-						else
-						{
-							buffer_size = atoi(p);
-						}
-						p = q;
-						break;
-	
-					case 'r':
-						rewrite = 1;
-						break;
+				case 'b':
+					if (*(++p) == '=')
+					{
+						p++;
+					}
+					q = p + strlen(p) - 1;
+					if (toupper((unsigned char)*q) == 'K')
+					{
+						*q = '\0';
+						buffer_size = atoi(p) * 1024;
+					}
+					else
+					{
+						buffer_size = atoi(p);
+					}
+					p = q;
+					break;
 
-					case 'e':
-						execute = 1;
-						break;
+				case 'r':
+					rewrite = 1;
+					break;
 
-					case 'h':
-					case '?':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case 'e':
+					execute = 1;
+					break;
+
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
 	}
 
 	/* Count non option arguments */
-	for( i = 1, count = 0; i < argc; i++ )
+	for (i = 1, count = 0; i < argc; i++)
 	{
-		if( argv[i] == NULL )
+		if (argv[i] == NULL)
 		{
 			continue;
 		}
-		
-		if( argv[i][0] == '-' )
+
+		if (argv[i][0] == '-')
 		{
 			continue;
 		}
-		
+
 		if (source == NULL)
 		{
 			source = argv[i];
@@ -117,7 +119,7 @@ int os9dsave(int argc, char *argv[])
 	if (count < 1 || count > 2)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* if target is NULL, then source is really . and target is source */
@@ -131,36 +133,39 @@ int os9dsave(int argc, char *argv[])
 	ec = do_dsave(source, target, execute, buffer_size, rewrite);
 	if (ec != 0)
 	{
-		fprintf(stderr, "%s: error %d encountered during dsave\n", argv[0], ec);
+		fprintf(stderr, "%s: error %d encountered during dsave\n",
+			argv[0], ec);
 	}
 
-	return(ec);
+	return (ec);
 }
 
 
-static error_code do_dsave(char *source, char *target, int execute, int buffer_size, int rewrite)
+static error_code do_dsave(char *source, char *target, int execute,
+			   int buffer_size, int rewrite)
 {
-	error_code	ec = 0;
-	static int	level = 0;
-	fd_dentry	dirent;
-	char		command[1024];
-	char		sourcePathList[1024];
-	os9_path_id	sourcePath;
+	error_code ec = 0;
+	static int level = 0;
+	fd_dentry dirent;
+	char command[1024];
+	char sourcePathList[1024];
+	os9_path_id sourcePath;
 
 	ec = _os9_open(&sourcePath, source, FAM_DIR | FAM_READ);
 	if (ec != 0)
 	{
-		return(ec);
+		return (ec);
 	}
 
 	/* read .. and . directories */
 	_os9_readdir(sourcePath, &dirent);
 	_os9_readdir(sourcePath, &dirent);
-	
-	while (_os9_readdir(sourcePath, &dirent) == 0 && dirent.name[0] != '\0')
+
+	while (_os9_readdir(sourcePath, &dirent) == 0
+	       && dirent.name[0] != '\0')
 	{
-		os9_path_id	filePath;
-		int		isdir = 1;
+		os9_path_id filePath;
+		int isdir = 1;
 
 		OS9NameToString(dirent.name);
 
@@ -176,7 +181,7 @@ static error_code do_dsave(char *source, char *target, int execute, int buffer_s
 			{
 				_os9_close(sourcePath);
 
-				return(ec);
+				return (ec);
 			}
 		}
 
@@ -195,7 +200,7 @@ static error_code do_dsave(char *source, char *target, int execute, int buffer_s
 			/* 2. make directory on target IF target path is relative */
 			if (*target != '/')
 			{
-//				strcpy(newTarget, "../");
+//                              strcpy(newTarget, "../");
 			}
 
 			if (strcmp(target, "/") == 0)
@@ -204,19 +209,21 @@ static error_code do_dsave(char *source, char *target, int execute, int buffer_s
 			}
 			else
 			{
-				sprintf(newTarget, "%s/%s", target, dirent.name);
+				sprintf(newTarget, "%s/%s", target,
+					dirent.name);
 			}
 
 			/* 3. make directory on target */
 			sprintf(command, "makdir %s", newTarget);
 			puts(command);
-			if (execute) 
+			if (execute)
 			{
 				DoFunc(os9makdir, command);
 			}
 
 			/* 4. call this function again */
-			do_dsave(sourcePathList, newTarget, execute, buffer_size, rewrite);
+			do_dsave(sourcePathList, newTarget, execute,
+				 buffer_size, rewrite);
 
 			/* 5. decrement level indicator */
 			level--;
@@ -238,8 +245,9 @@ static error_code do_dsave(char *source, char *target, int execute, int buffer_s
 			{
 				strcat(ropt, "-r");
 			}
-			
-			sprintf(command, "copy %s/%s %s/%s %s %s", source, dirent.name, target, dirent.name, ropt, bopt);
+
+			sprintf(command, "copy %s/%s %s/%s %s %s", source,
+				dirent.name, target, dirent.name, ropt, bopt);
 			puts(command);
 			if (execute)
 			{
@@ -248,18 +256,21 @@ static error_code do_dsave(char *source, char *target, int execute, int buffer_s
 		}
 	}
 
+	/* presumably used for debugging */
+	(void) level;
+
 	_os9_close(sourcePath);
 
-	return(ec);
+	return (ec);
 }
 
 
 static int DoFunc(int (*func)(int, char *[]), char *command)
 {
-	error_code	ec = 0;
-	char		*argv[64];
-	char		*p;
-	int		argc = 0;
+	error_code ec = 0;
+	char *argv[64];
+	char *p;
+	int argc = 0;
 
 	p = strtok(command, " ");
 	argv[argc++] = p;
@@ -271,7 +282,7 @@ static int DoFunc(int (*func)(int, char *[]), char *command)
 	while (p != NULL);
 	argc--;
 
-	(*func)(argc, argv);
+	(*func) (argc, argv);
 
-	return(ec);
+	return (ec);
 }

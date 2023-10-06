@@ -1883,7 +1883,7 @@ int _bitgen(assembler *as, int opcode)
 
 	/* emit encoded byte */
 	{
-		char b;
+		unsigned char b;
 		
 		switch (r)
 		{

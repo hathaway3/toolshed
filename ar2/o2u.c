@@ -62,13 +62,12 @@ static MODE_MAP modeMap[] =
         { 0x40, 0x0       }         /* S_ISHARE  */
         };
 
-static int	monthLength[12] = {
+static int monthLength[12] = {
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
         };
 
 
-char	*u2oDate(l)
-long	l;
+char *u2oDate(time_t l)
 	{
 	static char	buf[5];
 	struct tm	*tp;
@@ -83,8 +82,7 @@ long	l;
 	}
 
 
-long	o2uDate(buf)
-char	*buf;
+long o2uDate(char *buf)
 	{
 	register int	i;
 	int				year;
@@ -92,8 +90,7 @@ char	*buf;
 	int				day;
 	int				hour;
 	int				minute;
-	long			result;
-	extern long		time();
+	time_t				result;
 
 	int				timezone = 5*60*60;   /* I'm in the Eastern Time zone GMT + 5 */
 
@@ -181,8 +178,7 @@ char	*buf;
 	}
 
 
-char	u2oFmode(flags)
-short	flags;
+char u2oFmode(short flags)
 	{
 	char			os9Flag = 0;
 	register int	i;
@@ -201,8 +197,7 @@ short	flags;
 	}
 
 
-short	o2uFmode(flags)
-char	flags;
+short o2uFmode(char flags)
 	{
 	short			unixFlag = 0;
 	register int	i;

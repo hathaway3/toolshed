@@ -24,8 +24,7 @@
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: makdir {<dirname> [<...>]}\n",
 	"Usage:  Create one or more directories.\n",
 	NULL
@@ -34,7 +33,7 @@ static char const * const helpMessage[] =
 
 int os9makdir(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -45,16 +44,18 @@ int os9makdir(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -76,16 +77,17 @@ int os9makdir(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d creating '%s'\n", argv[0], ec, p);
-			return(ec);
+			fprintf(stderr, "%s: error %d creating '%s'\n",
+				argv[0], ec, p);
+			return (ec);
 		}
 	}
 
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
-	return(0);
+	return (0);
 }

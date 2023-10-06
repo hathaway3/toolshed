@@ -575,9 +575,9 @@ int hiword(int i)
  */
 int head(char *str1, char *str2)
 {
-	while (tolower(*str1) != EOS && tolower(*str2) != EOS)
+	while (tolower((unsigned char)*str1) != EOS && tolower((unsigned char)*str2) != EOS)
 	{
-		if (tolower(*str1) != tolower(*str2))
+		if (tolower((unsigned char)*str1) != tolower((unsigned char)*str2))
 		{
 			break;
 		}
@@ -585,7 +585,7 @@ int head(char *str1, char *str2)
 		str2++;
 	}
 
-	if (tolower(*str1) == tolower(*str2))
+	if (tolower((unsigned char)*str1) == tolower((unsigned char)*str2))
 	{
 		return(1);
 	}
@@ -698,11 +698,11 @@ int white(char c)
 
 int strcasecmp(char *s, char *t)
 {
-	while (toupper(*s) == toupper(*t))  {
+	while (toupper((unsigned char)*s) == toupper((unsigned char)*t))  {
 		if (*s++ == 0) 
 		    return 0;
 		t++;
 	}
-	return (toupper(*s)-toupper(*t));
+	return (toupper((unsigned char)*s)-toupper((unsigned char)*t));
 }
 #endif

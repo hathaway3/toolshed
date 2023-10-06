@@ -89,8 +89,7 @@
  */
 
 #ifdef BRAINDEAD
-ck_tolower(ch)
-char	ch;
+ck_tolower(char ch)
 	{
 	if (isupper(ch))
 		tolower(ch);
@@ -99,8 +98,7 @@ char	ch;
 	}
 
 
-ck_toupper(ch)
-char	ch;
+ck_toupper(char ch)
 	{
 	if (islower(ch))
 		toupper(ch);
@@ -118,8 +116,7 @@ char	ch;
  *   back to a long.
  */
 
-long	c4tol(s)
-char	*s;
+long c4tol(char *s)
 	{
 	long	x = 0;
 
@@ -193,13 +190,14 @@ void set_fstat(char *pn, FILDES *fs)
 	char			*p = fs->fd_own;
 	short			s;
 	short			mode = o2uFmode(fs->fd_attr);
-	struct passwd	*pwdbuf;
 #if !defined(WIN32)
-	struct passwd	*getpwuid();
+	struct passwd	*pwdbuf;
 #endif
+/*
 	struct  {
 		long	a, m;
 		} ubuf;
+*/
 
 	s = (*p++&0xff);
 	s <<= 8;
@@ -212,8 +210,9 @@ void set_fstat(char *pn, FILDES *fs)
 	chown(pn, s, pwdbuf ? pwdbuf->pw_gid : s);
 #endif
 
-	ubuf.a = time((long *) 0);
-	ubuf.m = o2uDate(fs->fd_date);
+	struct utimbuf ubuf;
+	ubuf.actime = time(NULL);
+	ubuf.modtime = o2uDate(fs->fd_date);
 	utime(pn, &ubuf);
 #else
 # ifdef OSK
@@ -232,8 +231,7 @@ void set_fstat(char *pn, FILDES *fs)
  * get the file size
  */
 
-long	get_fsize(pn)
-int		pn;
+long get_fsize(int pn)
 	{
 #ifdef SYSV
 	struct stat	stbuf;

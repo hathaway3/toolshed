@@ -10,11 +10,11 @@
 #include <os9module.h>
 
 
-error_code _os9_crc_compute(u_char *ptr, u_int sz, u_char *crc)
+error_code _os9_crc_compute(u_char * ptr, u_int sz, u_char * crc)
 {
-	error_code	ec = 0;
-	u_char  a;
-	u_int   i;
+	error_code ec = 0;
+	u_char a;
+	u_int i;
 
 	for (i = 0; i < sz; i++)
 	{
@@ -39,8 +39,7 @@ error_code _os9_crc_compute(u_char *ptr, u_int sz, u_char *crc)
 	}
 
 	if ((crc[0] == OS9_CRC0) &&
-		(crc[1] == OS9_CRC1) &&
-		(crc[2] == OS9_CRC2))
+	    (crc[1] == OS9_CRC1) && (crc[2] == OS9_CRC2))
 	{
 		ec = 1;
 	}
@@ -52,32 +51,32 @@ error_code _os9_crc_compute(u_char *ptr, u_int sz, u_char *crc)
 
 /* Calculate the OS-9/6809 module CRC, returning 0 == !OK, 1 == OK */
 
-error_code _os9_crc(OS9_MODULE_t *mod)
+error_code _os9_crc(OS9_MODULE_t * mod)
 {
-	u_char  crc[3] = {0xff, 0xff, 0xff};
+	u_char crc[3] = { 0xff, 0xff, 0xff };
 
-	return(_os9_crc_compute((u_char *)mod, INT(mod->size), crc));
+	return (_os9_crc_compute((u_char *) mod, INT(mod->size), crc));
 }
 
 
 
 /* Calculate the OS-9/68K module CRC, returning 0 == !OK, 1 == OK */
 
-error_code _osk_crc(OSK_MODULE_t *mod)
+error_code _osk_crc(OSK_MODULE_t * mod)
 {
-	u_char  crc[3] = {0xff, 0xff, 0xff};
+	u_char crc[3] = { 0xff, 0xff, 0xff };
 
-	return(_os9_crc_compute((u_char *) mod, int4(mod->size), crc));
+	return (_os9_crc_compute((u_char *) mod, int4(mod->size), crc));
 }
 
 
 
 /* Calculate the OS-9/6809 module header parity, returning 0 == OK, !0 == !OK */
 
-u_char _os9_header(OS9_MODULE_t *mod)
+u_char _os9_header(OS9_MODULE_t * mod)
 {
 	u_char tmp = 0x00;
-	u_char *ptr = (u_char *)mod;
+	u_char *ptr = (u_char *) mod;
 	int i;
 
 	for (i = 0; i < OS9_HEADER_SIZE; i++)
@@ -92,11 +91,11 @@ u_char _os9_header(OS9_MODULE_t *mod)
 
 /* Calculate the OS-9/68K module header parity, returning 0 == OK, !0 == !OK */
 
-unsigned short _osk_header(OSK_MODULE_t *mod)
+unsigned short _osk_header(OSK_MODULE_t * mod)
 {
-    unsigned short  tmp = 0x0000;
-    u_char   *ptr = (u_char *)mod;
-    int      i;
+	unsigned short tmp = 0x0000;
+	u_char *ptr = (u_char *) mod;
+	int i;
 
 	for (i = 0; i < OSK_HEADER_SIZE / 2; i++)
 	{

@@ -17,41 +17,41 @@
 #include "nativepath.h"
 
 
-static int init_pd(native_path_id *path, int mode);
+static int init_pd(native_path_id * path, int mode);
 static int term_pd(native_path_id path);
 
 
-static int init_pd(native_path_id *path, int mode)
+static int init_pd(native_path_id * path, int mode)
 {
-    /* 1. Allocate path structure and initialize it. */
+	/* 1. Allocate path structure and initialize it. */
 
-    *path = malloc(sizeof(struct _native_path_id));
+	*path = malloc(sizeof(struct _native_path_id));
 
-    if (*path == NULL)
-    {
-        return 1;
-    }
-
-
-    /* 2. Clear out newly allocated path structure. */
-
-    memset(*path, 0, sizeof(**path));
-
-    (*path)->mode = mode;
+	if (*path == NULL)
+	{
+		return 1;
+	}
 
 
-    return 0;
+	/* 2. Clear out newly allocated path structure. */
+
+	memset(*path, 0, sizeof(**path));
+
+	(*path)->mode = mode;
+
+
+	return 0;
 }
 
 
 
 static int term_pd(native_path_id path)
 {
-    /* 1. Deallocate path structure. */
+	/* 1. Deallocate path structure. */
 
-    free(path);
+	free(path);
 
-    return 0;
+	return 0;
 }
 
 
@@ -61,10 +61,11 @@ static int term_pd(native_path_id path)
  *
  * Create a file on the native fs
  */
-error_code _native_create(native_path_id *path, char *pathlist, int mode, int perms)
+error_code _native_create(native_path_id * path, char *pathlist, int mode,
+			  int perms)
 {
-    error_code	ec = 0;
-    char *nativeMode = "r";
+	error_code ec = 0;
+	char *nativeMode = "r";
 
 
 	/* 1. Initialize path. */
@@ -75,34 +76,34 @@ error_code _native_create(native_path_id *path, char *pathlist, int mode, int pe
 	}
 
 
-    /* 2. Convert passed mode to native file mode. */
+	/* 2. Convert passed mode to native file mode. */
 
-    if (mode & (FAM_WRITE | FAM_READ))
-    {
-        nativeMode = "wb+";
-    }
-    else if (mode & FAM_READ)
-    {
-        nativeMode = "rb";
-    }
-    else if (mode & FAM_WRITE)
-    {
-        nativeMode = "wb";
-    }
+	if (mode & (FAM_WRITE | FAM_READ))
+	{
+		nativeMode = "wb+";
+	}
+	else if (mode & FAM_READ)
+	{
+		nativeMode = "rb";
+	}
+	else if (mode & FAM_WRITE)
+	{
+		nativeMode = "wb";
+	}
 
-    (*path)->fd = fopen(pathlist, nativeMode);
+	(*path)->fd = fopen(pathlist, nativeMode);
 
-    if ((*path)->fd == NULL)
-    {
-        ec = UnixToCoCoError(errno);
-    }
+	if ((*path)->fd == NULL)
+	{
+		ec = UnixToCoCoError(errno);
+	}
 
-    if( ec != 0)
-    {
-      free(*path);
-      *path=NULL;
-    }
-    return ec;
+	if (ec != 0)
+	{
+		free(*path);
+		*path = NULL;
+	}
+	return ec;
 }
 
 
@@ -112,10 +113,10 @@ error_code _native_create(native_path_id *path, char *pathlist, int mode, int pe
  *
  * Open a file on the native fs
  */
-error_code _native_open(native_path_id *path, char *pathlist, int mode)
+error_code _native_open(native_path_id * path, char *pathlist, int mode)
 {
-    error_code	ec = 0;
-    char *nativeMode = "r";
+	error_code ec = 0;
+	char *nativeMode = "r";
 
 
 	/* 1. Initialize path. */
@@ -152,41 +153,41 @@ error_code _native_open(native_path_id *path, char *pathlist, int mode)
 		{
 			term_pd(*path);
 
-			ec =EOS_BMODE;
+			ec = EOS_BMODE;
 		}
 
 		return ec;
 	}
 
 
-    /* 2. Convert passed mode to native file mode. */
+	/* 2. Convert passed mode to native file mode. */
 
-    if ((mode & (FAM_WRITE | FAM_READ)) == (FAM_WRITE | FAM_READ))
-    {
-        nativeMode = "rb+";
-    }
-    else if (mode & FAM_READ)
-    {
-        nativeMode = "rb";
-    }
-    else if (mode & FAM_WRITE)
-    {
-        nativeMode = "ab";
-    }
+	if ((mode & (FAM_WRITE | FAM_READ)) == (FAM_WRITE | FAM_READ))
+	{
+		nativeMode = "rb+";
+	}
+	else if (mode & FAM_READ)
+	{
+		nativeMode = "rb";
+	}
+	else if (mode & FAM_WRITE)
+	{
+		nativeMode = "b";
+	}
 
-    (*path)->fd = fopen(pathlist, nativeMode);
+	(*path)->fd = fopen(pathlist, nativeMode);
 
-    if ((*path)->fd == NULL)
-    {
-        ec = UnixToCoCoError(errno);
-    }
+	if ((*path)->fd == NULL)
+	{
+		ec = UnixToCoCoError(errno);
+	}
 
-    if(ec != 0)
-    {
-      free(*path);
-      *path=NULL;
-    }
-    return ec;
+	if (ec != 0)
+	{
+		free(*path);
+		*path = NULL;
+	}
+	return ec;
 }
 
 
@@ -198,9 +199,9 @@ error_code _native_open(native_path_id *path, char *pathlist, int mode)
  */
 error_code _native_close(native_path_id path)
 {
-    if (path != NULL)
-    {
-        /* 1. This is a valid path. */
+	if (path != NULL)
+	{
+		/* 1. This is a valid path. */
 
 		if (path->mode & FAM_DIR)
 		{
@@ -213,11 +214,11 @@ error_code _native_close(native_path_id path)
 		else
 		{
 			fclose(path->fd);
-        }
+		}
 
-        term_pd(path);
-    }
+		term_pd(path);
+	}
 
 
-    return 0;
+	return 0;
 }

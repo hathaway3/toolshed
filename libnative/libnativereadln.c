@@ -11,19 +11,19 @@
 #include "nativepath.h"
 
 
-error_code _native_readln(native_path_id path, void *buffer, u_int *size)
+error_code _native_readln(native_path_id path, void *buffer, u_int * size)
 {
-	error_code		ec = 0;
-	u_int 			i;
-	char 			*buf_ptr = buffer;
-	
+	error_code ec = 0;
+	u_int i;
+	char *buf_ptr = buffer;
+
 
 	for (i = 0; i < *size; i++)
 	{
 		int ret;
 
 		ret = fread(buf_ptr, 1, 1, path->fd);
-	
+
 		if (ret == 0)
 		{
 			*size = i;
@@ -31,14 +31,14 @@ error_code _native_readln(native_path_id path, void *buffer, u_int *size)
 			if (*size == 0)
 			{
 				/* 1. We haven't read a char so we must be at EOF. */
-				
+
 				return EOS_EOF;
 			}
 			else
 			{
 				return 0;
 			}
-		}	
+		}
 
 		if (*buf_ptr == 0x0A)
 		{
@@ -49,7 +49,7 @@ error_code _native_readln(native_path_id path, void *buffer, u_int *size)
 
 		buf_ptr++;
 	}
-        
+
 
 	return ec;
 }

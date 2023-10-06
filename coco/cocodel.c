@@ -16,79 +16,81 @@
 static int do_del(char **argv, char *p);
 
 /* Help message */
-static char const * const helpMessage[] =
-{
-    "Syntax: del {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
-    "Usage:  Delete one or more files.\n",
-    "Options:\n",
-    NULL
+static char const *const helpMessage[] = {
+	"Syntax: del {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
+	"Usage:  Delete one or more files.\n",
+	"Options:\n",
+	NULL
 };
 
 
 int os9del(int argc, char *argv[])
 {
-    error_code	ec = 0;
-    char *p = NULL;
-    int i;
+	error_code ec = 0;
+	char *p = NULL;
+	int i;
 
-    /* walk command line for options */
-    for (i = 1; i < argc; i++)
-    {
-        if (argv[i][0] == '-')
-        {
-            for (p = &argv[i][1]; *p != '\0'; p++)
-            {
-                switch(*p)
-                {
-                    case '?':
-                    case 'h':
-                        show_help(helpMessage);
-                        return(0);
-	
-                    default:
-                        fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-                        return(0);
-                }
-            }
-        }
-    }
+	/* walk command line for options */
+	for (i = 1; i < argc; i++)
+	{
+		if (argv[i][0] == '-')
+		{
+			for (p = &argv[i][1]; *p != '\0'; p++)
+			{
+				switch (*p)
+				{
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
 
-    /* walk command line for pathnames */
-    for (i = 1; i < argc; i++)
-    {
-        if (argv[i][0] == '-')
-        {
-            continue;
-        }
-        else
-        {
-            p = argv[i];
-        }
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
+				}
+			}
+		}
+	}
 
-        ec = do_del(argv, p);
+	/* walk command line for pathnames */
+	for (i = 1; i < argc; i++)
+	{
+		if (argv[i][0] == '-')
+		{
+			continue;
+		}
+		else
+		{
+			p = argv[i];
+		}
 
-        if (ec != 0)
-        {
-            fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, p);
-            return(ec);
-        }
-    }
+		ec = do_del(argv, p);
 
-    if (p == NULL)
-    {
-        show_help(helpMessage);
-        return(0);
-    }
+		if (ec != 0)
+		{
+			fprintf(stderr, "%s: error %d opening '%s'\n",
+				argv[0], ec, p);
+			return (ec);
+		}
+	}
 
-    return(0);
+	if (p == NULL)
+	{
+		show_help(helpMessage);
+		return (0);
+	}
+
+	return (0);
 }
-	
+
 
 static int do_del(char **argv, char *p)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
-    ec = _os9_delete(p);
+	ec = _os9_delete(p);
 
-    return(ec);
+	return (ec);
 }

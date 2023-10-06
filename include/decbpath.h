@@ -69,19 +69,19 @@ typedef struct _decb_dir_entry
 typedef struct _decb_path_id
 {
 	int				mode;			/* access mode */
-	char			imgfile[512];	/* pointer to image file */
-	char			filename[64];	/* pointer to filename */
-	char			extension[64];	/* Pointer to extension */
-	int				drive;			/* Drive Number */
+	char			*imgfile;		/* pointer to image file */
+	char			*filename;		/* pointer to filename */
+	int				drive;			/* drive number */
 	decb_dir_entry  dir_entry;
 	unsigned int	this_directory_entry_index;
 	unsigned int	directory_entry_index;
 	u_char			FAT[256];
 	unsigned int	filepos;		/* file position */
 	FILE			*fd;			/* file path pointer */
-	int				israw;			/* No file I/O possible, just get/set sector and granule */
-	long int		disk_offset;	/* Offset for drive number */
-	long int		hdbdos_offset;	/* Offset and flag for HDB-DOS */
+	int				israw;			/* no file I/O possible, just get/set sector and granule */
+	long int		disk_offset;	/* offset for drive number */
+	long int		hdbdos_offset;	/* offset for HDB-DOS */
+	int				granule_count;	/* usually 68 */
 } *decb_path_id;
 
 
@@ -98,6 +98,7 @@ typedef struct
 
 /* Disk BASIC Prototypes */
 
+error_code _decb_dskini(char *vdisk, int tracks, char *diskName, int hdbdrives, int bps, int skitzo);
 error_code _decb_open(decb_path_id *, char *, int);
 error_code _decb_close(decb_path_id);
 error_code _decb_create(decb_path_id *path, char *pathlist, int mode, int file_type, int data_type);

@@ -13,31 +13,32 @@
 
 error_code _coco_seek(coco_path_id path, int pos, int mode)
 {
-	error_code		ec = 0;
-	
-	
-    /* 1. Call appropriate function. */
-	
+	error_code ec = 0;
+
+
+	/* 1. Call appropriate function. */
+
 	switch (path->type)
 	{
-		case NATIVE:
-			ec = _native_seek(path->path.native, pos, mode);
-			break;
-			
-		case OS9:
-			ec = _os9_seek(path->path.os9, pos, mode);
-			break;
-			
-		case DECB:
-			ec = _decb_seek(path->path.decb, pos, mode);
-			break;
-		
-		case CECB:
-			fprintf( stderr, "_coco_seek not implemented in libcecb yet.\n" );
-			ec = -1;
-			break;
+	case NATIVE:
+		ec = _native_seek(path->path.native, pos, mode);
+		break;
+
+	case OS9:
+		ec = _os9_seek(path->path.os9, pos, mode);
+		break;
+
+	case DECB:
+		ec = _decb_seek(path->path.decb, pos, mode);
+		break;
+
+	case CECB:
+		fprintf(stderr,
+			"_coco_seek not implemented in libcecb yet.\n");
+		ec = -1;
+		break;
 	}
-	
-	
+
+
 	return ec;
 }

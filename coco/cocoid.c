@@ -19,8 +19,7 @@ static int do_id(char **argv, char *p);
 static char os9pathlist[256];
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: id {[<opts>]} {<disk> [<...>]} {[<opts>]}\n",
 	"Usage:  Display sector 0 of an image.\n",
 	"Options:\n",
@@ -30,7 +29,7 @@ static char const * const helpMessage[] =
 
 int os9id(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -41,16 +40,18 @@ int os9id(int argc, char *argv[])
 		{
 			for (p = &argv[i][1]; *p != '\0'; p++)
 			{
-				switch(*p)
+				switch (*p)
 				{
-					case '?':
-					case 'h':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case '?':
+				case 'h':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -72,24 +73,25 @@ int os9id(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, p);
-			return(ec);
+			fprintf(stderr, "%s: error %d opening '%s'\n",
+				argv[0], ec, p);
+			return (ec);
 		}
 	}
 
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
-	return(0);
+	return (0);
 }
-	
+
 
 static int do_id(char **argv, char *p)
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	os9_path_id path;
 
 	strcpy(os9pathlist, p);
@@ -99,8 +101,9 @@ static int do_id(char **argv, char *p)
 	ec = _os9_open(&path, os9pathlist, FAM_READ);
 	if (ec != 0)
 	{
-		fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, os9pathlist);
-		return(ec);
+		fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec,
+			os9pathlist);
+		return (ec);
 	}
 
 	{
@@ -116,7 +119,8 @@ static int do_id(char **argv, char *p)
 		printf("  Bytes in bitmap :   %d\n", int2(buffer.dd_map));
 		printf("  Sectors/Cluster :   %d\n", int2(buffer.dd_bit));
 		printf("  Root dir sector :   %d\n", int3(buffer.dd_dir));
-		printf("  Disk owner      :   %d.%-3d\n", buffer.dd_own[0], buffer.dd_own[1]);
+		printf("  Disk owner      :   %d.%-3d\n", buffer.dd_own[0],
+		       buffer.dd_own[1]);
 		printf("  Disk attributes :   ");
 		{
 			char attrs[9];
@@ -161,17 +165,16 @@ static int do_id(char **argv, char *p)
 			}
 
 			printf("  Disk format     :   $%X (%s)\n",
-				buffer.dd_fmt[0], formatString);
+			       buffer.dd_fmt[0], formatString);
 		}
 		printf("  Sectors/track   :   %d\n", int2(buffer.dd_spt));
 		printf("  Boot sector     :   %d\n", int3(buffer.dd_bt));
 		printf("  Bootfile size   :   %d\n", int2(buffer.dd_bsz));
 		printf("  Creation date   :   %02d/%02d/%02d %02d:%02d\n",
-			buffer.dd_dat[1],
-			buffer.dd_dat[2],
-			buffer.dd_dat[0] + 1900,
-			buffer.dd_dat[3],
-			buffer.dd_dat[4]);
+		       buffer.dd_dat[1],
+		       buffer.dd_dat[2],
+		       buffer.dd_dat[0] + 1900,
+		       buffer.dd_dat[3], buffer.dd_dat[4]);
 		p = strdup(buffer.dd_nam);
 		printf("  Disk name       :   %s\n", OS9NameToString(p));
 
@@ -179,15 +182,18 @@ static int do_id(char **argv, char *p)
 		if (int4(buffer.dd_sync) == 0x4372757A)
 		{
 			printf("  Sync Bytes      :   $4372757A (CRUZ)\n");
-			printf("  Bitmap Sector   :   %d\n", int4(buffer.dd_maplsn));
-			printf("  LSN0 Version ID :   %d\n", int2(buffer.dd_versid));
+			printf("  Bitmap Sector   :   %d\n",
+			       int4(buffer.dd_maplsn));
+			printf("  LSN0 Version ID :   %d\n",
+			       int2(buffer.dd_versid));
 		}
 		{
 			int bytesPerSector = 256;
 
 			if (int1(buffer.dd_lsnsize) > 0)
 			{
-				bytesPerSector = int1(buffer.dd_lsnsize) * 256;
+				bytesPerSector =
+					int1(buffer.dd_lsnsize) * 256;
 			}
 			printf("  Bytes/Sector    :   %d\n", bytesPerSector);
 		}
@@ -195,5 +201,5 @@ static int do_id(char **argv, char *p)
 
 	_os9_close(path);
 
-	return(0);
+	return (0);
 }

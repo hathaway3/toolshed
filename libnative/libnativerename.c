@@ -17,40 +17,40 @@
 
 error_code _native_rename(char *pathlist, char *new_name)
 {
-    error_code	ec = 0;
-    char		*a;
-    char		*dest = malloc(strlen(pathlist) + strlen(new_name));
+	error_code ec = 0;
+	char *a;
+	char *dest = malloc(strlen(pathlist) + strlen(new_name));
 
 
-    if (dest == NULL)
-    {
-        return 1;
-    }
-	
-
-    /* Construct destination path name */
-	
-    a = strrchr(pathlist, '/');
-	
-    if (a == NULL)
-    {
-        strcpy(dest, new_name);
-    }
-    else
-    {
-        strncpy(dest, pathlist, a - pathlist + 1);
-        strcat(dest, new_name);
-    }
-
-    rename(pathlist, dest);
-	
-    free(dest);
-	
-    if (ec != 0)
+	if (dest == NULL)
 	{
-        ec = errno;
+		return 1;
 	}
-	
-	
-    return ec;
+
+
+	/* Construct destination path name */
+
+	a = strrchr(pathlist, '/');
+
+	if (a == NULL)
+	{
+		strcpy(dest, new_name);
+	}
+	else
+	{
+		strncpy(dest, pathlist, a - pathlist + 1);
+		strcat(dest, new_name);
+	}
+
+	rename(pathlist, dest);
+
+	free(dest);
+
+	if (ec != 0)
+	{
+		ec = errno;
+	}
+
+
+	return ec;
 }

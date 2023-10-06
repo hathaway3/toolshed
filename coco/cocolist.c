@@ -14,8 +14,7 @@
 
 
 /* Help message */
-static char const * const helpMessage[] =
-{
+static char const *const helpMessage[] = {
 	"Syntax: list {[<opts>]} {<file> [<...>]} {[<opts>]}\n",
 	"Usage:  Display contents of a text file.\n",
 	"Options:\n",
@@ -25,7 +24,7 @@ static char const * const helpMessage[] =
 
 int os9list(int argc, char *argv[])
 {
-	error_code	ec = 0;
+	error_code ec = 0;
 	char *p = NULL;
 	os9_path_id path;
 	int i;
@@ -40,14 +39,16 @@ int os9list(int argc, char *argv[])
 
 				switch (*p)
 				{
-					case 'h':
-					case '?':
-						show_help(helpMessage);
-						return(0);
-	
-					default:
-						fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-						return(0);
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (0);
 				}
 			}
 		}
@@ -70,7 +71,7 @@ int os9list(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return(0);
+		return (0);
 	}
 
 	/* open a path to the file */
@@ -80,7 +81,7 @@ int os9list(int argc, char *argv[])
 		_os9_close(path);
 		printf("Error %d opening %s\n", ec, p);
 
-		return(ec);
+		return (ec);
 	}
 
 	while (_os9_gs_eof(path) == 0)
@@ -94,7 +95,7 @@ int os9list(int argc, char *argv[])
 		{
 			break;
 		}
-		
+
 		buffer[size] = '\0';
 
 		p = strchr(buffer, 0x0D);
@@ -109,5 +110,5 @@ int os9list(int argc, char *argv[])
 
 	_os9_close(path);
 
-	return(0);
+	return (0);
 }

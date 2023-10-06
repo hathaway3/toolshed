@@ -14,10 +14,11 @@
 #include "cocosys.h"
 
 
-error_code _coco_rename_ex(char *pathlist, char *new_name, coco_dir_entry *dentry)
+error_code _coco_rename_ex(char *pathlist, char *new_name,
+			   coco_dir_entry * dentry)
 {
-	error_code		ec = 0;
-	_path_type		type;
+	error_code ec = 0;
+	_path_type type;
 
 	/* 1. Call appropriate function. */
 
@@ -30,22 +31,24 @@ error_code _coco_rename_ex(char *pathlist, char *new_name, coco_dir_entry *dentr
 
 	switch (type)
 	{
-		case NATIVE:
-			ec = _native_rename(pathlist, new_name);
-			break;
+	case NATIVE:
+		ec = _native_rename(pathlist, new_name);
+		break;
 
-		case OS9:
-			ec = _os9_rename_ex(pathlist, new_name, &dentry->dentry.os9);
-			break;
+	case OS9:
+		ec = _os9_rename_ex(pathlist, new_name, &dentry->dentry.os9);
+		break;
 
-		case DECB:
-			ec = _decb_rename_ex(pathlist, new_name, &dentry->dentry.decb);
-			break;
-		
-		case CECB:
-			fprintf( stderr, "_coco_rename not implemented in libcecb yet.\n" );
-			ec = -1;
-			break;
+	case DECB:
+		ec = _decb_rename_ex(pathlist, new_name,
+				     &dentry->dentry.decb);
+		break;
+
+	case CECB:
+		fprintf(stderr,
+			"_coco_rename not implemented in libcecb yet.\n");
+		ec = -1;
+		break;
 	}
 
 	return ec;
@@ -54,9 +57,7 @@ error_code _coco_rename_ex(char *pathlist, char *new_name, coco_dir_entry *dentr
 
 error_code _coco_rename(char *pathlist, char *new_name)
 {
-	coco_dir_entry	dentry;
+	coco_dir_entry dentry;
 
 	return _coco_rename_ex(pathlist, new_name, &dentry);
 }
-
-

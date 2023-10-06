@@ -14,11 +14,11 @@
 
 error_code _native_seek(native_path_id path, int pos, int mode)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
 
-    fseek(path->fd, pos, mode);
+	fseek(path->fd, pos, mode);
 
 
-    return ec;
+	return ec;
 }

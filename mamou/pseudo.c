@@ -91,7 +91,6 @@ int _dtb(assembler *as)
  * OS-9 ASM DIRECTIVES (MOD, EMOD)
  *
  *****************************************************************************/
-#pragma mark OS-9 Asm Directives
 
 /*!
 	@function _mod
@@ -262,7 +261,6 @@ int _emod(assembler *as)
  * CONDITIONAL DIRECTIVES (IF, IFP1, IFP2, IFNE, IFEQ, ELSE, ENDC, etc.)
  *
  *****************************************************************************/
-#pragma mark Conditional Directives
 
 typedef enum
 {
@@ -511,7 +509,6 @@ int _else(assembler *as)
  * ALIGNMENT DIRECTIVES
  *
  *****************************************************************************/
-#pragma mark Alignment Directives
 
 /*!
 	@function _align
@@ -621,7 +618,6 @@ int _odd(assembler *as)
 * PAGING DIRECTIVES (NAM, TTL, PAGE, etc.)
 *
 *****************************************************************************/
-#pragma mark Paging Directives
 
 /*!
 	@function nam
@@ -1183,7 +1179,7 @@ int _opt(assembler *as)
 	}
 
 	/* Parse the option */
-	switch (tolower(*Opt))
+	switch (tolower((unsigned char)*Opt))
 	{
 		case 'c':	/* conditional assembly in listing */
 			as->o_show_cond = opt_state;
@@ -1216,11 +1212,12 @@ int _opt(assembler *as)
 		case 'o':	/* object file name */
 			if (opt_state == 0)
 			{
-				strncpy(as->object_name, as->line.optr + 1, FNAMESIZE - 1);
+				/* FIXME won't be freed */
+				as->object_name = strdup(as->line.optr + 1);
 			}
 			else
 			{
-				as->object_name[0] = EOS;
+				as->object_name = NULL;
 			}
 			break;
 
@@ -1335,7 +1332,8 @@ int _use(assembler *as)
 		
 		as->current_file = &use_file;
 		
-		strncpy(use_file.file, as->line.optr, FNAMESIZE);
+		strncpy(use_file.file, as->line.optr, FNAMESIZE - 1);
+		use_file.file[FNAMESIZE - 1] = '\0';
 
 		use_file.current_line = 0;
 		use_file.num_blank_lines = 0;
@@ -1343,7 +1341,7 @@ int _use(assembler *as)
 		use_file.end_encountered = 0;
 		
 		/* Open a path to the file. */
-		strncpy(path, use_file.file, FNAMESIZE);
+		strcpy(path, use_file.file);
 
 		do
 		{
@@ -1427,7 +1425,6 @@ int __end(assembler *as)
 * RESERVE MEMORY STORAGE (RMB, etc.)
 *
 *****************************************************************************/
-#pragma mark Reserve Memory Storage
 
 static int _reserve_memory(assembler *as, int size);
 
@@ -1523,7 +1520,6 @@ int _rmq(assembler *as)
  * FILL CONSTANT DATA
  *
  *****************************************************************************/
-#pragma mark Fill Constant Data
 
 static int _fill_constant(assembler *as, int size, int byteswapped);
 
@@ -1642,7 +1638,6 @@ int _fqb(assembler *as)
  * FILL CONSTANT DATA WITH VALUE
  *
  *****************************************************************************/
-#pragma mark Fill Constant Data With Value
 
 static int _fill_constant_with_value(assembler *as, int size, int value);
 

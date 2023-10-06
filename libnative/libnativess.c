@@ -20,32 +20,32 @@
 
 error_code _native_ss_attr(native_path_id path, int perms)
 {
-    error_code	ec = 0;
-    struct stat statbuf;
+	error_code ec = 0;
+	struct stat statbuf;
 
 
-    ec = _native_gs_fd(path, &statbuf);
+	ec = _native_gs_fd(path, &statbuf);
 
-    if (ec == 0)
-    {
-        statbuf.st_mode = perms;
+	if (ec == 0)
+	{
+		statbuf.st_mode = perms;
 
-        ec = _native_ss_fd(path, &statbuf);
-    }
+		ec = _native_ss_fd(path, &statbuf);
+	}
 
 
-    return ec;
+	return ec;
 }
 
 
 
 error_code _native_ss_fd(native_path_id path, struct stat *statbuf)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 /* Removed a conditional; RG*/
 	struct utimbuf tbuff;
 
-	
+
 /* Removed a conditional; RG*/
 	tbuff.actime = statbuf->st_ctime;
 	tbuff.modtime = statbuf->st_mtime;
@@ -61,23 +61,23 @@ error_code _native_ss_fd(native_path_id path, struct stat *statbuf)
 	/* 2. Update permissions. */
 
 /* Removed a conditional; RG */
-    chmod(path->pathlist, statbuf->st_mode);
+	chmod(path->pathlist, statbuf->st_mode);
 
 
 
-    return ec;
+	return ec;
 }
 
 
 
 error_code _native_ss_size(native_path_id path, int size)
 {
-    error_code	ec = 0;
+	error_code ec = 0;
 
-#if defined(__APPLE__) || defined(WIN32) || defined(sun)
-   ftruncate(path->fd->_file, size);
+#if defined(__APPLE__) || defined(WIN32) || defined(sun) || defined(__CYGWIN__)
+	ftruncate(path->fd->_file, size);
 #else
-   ftruncate(path->fd->_fileno, size);
+	ftruncate(path->fd->_fileno, size);
 #endif
 	return ec;
 }

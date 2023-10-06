@@ -51,7 +51,7 @@
 #define NON_UNIX_FLAGS	(0x80|0x40)
 #define CHARACTER_OF(C)	((char) ((C) & 0xff))
 
-extern char		*u2oDate();
-extern long		o2uDate();
-extern char		u2oFmode();
-extern short	o2uFmode();
+extern char		*u2oDate(time_t);
+extern long		o2uDate(char *);
+extern char		u2oFmode(short);
+extern short	o2uFmode(char);

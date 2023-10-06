@@ -19,6 +19,9 @@
  * qDeleteNode()
  * 		removes a node from a queue
  *
+ * qCheckDuplicateNode()
+ * 		check for a duplicate node, already in the list
+ *
  * $Id$
  ********************************************************************/
 #include <stdlib.h>
@@ -27,109 +30,152 @@
 #include <queue.h>
 
 
-int qAllocNode(NodeType *node, void *data, int size)
+int qAllocNode(NodeType * node, void *data, int size)
 {
-    *node = (NodeType)malloc(sizeof(nodeType));
+	*node = (NodeType) malloc(sizeof(nodeType));
 
-    if (*node == NULL)
-    {
+	if (*node == NULL)
+	{
 		/* error */
-        return(1);
-    }
-    else
-    {
-        (*node)->data = (void *)malloc(size);
-        if ((*node)->data == NULL)
-        {
-            free(*node);
-            return(1);
-        }
+		return (1);
+	}
+	else
+	{
+		(*node)->data = (void *) malloc(size);
+		if ((*node)->data == NULL)
+		{
+			free(*node);
+			return (1);
+		}
 
-        /* copy data */
-        memcpy((*node)->data, data, size);
+		/* copy data */
+		memcpy((*node)->data, data, size);
 
-        /* no error */
-        return(0);
-    }
+		/* no error */
+		return (0);
+	}
 }
 
 
-int qAddNode(NodeType *head, void *data, int size)
+int qAddNode(NodeType * head, void *data, int size)
 {
-    NodeType node;
-    NodeType p = *head;
+	NodeType node;
+	NodeType p = *head;
 
-    /* allocate node */
-    if (qAllocNode(&node, data, size) != 0)
-    {
-        return(1);
-    }
+	/* allocate node */
+	if (qAllocNode(&node, data, size) != 0)
+	{
+		return (1);
+	}
 
-    /* populate node data structure */
+	/* populate node data structure */
 	node->next = NULL;
 
-    /* if head is NULL, then this will be the 1st element in the queue */
-    if (*head == NULL)
-    {
-        *head = node;
-    }
-    else
-    /* walk the queue and insert this node at the end */
-    {
-        while (p->next != NULL)
-        {
-            p = p->next;
-        }
-        p->next = node;
-    }
+	/* if head is NULL, then this will be the 1st element in the queue */
+	if (*head == NULL)
+	{
+		*head = node;
+	}
+	else
+		/* walk the queue and insert this node at the end */
+	{
+		while (p->next != NULL)
+		{
+			p = p->next;
+		}
+		p->next = node;
+	}
 
-    return(0);
+	return (0);
 }
 
 
 NodeType qGetNextNode(NodeType nextNode)
 {
-    if (nextNode == NULL)
-    {
-        return(NULL);
-    }
+	if (nextNode == NULL)
+	{
+		return (NULL);
+	}
 
-    nextNode = nextNode->next;
+	nextNode = nextNode->next;
 
-    return(nextNode);
-}	
-
-
-int qDeleteNode(NodeType *head, NodeType targetNode)
-{
-    NodeType p = *head;
-    NodeType prev = *head;
-
-    /* take 1st case where head may be targetNode */
-    if (*head == targetNode)
-    {
-        *head = (*head)->next;
-        free(targetNode->data);
-        free(targetNode);
-        return(0);
-    }
-
-    /* other case: walk the queue to find the node to delete */
-    while (p->next != NULL)
-    {
-        if (p == targetNode)
-        {
-            /* targetNode has been found */
-            prev->next = p->next;
-            free(p->data);
-            free(p);
-            return(0);
-        }
-
-        prev = p;
-        p = p->next;
-    }
-
-    return(1);
+	return (nextNode);
 }
 
+
+int qDeleteNode(NodeType * head, NodeType targetNode)
+{
+	NodeType p = *head;
+	NodeType prev = *head;
+
+	/* take 1st case where head may be targetNode */
+	if (*head == targetNode)
+	{
+		*head = (*head)->next;
+		free(targetNode->data);
+		free(targetNode);
+		return (0);
+	}
+
+	/* other case: walk the queue to find the node to delete */
+	while (p->next != NULL)
+	{
+		if (p == targetNode)
+		{
+			/* targetNode has been found */
+			prev->next = p->next;
+			free(p->data);
+			free(p);
+			return (0);
+		}
+
+		prev = p;
+		p = p->next;
+	}
+
+	return (1);
+}
+
+
+int qDeleteLastNode(NodeType * head)
+{
+	NodeType p = *head;
+	NodeType prev = *head;
+
+	/* take 1st case where queue is empty */
+	if (p == NULL)
+	{
+		return 0;
+	}
+	/* walk queue to find last node */
+	while (p != NULL)
+	{
+		if (p->next == NULL)
+		{
+			break;
+		}
+		prev = p;
+		p = p->next;
+	}
+
+	free(p->data);
+	free(p);
+	prev->next = NULL;
+	return 0;
+}
+
+
+int qCheckDuplicateNode(NodeType head, void *data, int size)
+{
+	/* walk queue looking for a duplicate node */
+	while (head != NULL)
+	{
+		if (!memcmp(head->data, data, size))
+		{
+			return 1;
+		}
+		head = head->next;
+	}
+
+	return 0;
+}
