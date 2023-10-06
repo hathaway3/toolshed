@@ -19,24 +19,24 @@ The easiest way to install MingW is using a mingw-get-inst.*.exe [from here](htt
 
 Inside MingW, make sure you have "make" installed. There are several options, but the simpler mingw-make should be good enough:
 ```
-$ mingw-get install mingw-make
+mingw-get install mingw-make
 ```
 
 Enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install CC=gcc
+make -C build/unix install CC=gcc
 ```
 
 ## Building on Linux
 
 To build cocofuse for Linux, you need FUSE libraries and header files installed. On Debian-based systems:
 ```
-$ sudo apt-get install libfuse-dev
+sudo apt-get install libfuse-dev
 ```
 
 Enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install
+make -C build/unix install
 ```
 
 ## Building on macOS
@@ -60,7 +60,7 @@ brew install macfuse
 
 Then, enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install
+make -C build/unix install
 ```
 
 ## Building HDB-DOS and DriveWire DOS
@@ -69,15 +69,15 @@ It is highly recommended to have [LWTOOLS](http://lwtools.projects.l-w.ca/) inst
 
 To build all default flavors:
 ```
-$ make -C dwdos
-$ make -C hdbdos
-$ make -C superdos
+make -C dwdos
+make -C hdbdos
+make -C superdos
 ```
 
 Instead of LWTOOLS, you can use the deprecated `mamou`:
 ```
-$ make -C dwdos AS="mamou -r -q"
-$ make -C hdbdos AS="mamou -r -q"
+make -C dwdos AS="mamou -r -q"
+make -C hdbdos AS="mamou -r -q"
 ```
 
 Note that SuperDOS still builds with `mamou` by default.
