@@ -45,11 +45,16 @@
 #else
 # include <types.h>
 #endif
+#ifdef DEBUG
+# include <string.h>
+#endif
 #include "arerrs.h"
 #include "lz1.h"
 
 void insert_bit(short code);
 void addentry(WORD c, WORD ent);
+void output(WORD code, FILE *ofp);
+WORD getcode(FILE *infile);
 void writebuf(int cnt, FILE *fp);
 void lz1_init(int direction);
 char *emalloc(size_t);
@@ -74,7 +79,6 @@ DCOMPTBL	*CrakTbl;
 
 int LZ_1(FILE *infile, FILE *outfile, long *bytes)
 	{
-	VOID				output();
 	WORD				c, ent, tag = TAG;
 	WORD				n_ent;
 	register COMPTBL	*ctp;
@@ -160,9 +164,7 @@ void addentry(WORD c, WORD ent)
  * Output the given code.
  */
 
-VOID	output(code, ofp)
-WORD	code;
-FILE	*ofp;
+void output(WORD code, FILE *ofp)
 	{
 	if (code < 0)
 		{
@@ -262,15 +264,12 @@ void insert_bit(short code)
  * Decompress the input file.
  */
 
-WORD	de_LZ_1(infile, outfile, bytes)
-FILE	*infile, *outfile;
-long	bytes;
+WORD de_LZ_1(FILE *infile, FILE *outfile, long bytes)
 	{
 	register DCOMPTBL	*dtp;
 	unsigned char			stack[MAXSTACK];
 	WORD				tag, finchar, code, oldcode, incode;
 	register unsigned char		*stackp = stack;
-	WORD				getcode();
 
 	if (readshort(infile, &tag) == EOF || tag != TAG)
 		return (NOT_AR);
@@ -323,8 +322,7 @@ long	bytes;
  * Read one code from the input file.  If EOF, return -1.
  */
 
-WORD	getcode(infile)
-FILE	*infile;
+WORD getcode(FILE *infile)
 	{
 	WORD		code, reslt;
 	static WORD	size = 0;
@@ -498,7 +496,7 @@ int lz1_config(int bits)
 	}
 #ifdef DEBUG
 /*page*/
-dump_itbl()
+void dump_itbl()
 	{
 	short	nxt, chn, suf;
 	int		i, lim = maxmaxcode + 1;
@@ -529,7 +527,7 @@ dump_itbl()
 	}
 
 
-dump_otbl()
+void dump_otbl()
 	{
 	short	ch, pref;
 	int		i, lim = maxmaxcode + 1;
