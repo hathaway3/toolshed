@@ -99,8 +99,8 @@ typedef unsigned char u_char;
 #define WSIZE		16				/* size of base type of buf			*/
 
 #define BytesToBits(b)	((b) << 3)
-#define LowOrder(n)		(~(~0U << (n)))	/* thanks to K & R				*/
-#define HighOrder(n)	(~0U << (n))
+#define LowOrder(n)		(~(~0 << (n)))	/* thanks to K & R				*/
+#define HighOrder(n)	(~0 << (n))
 
 typedef struct {
 	UWORD	next,					/* chain of entries with same prefix*/
@@ -135,7 +135,3 @@ int fetch(void);
 int writeshort(FILE *fp, short s);
 int readshort(FILE *fp, short *sp);
 int readushort(FILE *fp, unsigned short *sp);
-#ifdef DEBUG
-void dump_otbl(void);
-void dump_itbl(void);
-#endif

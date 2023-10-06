@@ -60,6 +60,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if defined(__APPLE__)
+#include <utime.h>
+#endif
 #if defined(SYSV)
 # include "o2u.h"
 # include <sys/time.h>
@@ -89,7 +92,8 @@
  */
 
 #ifdef BRAINDEAD
-ck_tolower(char ch)
+ck_tolower(ch)
+char	ch;
 	{
 	if (isupper(ch))
 		tolower(ch);
@@ -98,7 +102,8 @@ ck_tolower(char ch)
 	}
 
 
-ck_toupper(char ch)
+ck_toupper(ch)
+char	ch;
 	{
 	if (islower(ch))
 		toupper(ch);
@@ -116,7 +121,8 @@ ck_toupper(char ch)
  *   back to a long.
  */
 
-long c4tol(char *s)
+long	c4tol(s)
+char	*s;
 	{
 	long	x = 0;
 
@@ -190,15 +196,17 @@ void set_fstat(char *pn, FILDES *fs)
 	char			*p = fs->fd_own;
 	short			s;
 	short			mode = o2uFmode(fs->fd_attr);
-#if !defined(WIN32)
 	struct passwd	*pwdbuf;
+#if !defined(WIN32)
+	struct passwd	*getpwuid();
 #endif
-/*
+#if defined(__APPLE__)
+	struct utimbuf ubuf;
+#else
 	struct  {
 		long	a, m;
 		} ubuf;
-*/
-
+#endif
 	s = (*p++&0xff);
 	s <<= 8;
 	s |= (*p & 0xff);
@@ -210,11 +218,15 @@ void set_fstat(char *pn, FILDES *fs)
 	chown(pn, s, pwdbuf ? pwdbuf->pw_gid : s);
 #endif
 
-	struct utimbuf ubuf;
-	ubuf.actime = time(NULL);
+#if defined(__APPLE__)
+	ubuf.actime = time((long *) 0);
 	ubuf.modtime = o2uDate(fs->fd_date);
 	utime(pn, &ubuf);
 #else
+	ubuf.a = time((long *) 0);
+	ubuf.m = o2uDate(fs->fd_date);
+	utime(pn, &ubuf);
+#endif
 # ifdef OSK
 	_ss_pfd(pn, fs, sizeof(FILDES));
 	_ss_attr(pn, fs->fd_attr);
@@ -231,7 +243,8 @@ void set_fstat(char *pn, FILDES *fs)
  * get the file size
  */
 
-long get_fsize(int pn)
+long	get_fsize(pn)
+int		pn;
 	{
 #ifdef SYSV
 	struct stat	stbuf;
