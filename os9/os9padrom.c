@@ -120,7 +120,7 @@ int os9padrom(int argc, char **argv)
 				if (tse != 0)
 				{
 					fprintf(stderr, "%s: %s\n", argv[0],
-						TSReportError(ec));
+						TSReportError(tse));
 				}
 			}
 		}
