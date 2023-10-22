@@ -3,7 +3,7 @@ include ../rules.mak
 
 vpath %.c ../../../libcecb
 
-CFLAGS	+= -I../../../include -Wall -Wno-error=stringop-truncation
+CFLAGS	+= -I../../../include -Wall
 
 %.a:
 	$(AR) -r $@ $^
