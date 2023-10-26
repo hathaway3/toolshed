@@ -469,8 +469,8 @@ static error_code validate_pathlist(cecb_path_id path, char *pathlist)
 {
 	error_code ec = 0;
 	char *p;
-	int i;
-
+	int i, j;
+	
 	/* 1. Validate the pathlist. */
 
 	if ((p = strchr(pathlist, ',')) == NULL)
@@ -490,12 +490,18 @@ static error_code validate_pathlist(cecb_path_id path, char *pathlist)
 
 		p++;
 
-		strncpy(path->filename, p, 8);
-
-		/* Space fill remaining characters */
-		for (i = strlen(p); i < 8; i++)
-			path->filename[i] = ' ';
-
+		/* Copy characters and space fill buffer */
+		for (i = 0, j = 0; j < 8; j++)
+		{
+			if (p[i] != 0)
+			{
+				path->filename[j] = p[i++];
+			}
+			else
+			{
+				path->filename[j] = ' ';
+			}
+		}
 	}
 
 	/* 2. Return. */
