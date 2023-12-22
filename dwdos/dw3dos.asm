@@ -376,8 +376,14 @@ BootMLen equ    *-BootMsg
 FailMsg  fcc    /FAILED/
 FailMLen equ    *-FailMsg
 
+* MegaMiniMPI
+         IFEQ MEGAMINIMPI
+         use ../hdbdos/dwinit.asm
+         ENDC
+
 csize    equ   *-Entry
 eom      equ   *-Top
+         
 
 * Fill pattern
          IFEQ   BIN
@@ -420,11 +426,6 @@ eom      equ   *-Top
 
          ENDC
          ENDC
-         ENDC
-
-* MegaMiniMPI
-         IFEQ MEGAMINIMPI
-         use ../hdbdos/dwinit.asm
          ENDC
 
          end   Entry
