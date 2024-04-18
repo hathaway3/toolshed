@@ -6,13 +6,19 @@
 
 * DECB binary file preamble
 
+	* Trick lwasm into thinking the preamble is part of the
+	* code, and it starts 5 bytes before we really want the
+	* code to start.
+	org	$4fd0-5
+
 	fcb     $00		Preamble flag
 	fdb	$2030		Length of data block
 	fdb	$4FD0		Load address
 
 * Entry point from Basic
 
-	org	$4fd0		This code covers $4fd0-$4fff
+	* Note: Don't use ORG here, it confuses lwasm.
+	* org	$4fd0		This code covers $4fd0-$4fff
 	orcc	#$50		Disable interrupts
 	lda	>$fffe		Check RESET vector
 	cmpa	#$8c		Points to CoCo3 reset code?
