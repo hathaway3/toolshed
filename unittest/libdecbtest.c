@@ -306,6 +306,42 @@ void test_decb_rename()
 	ASSERT_EQUALS(0, ec);
 }
 
+char *basic_prog = "10 PRINT\"Hello World\"\n15 X=INT(234.54-23)\n20 GOTO 10\n";
+
+void test_decb_token()
+{
+	error_code ec;
+
+	u_int source_length = strlen(basic_prog);
+	unsigned char *source = malloc(source_length);
+	unsigned char *entokenize_buffer;
+	u_int entokenize_size;
+	int path_type = 0;
+
+	char *detokenize_buffer;
+	u_int detokenize_size;
+
+	source = malloc(source_length+1);
+	strcpy((char *)source, basic_prog);
+
+	ec = _decb_entoken(source, source_length,
+			 &entokenize_buffer, &entokenize_size,
+			 path_type);
+	ASSERT_EQUALS(0, ec);
+
+	ec = _decb_detoken(entokenize_buffer, entokenize_size,
+			 &detokenize_buffer, &detokenize_size);
+	ASSERT_EQUALS(0, ec);
+
+	detokenize_buffer[detokenize_size] = '\0';
+
+	ASSERT_STRING_EQUALS(basic_prog, detokenize_buffer);
+
+	free(source);
+	free(entokenize_buffer);
+	free(detokenize_buffer);
+}
+
 int main()
 {
 	remove("test.dsk");
@@ -317,6 +353,7 @@ int main()
 	RUN(test_decb_open_and_read);
 	RUN(test_decb_delete);
 	RUN(test_decb_rename);
+	RUN(test_decb_token);
 
 	return TEST_REPORT();
 }
