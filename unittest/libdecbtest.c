@@ -313,7 +313,7 @@ void test_decb_token()
 	error_code ec;
 
 	u_int source_length = strlen(basic_prog);
-	unsigned char *source = malloc(source_length);
+	unsigned char *source;
 	unsigned char *entokenize_buffer;
 	u_int entokenize_size;
 	int path_type = 0;
