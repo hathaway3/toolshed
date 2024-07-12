@@ -164,7 +164,7 @@ int decblist(int argc, char *argv[])
 
 	DECBToNative((char *) buffer, size, (char **) &buffer2, &size2);
 
-	printf("%s", buffer2);
+	fwrite(buffer2, size2, 1, stdout);
 
 	free(buffer);
 	free(buffer2);
