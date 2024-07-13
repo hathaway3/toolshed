@@ -333,6 +333,8 @@ void test_decb_token()
 			 &detokenize_buffer, &detokenize_size);
 	ASSERT_EQUALS(0, ec);
 
+	ASSERT_EQUALS(source_length, detokenize_size);
+
 	detokenize_buffer[detokenize_size] = '\0';
 
 	ASSERT_STRING_EQUALS(basic_prog, detokenize_buffer);

@@ -165,6 +165,8 @@ void test_cecb_token()
 
 	ec = _cecb_detoken(ent_outbuf, ent_out_size, &det_outbuf, &det_out_size);
 	ASSERT_EQUALS(0, ec);
+	
+	ASSERT_EQUALS(test_program_size, det_out_size-2);
 
 	ec = memcmp(basic_program, det_outbuf, test_program_size-1);
 	ASSERT_EQUALS(0, ec);
