@@ -86,7 +86,6 @@ const char *d_commands[128] =
 };
 
 //size_t malloc_size(void *ptr);
-error_code append_zero(u_int * position, char **str, size_t *buffer_size);
 int tok_strcmp(const char *str1, char *str2);
 
 /* _decb_detoken()
@@ -231,8 +230,6 @@ error_code _decb_detoken(unsigned char *in_buffer, int in_size,
 			return ec;
 	}
 
-	append_zero(&out_pos, out_buffer, &buffer_size);
-
 	*out_size = out_pos;
 
 	return 0;
@@ -253,6 +250,21 @@ error_code _decb_entoken(unsigned char *in_buffer, int in_size,
 	int in_pos = 0, out_pos = 0;
 
 	*out_size = 0;
+
+	/* Preprocessing input to remove illegal characters */
+	for (int i=0; i<in_size; i++)
+	{
+		in_buffer[i] &= 0x7f;
+
+		if (in_buffer[i] == 0x0d)
+			continue;
+		if (in_buffer[i] == 0x0a)
+			continue;
+		if (isprint(in_buffer[i]))
+			continue;
+		
+		in_buffer[i] = ' ';
+	}
 
 	/* The tokenized form of the BASIC program should be smaller than the untokenized form,
 	   but you never know. */
@@ -296,7 +308,7 @@ error_code _decb_entoken(unsigned char *in_buffer, int in_size,
 		while (in_pos < in_size && isspace(in_buffer[in_pos]))
 			in_pos++;	/* Spin past pre-line-number spaces */
 
-		/* Enocde line number */
+		/* Encode line number */
 
 		line_number = 0;
 		while (in_pos < in_size && isdigit(in_buffer[in_pos]))
@@ -497,34 +509,6 @@ error_code _decb_detect_tokenized(unsigned char *in_buffer, u_int in_size)
 		/* Error adjusted internal BASIC file size does not match buffer size */
 		return EOS_SN;
 	}
-
-	return 0;
-}
-
-error_code append_zero(u_int * position, char **str, size_t *buffer_size)
-{
-	if (*position > ((*buffer_size) - 20))
-	{
-		char *buffer;
-
-		buffer = realloc(*str, (*buffer_size) + BLOCK_QUANTUM);
-
-		if (buffer == NULL)
-		{
-			/* error */
-			return EOS_OM;
-		}
-
-		*buffer_size = *buffer_size + BLOCK_QUANTUM;
-
-		if (*str != buffer)
-		{
-			*str = buffer;
-		}
-	}
-
-	*((*str) + *position) = 0x00;
-	(*position) += 1;
 
 	return 0;
 }
