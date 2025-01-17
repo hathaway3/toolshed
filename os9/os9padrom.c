@@ -112,15 +112,12 @@ int os9padrom(int argc, char **argv)
 			}
 			else
 			{
-				error_code tse;
-
 				file = argv[i];
-				tse = TSPadROM(file, padSize, padChar,
+				ec = TSPadROM(file, padSize, padChar,
 					       padAtStart);
-				if (tse != 0)
+				if (ec != 0)
 				{
-					fprintf(stderr, "%s: %s\n", argv[0],
-						TSReportError(tse));
+					break;
 				}
 			}
 		}
