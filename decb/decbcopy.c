@@ -285,7 +285,7 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 	coco_path_id path;
 	coco_path_id destpath;
 	int mode = FAM_NOCREATE | FAM_WRITE;
-	unsigned char *buffer;
+	unsigned char *buffer = NULL;
 	char *translation_buffer;
 	u_int new_translation_size;
 	u_int buffer_size;
@@ -364,7 +364,7 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 		{
 			if (buffer[0] == 0xff)
 			{
-				u_char *detokenize_buffer;
+				u_char *detokenize_buffer = NULL;
 				u_int detokenize_size;
 
 				/* File is already a tokenized BASIC file, de-tokenize it */
@@ -383,11 +383,15 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 					data_type = 0xff;
 				}
 				else
+				{
+					if (detokenize_buffer != NULL)
+						free(detokenize_buffer);
 					return -1;
+				}
 			}
 			else
 			{
-				unsigned char *entokenize_buffer;
+				unsigned char *entokenize_buffer = NULL;
 				u_int entokenize_size;
 
 				/* Tokenized file */
@@ -409,7 +413,11 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 
 				}
 				else
+				{
+					if (entokenize_buffer != NULL)
+						free(entokenize_buffer);
 					return -1;
+				}
 			}
 		}
 
@@ -510,6 +518,10 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
 			}
 		}
 	}
+
+	// free whatever buffer ended up being
+	if (buffer)
+		free(buffer);
 
 	_coco_close(path);
 	_coco_close(destpath);
