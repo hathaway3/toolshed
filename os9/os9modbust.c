@@ -95,7 +95,7 @@ int os9modbust(int argc, char **argv)
 
 
 
-int modbust_osk(os9_path_id path)
+int modbust_osk(coco_path_id path)
 {
 	error_code ec;
 	u_int size;
@@ -109,7 +109,7 @@ int modbust_osk(os9_path_id path)
 	/* We have an OS-9 module - get 2 bytes then 4 byte size */
 	size = 6;
 
-	ec = _os9_read(path, buffer, &size);
+	ec = _coco_read(path, buffer, &size);
 	size = int4((u_char *) buffer + 2);
 	module = (u_char *) malloc(size);
 
@@ -128,7 +128,7 @@ int modbust_osk(os9_path_id path)
 	module[6] = buffer[4];
 	module[7] = buffer[5];
 	size -= 8;
-	ec = _os9_read(path, &module[8], &size);
+	ec = _coco_read(path, &module[8], &size);
 	nameoffset = int4(&module[12]);
 	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
 	OS9StringToCString((u_char *) name);
@@ -152,7 +152,7 @@ int modbust_osk(os9_path_id path)
 	return 0;
 }
 
-int modbust_os9(os9_path_id path)
+int modbust_os9(coco_path_id path)
 {
 	error_code ec;
 	u_int size;
@@ -166,7 +166,7 @@ int modbust_os9(os9_path_id path)
 	/* We have an OS-9 module - get size */
 	size = 2;
 
-	ec = _os9_read(path, buffer, &size);
+	ec = _coco_read(path, buffer, &size);
 	size = int2((u_char *) buffer);
 	module = (u_char *) malloc(size);
 
@@ -181,7 +181,7 @@ int modbust_os9(os9_path_id path)
 	module[2] = buffer[0];
 	module[3] = buffer[1];
 	size -= 4;
-	ec = _os9_read(path, &module[4], &size);
+	ec = _coco_read(path, &module[4], &size);
 	nameoffset = int2(&module[4]);
 	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
 	OS9StringToCString((u_char *) name);
@@ -209,20 +209,20 @@ static int do_modbust(char **argv, char *filename)
 {
 	error_code ec = 0;
 	char buffer[256];
-	os9_path_id path;
+	coco_path_id path;
 
-	ec = _os9_open(&path, filename, FAM_READ);
+	ec = _coco_open(&path, filename, FAM_READ);
 
 	if (ec != 0)
 	{
 		return ec;
 	}
 
-	while (_os9_gs_eof(path) == 0)
+	while (_coco_gs_eof(path) == 0)
 	{
 		u_int size = 2;
 
-		ec = _os9_read(path, buffer, &size);
+		ec = _coco_read(path, buffer, &size);
 		if (ec != 0)
 		{
 			fprintf(stderr, "%s: error reading file %s\n",
@@ -243,7 +243,7 @@ static int do_modbust(char **argv, char *filename)
 		}
 	}
 
-	_os9_close(path);
+	_coco_close(path);
 
 
 	return 0;
