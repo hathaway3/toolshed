@@ -5,7 +5,7 @@ ToolShed v2.2
 
 ![ToolShed](cover.jpg)
 
-<http://www.sourceforge.net/projects/toolshed>
+<https://github.com/nitros9project/toolshed>
 
 ---
 
