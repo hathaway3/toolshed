@@ -34,12 +34,14 @@ static char const *const helpMessage[] = {
 	"     -ds  = double sided\n",
 	"     -tX  = tracks (default = 35)\n",
 	"     -stX = sectors per track (default = 18)\n",
+	"     -szX = sectors for track 0 (default = 18)\n",
 	"     -dr  = format a Dragon disk\n",
 	" Hard Drive Options:\n",
-	"     -lX  = number of logical sectors\n",
+	"     -lX  = number of logical sectors (floppy options ignored)\n",
 	NULL
 };
 
+#define DEF_SECTORS_TRACK	18
 
 int os9format(int argc, char **argv)
 {
@@ -48,7 +50,8 @@ int os9format(int argc, char **argv)
 	int i;
 	int tracks = 35;
 	int heads = 1;
-	int sectorsPerTrack = 18;
+	int sectorsPerTrack = DEF_SECTORS_TRACK;
+	int sectorsTrack0 = 0;   /* mark as unset */
 	int bytesPerSector = 256;
 	int tpi = 48;		/* 48 tpi */
 	int density = 1;	/* double density */
@@ -184,6 +187,10 @@ int os9format(int argc, char **argv)
 						sectorsPerTrack = atoi(p + 2);
 						break;
 
+					case 'z':
+						sectorsTrack0 = atoi(p + 2);
+						break;
+
 					default:
 						fprintf(stderr,
 							"%s: unknown option '%c'\n",
@@ -233,6 +240,12 @@ int os9format(int argc, char **argv)
 		}
 	}
 
+	/* match sectors on track 0 only if it's unset. */
+	if (sectorsTrack0 == 0)
+	{
+		sectorsTrack0 = sectorsPerTrack;
+	}
+
 	/* if logicalSectors != 0, then format as a hard drive image */
 	if (logicalSectors != 0)
 	{
@@ -258,6 +271,7 @@ int os9format(int argc, char **argv)
 			if (logicalSectors % i == 0)
 			{
 				sectorsPerTrack = logicalSectors / i;
+				sectorsTrack0 = sectorsPerTrack;
 				heads = i;
 				i = 0;
 			}
@@ -277,8 +291,8 @@ int os9format(int argc, char **argv)
 
 			error_code ec =
 				_os9_format(argv[i], os968k, tracks,
-					    sectorsPerTrack, heads,
-					    bytesPerSector, &clusterSize,
+					    sectorsPerTrack, sectorsTrack0,
+					    heads, bytesPerSector, &clusterSize,
 					    diskName, sectorAllocationSize,
 					    tpi, density, formatEntire,
 					    isDragon, isHDD, &totalSectors,
@@ -298,6 +312,11 @@ int os9format(int argc, char **argv)
 					       heads);
 					printf("  Sectors/track: %d\n",
 					       sectorsPerTrack);
+					if (sectorsPerTrack != sectorsTrack0)
+					{
+						printf(" Sectors/track0: %d\n",
+								sectorsTrack0);
+					}
 					printf("    Sector size: %d\n",
 					       bytesPerSector);
 					printf("\nLogical Data:\n");

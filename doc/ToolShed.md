@@ -1,11 +1,11 @@
-ToolShed v2.2
+ToolShed v2.4
 -------------
 
 ## A Color Computer Cross-Development Toolset
 
 ![ToolShed](cover.jpg)
 
-<http://www.sourceforge.net/projects/toolshed>
+<https://github.com/nitros9project/toolshed>
 
 ---
 
@@ -15,7 +15,6 @@ ToolShed v2.2
   * [Disk Extraction Under Linux](#de_linux)
   * [Pathname Elements](#path_elements)
   * [Support for HDB-DOS](#de_hdb_dos)
-* [rma, rlink and rdump](#rma)
 * [os9](#os9) - Manipulate OS-9 formatted disk images
   * [ATTR](#attr_os9) - Display or modify file attributes
   * [CMP](#cmp) - Compare the contents of two files
@@ -60,6 +59,7 @@ ToolShed v2.2
   * [COPY](#copy_cecb) - Copy one or more files to a casette container
 * [ar2](#ar2)
 * [dis68](#dis68)
+* [lst2cmt](#lst2cmt) - Create MAME comment file
 
 ---
 
@@ -87,17 +87,27 @@ Managing a sizable assembly language source file for a complex program can be da
 
 The relocatable macro assembler and linker give you the ability to write complex assembly language programs in different source files, then link them together to form a single OS-9 or Disk BASIC object file that can be loaded and executed.
 
+These two command are no longer included in the ToolShed project.
+
 ### rdump
 
 The output of the rma macro assembler is a ROF (relocatable object file). rdump allows the inspection of this intermediate file, and can also act as a disassembler.
+
+This command is no longer included in the ToolShed project. It's functionality has been included into the os9 command.
 
 ### mamou
 
 If you are comfortable with using the asm assembler that was part of OS-9/6809, then you will feel at home with mamou. This tool is more suited for assembly language programs that contain their entire source code in one file.
 
+This assembler is included for historical purposes and should not be used for new development. For example, the NitrOS-9 project has switch to the LWASM assembler.
+
 ### ar2
 
 Carl Kreider is a long time OS-9/6809 user and programmer, and has graciously given us permission to include his archiver utility, ar2, in ToolShed.
+
+### lst2cmt
+
+This is a tool used to convert lwasm listing files into MAME comment files.
 
 ---
 <h2 id="tutorial">A Tutorial On Disk Images</h2>
@@ -195,23 +205,6 @@ Another feature of HDB-DOS is an offset to be used for the first disk image. Thi
     DECB list -t hd.img,NEW.BAS:3+1348276
 
 The number after the plus is the offset. It can be expressed in decimal or hexadecimal form. Prepend the number with '0x' to use hexadecimal.
-
----
-
-<h2 id="rma">rma, rlink and rdump</h2>
-
-If you have used the software tools from the OS-9 Development System sold by Radio Shack for the Color Computer, then you will be right at home with rma, rlink and rdump. These tools behave exactly the same and have identical function to their Color Computer counterparts.
-
-### Roles and Responsibilities
-
-The function of each of these tools can be summed as follows: rma assembles source code into intermediate object code files called ROFs, and rlink assembles one or more ROFs into a binary executable file.
-
-Let's look at a hypothetical program called doesitall. This program is a whiz-bang text processor written in 6809 assembly language and is composed of three files: main.a, sub.a and io.a. On top of that, the program uses routines from the alib assembly routine library (available from the NitrOS-9 Project). Here's how you would assemble a working executable from these files:
-
-    rma main.a -o=main.r
-    rma sub.a -o=sub.r
-    rma io.a -o=io.r
-    rlink main.r sub.r io.r -l=alib.l
 
 ---
 
@@ -987,8 +980,10 @@ This command will work on Disk BASIC and RBF disk image files as well as host fi
 <tr><td>-a</td><td>dump output in assembler format (hex)</td></tr>
 <tr><td>-b</td><td>dump output in assembler format (binary)</td></tr>
 <tr><td>-c</td><td>don't display ASCII character data</td></tr>
-<tr><td>-h</td><td>don't display header</td></tr>
+<tr><td>-e</td><td>dump output in C format</td></tr>
+<tr><td>-t</td><td>don't display header</td></tr>
 <tr><td>-l</td><td>don't display line label/count</td></tr>
+<tr><td>-z</td><td>decode DECB binary</td></tr>
 </table>
 #### Description
 
@@ -1439,3 +1434,36 @@ The parameter file does not have to be specified on the command line if it's nam
     c 5f
 
 Since it is an OS-9/68K module and dis68 is not told otherwise, it will first take apart the module header. Next, it will assume long (32 bit) data up to and including address 0x47, text up to and including address 0x4d, and code up to and including address 0x5f.
+
+---
+
+<h2 id="lst2cmt">lst2cmt</h2>
+
+This is a tool used to convert lwasm listing files into MAME comment files. It was originally written by Eric Canales in PowerBASIC. It was rewritten in C by tim lindner.
+
+#### Syntax and Scope
+
+    lst2cmt {[<opts>]} <srcfile> <destfile> {[<opts>]}
+
+#### Options
+<table>
+<tr><td>-nocrc</td><td>Writes comment lines with no CRC field</td></tr>
+<tr><td>-s&lt;system&gt;</td><td>Sets the system MAME should apply the comments file to. Default is blank, but this is required be specified.</td></tr>
+<tr><td>-c&lt;cpu&gt;</td><td>Sets the CPU MAME should apply the comments file to. Default is ":maincpu".</td></tr>
+<tr><td>-nolinenumbers</td><td>Remove line numbers. Useful if your debugger has limited space.</td></tr>
+<tr><td>-o&lt;offset&gt;</td><td>Offset the memory locations to place the comments.</td></tr>
+</table>
+
+#### Description
+
+The lwasm assembler can produce a listing file. An assembler listing file will include line number, object code, source code, and comments all in one text file.
+The MAME emulator has the ability to display comments next to it's dissasembly view.
+This tool allows you to process lwasm's listing files to produce a file MAME can use to display comments next to the dissasembly.
+
+#### Notes
+
+1. Comments in between code lines will not be visible in MAME. Only comments placed after the menemonomic and operand.
+2. Comments will only be displayed in MAME if the CRC of the object codes matches what is in the comment file.
+3. MAME comments are automatically loaded. By default, the comment file location is next to the MAME executable in a folder called 'comments'. The name of the comment file must be the MAME driver short name and dot 'cmt'. Inside the comment file, the name of the driver must match the driver you are running. Inside the comment file, the name of the cpu must also match the running driver.
+4. MAME does not have comments turned on by default. There is a menu item to turn them off.
+5. MAME display comments very far to the right in the disasembly. You may have to make the window very large to see them.

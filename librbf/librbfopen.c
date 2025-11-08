@@ -94,12 +94,15 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		term_pd(*path);
 
 	      aa:
+		filename = NULL;
 		ec = _os9_open_parent_directory(&parent_path, pathlist,
 						FAM_DIR | FAM_WRITE,
 						&filename);
 
 		if (ec != 0)
 		{
+			if (filename != NULL)
+				free(filename);
 			return ec;
 		}
 
@@ -133,6 +136,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 			if (ec == 0)
 			{
+				free(filename);
 				goto aa;
 			}
 		}
@@ -355,8 +359,8 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		term_pd(*path);
 		fclose((*path)->fd);
+		term_pd(*path);
 
 		return ec;
 	}
@@ -368,8 +372,11 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		term_pd(*path);
+		if ((*path)->bitmap)
+			free((*path)->bitmap);
+		term_lsn0(*path);
 		fclose((*path)->fd);
+		term_pd(*path);
 
 		return ec;
 	}
@@ -443,6 +450,9 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 	{
 		free(tmppathlist);
 
+		free((*path)->bitmap);
+		term_lsn0(*path);
+
 		fclose((*path)->fd);
 
 		term_pd(*path);
@@ -482,6 +492,9 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		    || ((fd_sector.fd_att & FAM_DIR) != (mode & FAM_DIR)))
 		{
 			free(tmppathlist);
+
+			free((*path)->bitmap);
+			term_lsn0(*path);
 
 			fclose((*path)->fd);
 

@@ -12,6 +12,7 @@ The repository contains:
 
 **NOTE:** while the venerable 6809 cross-assembler, mamou, is part of the repository, it is only kept for historical value. Everyone should really be using William Astle's excellent LWTOOLS which contains the *lwasm* 6809 assembler and *lwlink* linker. [Download the latest version of the source here.](http://lwtools.projects.l-w.ca)
 
+Find the documentation for some of the command in Toolshed's [Wiki](https://github.com/nitros9project/toolshed/wiki)
 ## Building on Windows
 
 The recommended build environment is [MingW32 or MingW64](http://mingw.org/), [MSYS2](http://msys2.github.io/), or the [WSL subsystem for Windows 10+](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux).
@@ -49,7 +50,7 @@ The best way to do this is to first [visit the Homebrew page](https://brew.sh) a
 Once that's done, you can use the brew command to install macfuse (`osxfuse` has been succeeded by `macfuse` as of version 4.0.0.):
 
 ```
-brew install macuse
+brew install macfuse
 ```
 
 If you have previously install osxfuse, you can use brew command to uninstall `oxsfuse` and install `macfuse`

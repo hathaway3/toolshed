@@ -1,6 +1,6 @@
 # Project-Wide Rules
 
-VERSION = 2.2
+VERSION = 2.4.2
 
 MERGE		= cat
 SOFTLINK	= ln -s
@@ -12,6 +12,10 @@ ASM		= rma
 AR		= $(CROSS)ar
 RANLIB		= $(CROSS)ranlib
 CC		= $(CROSS)cc
+
+ifneq ($(WIN),)
+SUFEXE		= .exe
+endif
 
 %.l: %.r
 	$(MERGE) $< > $@
