@@ -1,6 +1,9 @@
 name: Make Release
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - '*'
 
 env:
   # Path to the solution file relative to the root of the project.

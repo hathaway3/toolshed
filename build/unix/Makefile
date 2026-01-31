@@ -7,12 +7,14 @@ vpath %.c ../../mamou:../../os9
 PACKAGENAME_UNIX	= toolshed-unix64-$(VERSION).tgz
 PACKAGENAME_WIN		= toolshed-win64-$(VERSION).zip
 
+PREFIX		?= /usr/local
+
 ifneq ($(DESTDIR),)
-INSTALLDIR	= $(DESTDIR)/usr/bin
-DOCDIR		= $(DESTDIR)/usr/share/doc/toolshed
+INSTALLDIR	?= $(DESTDIR)/usr/bin
+DOCDIR		?= $(DESTDIR)/usr/share/doc/toolshed
 else
-INSTALLDIR	= /usr/local/bin
-DOCDIR		= /usr/local/share/toolshed
+INSTALLDIR	?= $(PREFIX)/bin
+DOCDIR		?= $(PREFIX)/share/doc/toolshed
 endif
 APPS 		= ar2 os9 mamou cecb decb tocgen makewav dis68 lst2cmt
 
