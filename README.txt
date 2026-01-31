@@ -6,6 +6,14 @@ microcomputers.
 https://sourceforge.net/projects/toolshed/
 
 
+== QUICK INSTALLATION ==
+To install on any supported platform, simply run:
+$ ./install.sh
+
+This will install dependencies and build the project.
+You can also run "make install" from the root directory.
+
+
 == HOW TO BUILD ON WINDOWS ==
 
 The recommended build environment is MingW32 or MingW64 (http://mingw.org/),

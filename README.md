@@ -11,6 +11,20 @@ The repository contains:
 
 **NOTE:** while the venerable 6809 cross-assembler, mamou, is part of the repository, it is only kept for historical value. Everyone should really be using William Astle's excellent LWTOOLS which contains the *lwasm* 6809 assembler and *lwlink* linker. [Download the latest version of the source here.](http://lwtools.projects.l-w.ca)
 
+## Quick Installation
+To install on any supported platform (Linux, macOS, Windows via MinGW), simply run the included install script:
+
+```
+./install.sh
+```
+
+This script will attempt to detect your OS, install necessary dependencies (like FUSE), and build the project.
+
+Alternatively, you can use the standard make commands from the root directory:
+```
+make install
+```
+
 ## Building on Windows
 
 The recommended build environment is [MingW32 or MingW64](http://mingw.org/), [MSYS2](http://msys2.github.io/), or the [WSL subsystem for Windows 10+](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux).

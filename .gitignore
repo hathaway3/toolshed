@@ -1,0 +1,43 @@
+# Object files
+*.o
+*.a
+
+# Executables
+*.exe
+*.bin
+*.rom
+
+# Disk and tape images
+*.dsk
+*.wav
+*.cas
+*.trk
+
+# Test executables
+/librbftest
+/libdecbtest
+/libcecbtest
+/libtoolshedtest
+
+# Build directories
+/build/unix/cocofuse/cocofuse
+/build/unix/cocofuse/cocofuse.o
+
+# Specific tools built in place
+/unittest/librbftest
+/unittest/libdecbtest
+/unittest/libcecbtest
+/unittest/libtoolshedtest
+/build/unix/ar2/ar2
+/build/unix/os9/os9
+/build/unix/mamou/mamou
+/build/unix/cecb/cecb
+/build/unix/decb/decb
+/build/unix/tocgen/tocgen
+/build/unix/makewav/makewav
+/build/unix/dis68/dis68
+/build/unix/cocofuse/cocofuse
+
+# OS specific
+.DS_Store
+Thumbs.db
