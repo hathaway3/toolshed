@@ -6,6 +6,16 @@ microcomputers.
 https://sourceforge.net/projects/toolshed/
 
 
+== QUICK INSTALL (LINUX and macOS) ==
+
+The easiest way to install ToolShed on Linux or macOS is to use the included
+installation script. This script will attempt to install any missing 
+dependencies (like FUSE) and then build and install the tools.
+
+From the root of the Toolshed directory, run:
+$ ./install.sh
+
+
 == HOW TO BUILD ON WINDOWS ==
 
 The recommended build environment is MingW32 or MingW64 (http://mingw.org/),

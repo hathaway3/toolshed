@@ -13,6 +13,17 @@ The repository contains:
 **NOTE:** while the venerable 6809 cross-assembler, mamou, is part of the repository, it is only kept for historical value. Everyone should really be using William Astle's excellent LWTOOLS which contains the *lwasm* 6809 assembler and *lwlink* linker. [Download the latest version of the source here.](http://lwtools.projects.l-w.ca)
 
 Find the documentation for some of the command in Toolshed's [Wiki](https://github.com/nitros9project/toolshed/wiki)
+
+## Quick Install (Linux and macOS)
+
+The easiest way to install ToolShed on Linux or macOS is to use the included installation script. This script will attempt to install any missing dependencies (like FUSE) and then build and install the tools.
+
+From the root of the Toolshed directory, run:
+```bash
+./install.sh
+```
+
+If you prefer to build manually, follow the platform-specific instructions below.
 ## Building on Windows
 
 The recommended build environment is [MingW32 or MingW64](http://mingw.org/), [MSYS2](http://msys2.github.io/), or the [WSL subsystem for Windows 10+](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux).
