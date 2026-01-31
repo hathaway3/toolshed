@@ -518,12 +518,30 @@ error_code _decb_buffer_sprintf(u_int * position, char **str,
 				size_t *buffer_size, const char *format, ...)
 {
 	va_list ap;
+	int formatted_size;
 
-	if (*position > ((*buffer_size) - 20))
+	va_start(ap, format);
+	/* First, determine the size needed for the formatted string */
+	formatted_size = vsnprintf(NULL, 0, format, ap);
+	va_end(ap);
+
+	if (formatted_size < 0)
+	{
+		return EOS_SN;
+	}
+
+	/* Ensure the buffer is large enough to hold the current content plus the new content plus the null terminator */
+	if ((*position + formatted_size + 1) > *buffer_size)
 	{
 		char *buffer;
+		size_t new_size = *buffer_size + BLOCK_QUANTUM;
+		
+		while (new_size < (*position + formatted_size + 1))
+		{
+			new_size += BLOCK_QUANTUM;
+		}
 
-		buffer = realloc(*str, (*buffer_size) + BLOCK_QUANTUM);
+		buffer = realloc(*str, new_size);
 
 		if (buffer == NULL)
 		{
@@ -531,16 +549,12 @@ error_code _decb_buffer_sprintf(u_int * position, char **str,
 			return EOS_OM;
 		}
 
-		*buffer_size = *buffer_size + BLOCK_QUANTUM;
-
-		if (*str != buffer)
-		{
-			*str = buffer;
-		}
+		*buffer_size = new_size;
+		*str = buffer;
 	}
 
 	va_start(ap, format);
-	*position += vsprintf((*str) + *position, format, ap);
+	*position += vsnprintf((*str) + *position, formatted_size + 1, format, ap);
 	va_end(ap);
 
 	return 0;

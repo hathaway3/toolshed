@@ -43,34 +43,34 @@
 /*  -m  file is not module format */
 /*  -s  create source do not print binary */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #ifdef WIN32
 typedef unsigned int u_int;
 typedef unsigned short u_short;
 #endif
 #include "dis68.h"
 
-int prnflg = 1;			/* default to pretty printing on */
+int prnflg = 1; /* default to pretty printing on */
 int mdfmt = 1, pso = 0;
 char *fn, *an, *parmfile;
 
 char mnebf[80];
-char str[80];			/* temporary string */
+char str[80]; /* temporary string */
 u_short opcode[6];
 int opwcnt;
 int opbcnt;
 u_int ppc;
 char type;
 int pass;
-int pcsflg = 0;			/* pc symbol table empty flag */
+int pcsflg = 0; /* pc symbol table empty flag */
 
 static u_int psdofs = 0;
 static u_int cend;
-static u_int nxpcref;		/* next pc reference */
+static u_int nxpcref; /* next pc reference */
 
 FILE *cfp, *pfp, *ofp;
 
@@ -79,7 +79,8 @@ static void readtyp();
 static void byte();
 static void word();
 static void lng();
-static void offset();;
+static void offset();
+;
 static void address();
 static void text();
 static void psect();
@@ -88,499 +89,439 @@ static void prnpcsym();
 static void prnsrc();
 static int htoi(char *s);
 
+int main(int argc, char **argv) {
+  int opt;
 
+  while (-1 != (opt = getopt(argc, argv, "mo:p:s")))
+    switch (opt) {
+    case 'm':
+      mdfmt = 0;
+      break;
 
-int main(int argc, char **argv)
-{
-	int opt;
+    case 'o':
+      psdofs = htoi(optarg); /* get starting offset */
+      break;
 
-	while (-1 != (opt = getopt(argc, argv, "mo:p:s")))
-		switch (opt)
-		{
-		case 'm':
-			mdfmt = 0;
-			break;
+    case 'p':
+      parmfile = optarg; /* use different parmfile */
+      break;             /* or say "none"                */
 
-		case 'o':
-			psdofs = htoi(optarg);	/* get starting offset */
-			break;
+    case 's':
+      prnflg = 0; /* print for assembler */
+      break;
 
-		case 'p':
-			parmfile = optarg;	/* use different parmfile */
-			break;	/* or say "none"                */
+    default:
+      help();
+    }
 
-		case 's':
-			prnflg = 0;	/* print for assembler */
-			break;
+  if (argc == optind)
+    help();
 
-		default:
-			help();
-		}
+  fn = argv[optind + 0];
+  if ((cfp = fopen(fn, "r")) == (FILE *)0)
+    exit(_errmsg(errno, "cannot open %s\n", fn));
 
-	if (argc == optind)
-		help();
+  if (argc > (optind + 1)) {
+    an = argv[optind + 1];
+    if ((ofp = fopen(an, "w")) == (FILE *)0)
+      exit(_errmsg(errno, "cannot open %s\n", an));
+  }
 
-	fn = argv[optind + 0];
-	if ((cfp = fopen(fn, "r")) == (FILE *) 0)
-		exit(_errmsg(errno, "cannot open %s\n", fn));
+  if (0 == parmfile) {
+    strncpy(str, fn, sizeof(str) - 1);
+    str[sizeof(str) - 1] = '\0';
+    strncat(str, ".prm", sizeof(str) - strlen(str) - 1);
+  } else {
+    strncpy(str, parmfile, sizeof(str) - 1);
+    str[sizeof(str) - 1] = '\0';
+  }
 
-	if (argc > (optind + 1))
-	{
-		an = argv[optind + 1];
-		if ((ofp = fopen(an, "w")) == (FILE *) 0)
-			exit(_errmsg(errno, "cannot open %s\n", an));
-	}
+  if ((pfp = fopen(str, "r")) == (FILE *)0)
+    exit(_errmsg(errno, "cannot open %s\n", str));
 
-	if (0 == parmfile)
-		strcat(strcpy(str, fn), ".prm");
-	else
-		strcpy(str, parmfile);
+  for (pass = 1; pass < 3; pass++) {
+    ppc = psdofs;
+    if (pass == 2) {
+      prnsym(); /* dump the register symbol table */
+      nxpcref = any_pc_sym();
+      prnpcsym();
+    }
 
-	if ((pfp = fopen(str, "r")) == (FILE *) 0)
-		exit(_errmsg(errno, "cannot open %s\n", str));
+    if (mdfmt)
+      psect();
 
-	for (pass = 1; pass < 3; pass++)
-	{
-		ppc = psdofs;
-		if (pass == 2)
-		{
-			prnsym();	/* dump the register symbol table */
-			nxpcref = any_pc_sym();
-			prnpcsym();
-		}
+    opwcnt = 0;
+    while (!feof(pfp)) {
+      readtyp();
+      while (ppc <= cend) {
+        opwcnt = opbcnt = 0;
+        *mnebf = 0;
+        switch (type) {
+        case 's':     /* skip (offset) */
+          ppc = cend; /* set new pc */
+          cend = 0;   /* force termination of block */
+          prnpcsym();
+          continue;
 
-		if (mdfmt)
-			psect();
+        case 'b': /* byte data */
+          pso = 1;
+          byte();
+          break;
 
-		opwcnt = 0;
-		while (!feof(pfp))
-		{
-			readtyp();
-			while (ppc <= cend)
-			{
-				opwcnt = opbcnt = 0;
-				*mnebf = 0;
-				switch (type)
-				{
-				case 's':	/* skip (offset) */
-					ppc = cend;	/* set new pc */
-					cend = 0;	/* force termination of block */
-					prnpcsym();
-					continue;
+        case 'w': /* word data */
+          pso = 1;
+          word();
+          break;
 
-				case 'b':	/* byte data */
-					pso = 1;
-					byte();
-					break;
+        case 'l': /* long data */
+          pso = 1;
+          lng();
+          break;
 
-				case 'w':	/* word data */
-					pso = 1;
-					word();
-					break;
+        case 't': /* text data */
+          pso = 1;
+          text();
+          break;
 
-				case 'l':	/* long data */
-					pso = 1;
-					lng();
-					break;
+        case 'o': /* word offsets */
+          pso = 1;
+          offset();
+          break;
 
-				case 't':	/* text data */
-					pso = 1;
-					text();
-					break;
+        case 'a': /* long offsets */
+          pso = 1;
+          address();
+          break;
 
-				case 'o':	/* word offsets */
-					pso = 1;
-					offset();
-					break;
+        case 'c': /* code */
+          if (pso) {
+            pso = 0;
+            if (pass == 2)
+              printf("\n");
+          }
+          disasm();
+          break;
 
-				case 'a':	/* long offsets */
-					pso = 1;
-					address();
-					break;
+        default:
+          exit(_errmsg(1, "bad parameter file type %c\n", type));
+        }
 
-				case 'c':	/* code */
-					if (pso)
-					{
-						pso = 0;
-						if (pass == 2)
-							printf("\n");
-					}
-					disasm();
-					break;
+        if (pass == 2)
+          prnsrc();
 
-				default:
-					exit(_errmsg
-					     (1,
-					      "bad parameter file type %c\n",
-					      type));
-				}
+        ppc += opbcnt;
+      }
+    }
 
-				if (pass == 2)
-					prnsrc();
+    rewind(cfp);
+    rewind(pfp);
+  }
 
-				ppc += opbcnt;
-			}
-		}
+  ppc = 0xffffff;
+  prnpcsym();
+  if (mdfmt)
+    printf(" ends\n\n");
 
-		rewind(cfp);
-		rewind(pfp);
-	}
-
-	ppc = 0xffffff;
-	prnpcsym();
-	if (mdfmt)
-		printf(" ends\n\n");
-
-	printf(" end\n");
-}
-
-static int help()
-{
-	fprintf(stderr, "Usage: dis68 [options] infile [outfile]\n");
-	fprintf(stderr, "  -m         file not module format\n");
-	fprintf(stderr, "  -o[=]nnnn  use logical offset of nnnn (hex)\n");
-	fprintf(stderr, "  -p name    use 'name' for parmfile\n");
-	fprintf(stderr, "  -s         create assembler source\n");
-	exit(1);
+  printf(" end\n");
 }
 
-
-static void readtyp()
-{
-	char tmp[80];
-
-	type = getc(pfp);
-	fgets(tmp, 79, pfp);
-	cend = psdofs + htoi(tmp);
+static int help() {
+  fprintf(stderr, "Usage: dis68 [options] infile [outfile]\n");
+  fprintf(stderr, "  -m         file not module format\n");
+  fprintf(stderr, "  -o[=]nnnn  use logical offset of nnnn (hex)\n");
+  fprintf(stderr, "  -p name    use 'name' for parmfile\n");
+  fprintf(stderr, "  -s         create assembler source\n");
+  exit(1);
 }
 
+static void readtyp() {
+  char tmp[80];
 
-static void byte()
-{
-	int i;
-	u_short dat;
-
-	strmne("dc.b ");
-	dat = getdat(1);
-	sprintf(str, "$%02x,$%02x", (dat >> 8) & 0xff, dat & 0xff);
-	strmne(str);
-	for (i = 1; i < 4 && ((ppc + 2 * i) <= cend); i++)
-	{
-		if ((ppc + 2 * i) >= nxpcref)
-			break;
-
-		dat = getdat(1);
-		sprintf(str, ", $%02x,$%02x", (dat >> 8) & 0xff, dat & 0xff);
-		strmne(str);
-	}
-
-	opbcnt = opwcnt << 1;
+  type = getc(pfp);
+  fgets(tmp, 79, pfp);
+  cend = psdofs + htoi(tmp);
 }
 
+static void byte() {
+  int i;
+  u_short dat;
 
-static void word()
-{
-	u_short dat;
+  strmne("dc.b ");
+  dat = getdat(1);
+  snprintf(str, sizeof(str), "$%02x,$%02x", (dat >> 8) & 0xff, dat & 0xff);
+  strmne(str);
+  for (i = 1; i < 4 && ((ppc + 2 * i) <= cend); i++) {
+    if ((ppc + 2 * i) >= nxpcref)
+      break;
 
-	strmne("dc.w ");
-	dat = getdat(1);
-	sprintf(str, "$%04x", dat);
-	strmne(str);
-	opbcnt = opwcnt << 1;
-}
-
-static void lng()
-{
-	u_int ldat;
-	char str[20];
+    dat = getdat(1);
+    snprintf(str, sizeof(str), ", $%02x,$%02x", (dat >> 8) & 0xff, dat & 0xff);
+    strmne(str);
+  }
 
-	strmne("dc.l ");
-	ldat = getldat(1);
-	sprintf(str, "$%08x", ldat);
-	strmne(str);
-	opbcnt = opwcnt << 1;
+  opbcnt = opwcnt << 1;
 }
 
+static void word() {
+  u_short dat;
 
-static void offset()
-{
-	u_short dat;
-
-	strmne("dc.w ");
-	dat = getdat(1);
-	dat &= 0xffff;
-	sprintf(str, "z%06hx", dat);
-	strmne(str);
-	add_pc_sym(dat);
-	opbcnt = opwcnt << 1;
+  strmne("dc.w ");
+  dat = getdat(1);
+  snprintf(str, sizeof(str), "$%04x", dat);
+  strmne(str);
+  opbcnt = opwcnt << 1;
 }
 
+static void lng() {
+  u_int ldat;
+  char str_local[20];
 
-static void address()
-{
-	u_int pcl;
-	char str[20];
-
-	strmne("dc.l ");
-	pcl = getldat(1);
-	sprintf(str, "z%06x", pcl & 0xffffff);
-	strmne(str);
-	add_pc_sym(pcl);
-	opbcnt = opwcnt << 1;
+  strmne("dc.l ");
+  ldat = getldat(1);
+  snprintf(str_local, sizeof(str_local), "$%08x", ldat);
+  strmne(str_local);
+  opbcnt = opwcnt << 1;
 }
-
-static void text()
-{
-	int i, flag;
-	u_short dat;
 
-	strmne("dc.b ");
-	flag = 0;
-	for (i = 0; i < 32 && ((ppc + i) <= cend); i++)
-	{
-		opbcnt += 1;
-		dat = getc(cfp);
-		if ((dat & 0x7f) < 0x20)
-		{
-			if (flag)
-				strmne("\",");
+static void offset() {
+  u_short dat;
 
-			flag = 0;
-			sprintf(str, "$%02x", 0xff & dat);
-			strmne(str);
-			break;
-		}
-
-		if (!flag)
-		{
-			strmne("\"");
-			flag = 1;
-		}
-
-		sprintf(str, "%c", (char) dat);
-		strmne(str);
-	}
-
-	if (flag)
-		strmne("\"");
+  strmne("dc.w ");
+  dat = getdat(1);
+  dat &= 0xffff;
+  snprintf(str, sizeof(str), "z%06hx", dat);
+  strmne(str);
+  add_pc_sym(dat);
+  opbcnt = opwcnt << 1;
 }
-
-static void psect()
-{
-	int typelang, attrrev, edtion;
-	u_int mname, stksz, mexec, mtrap, mmem;
 
-	eatdat(12);		/* get M$ID, M$SysRev, M$Size, M$Owner */
-	mname = getldat(0);	/* M$Name */
-	eatdat(2);		/* M$Accs */
-	typelang = getdat(0) & 0xffff;	/* typelang */
-	attrrev = getdat(0) & 0xffff;	/* attrrev */
-	edtion = getdat(0);	/* M$Edit */
-	stksz = getldat(0);	/* M$Usage */
-	eatdat(20);		/* M$symbol through M$Parity */
-	mexec = getldat(0);	/* M$Exec */
-	add_pc_sym(mexec);
-	mtrap = getldat(0);	/* M$expt */
-	mmem = getldat(0);	/* M$Mem */
-	ppc += 0x3c;
+static void address() {
+  u_int pcl;
+  char str_local[20];
 
-	(void) mname;		/* unused for now */
-
-	if (pass == 2)
-	{
-		if (prnflg)
-		{
-			printf("%04X            Type_Lang equ       $%04X\n",
-			       typelang, typelang);
-			printf("%04X            Attr_Rev  equ       $%04X\n",
-			       attrrev, attrrev);
-			printf("%04X            Edition   equ       $%04X\n",
-			       edtion, edtion);
-			printf("%06X           stksz     equ       $%06X\n",
-			       stksz, stksz);
-			printf("%06X           mexec     equ       Z%06x\n",
-			       mexec, mexec);
-			if (mtrap)
-				printf("%06X           mtrap    equ       $%06X\n", mtrap, mtrap);
-
-			printf("                         ");
-			printf(" psect mname,Type_Lang,Attr_Rev,Edition,stksz,mexec");
-			if (mtrap)
-				printf(",mtrap");
-
-			putchar('\n');
-			if (mmem)
-			{
-				printf("                         ");
-				printf(" vsect\n");
-				printf("                         ");
-				printf(" rmb $%06X\n", mmem);
-				printf("                         ");
-				printf(" ends\n\n");
-			}
-		}
-		else
-		{
-			printf("Type_Lang equ $%04X\n", typelang);
-			printf("Attr_Rev equ $%04X\n", attrrev);
-			printf("Edition equ $%04X\n", edtion);
-			printf("stksz equ $%08X\n", stksz);
-			printf("mexec equ Z%06x\n", mexec);
-			if (mtrap)
-				printf("mtrap equ $%06X\n", mtrap);
-
-			printf(" psect mname,Type_Lang,Attr_Rev,Edition,stksz,mexec");
-			if (mtrap)
-				printf(",mtrap");
-
-			putchar('\n');
-			if (mmem)
-				printf(" vsect\n ds.b $%06X\n ends\n", mmem);
-		}
-	}
+  strmne("dc.l ");
+  pcl = getldat(1);
+  snprintf(str_local, sizeof(str_local), "z%06x", pcl & 0xffffff);
+  strmne(str_local);
+  add_pc_sym(pcl);
+  opbcnt = opwcnt << 1;
 }
-
+
+static void text() {
+  int i, flag;
+  u_short dat;
+
+  strmne("dc.b ");
+  flag = 0;
+  for (i = 0; i < 32 && ((ppc + i) <= cend); i++) {
+    opbcnt += 1;
+    dat = getc(cfp);
+    if ((dat & 0x7f) < 0x20) {
+      if (flag)
+        strmne("\",");
+
+      flag = 0;
+      snprintf(str, sizeof(str), "$%02x", 0xff & dat);
+      strmne(str);
+      break;
+    }
+
+    if (!flag) {
+      strmne("\"");
+      flag = 1;
+    }
+
+    snprintf(str, sizeof(str), "%c", (char)dat);
+    strmne(str);
+  }
+
+  if (flag)
+    strmne("\"");
+}
+
+static void psect() {
+  int typelang, attrrev, edtion;
+  u_int mname, stksz, mexec, mtrap, mmem;
+
+  eatdat(12);                    /* get M$ID, M$SysRev, M$Size, M$Owner */
+  mname = getldat(0);            /* M$Name */
+  eatdat(2);                     /* M$Accs */
+  typelang = getdat(0) & 0xffff; /* typelang */
+  attrrev = getdat(0) & 0xffff;  /* attrrev */
+  edtion = getdat(0);            /* M$Edit */
+  stksz = getldat(0);            /* M$Usage */
+  eatdat(20);                    /* M$symbol through M$Parity */
+  mexec = getldat(0);            /* M$Exec */
+  add_pc_sym(mexec);
+  mtrap = getldat(0); /* M$expt */
+  mmem = getldat(0);  /* M$Mem */
+  ppc += 0x3c;
+
+  (void)mname; /* unused for now */
+
+  if (pass == 2) {
+    if (prnflg) {
+      printf("%04X            Type_Lang equ       $%04X\n", typelang, typelang);
+      printf("%04X            Attr_Rev  equ       $%04X\n", attrrev, attrrev);
+      printf("%04X            Edition   equ       $%04X\n", edtion, edtion);
+      printf("%06X           stksz     equ       $%06X\n", stksz, stksz);
+      printf("%06X           mexec     equ       Z%06x\n", mexec, mexec);
+      if (mtrap)
+        printf("%06X           mtrap    equ       $%06X\n", mtrap, mtrap);
+
+      printf("                         ");
+      printf(" psect mname,Type_Lang,Attr_Rev,Edition,stksz,mexec");
+      if (mtrap)
+        printf(",mtrap");
+
+      putchar('\n');
+      if (mmem) {
+        printf("                         ");
+        printf(" vsect\n");
+        printf("                         ");
+        printf(" rmb $%06X\n", mmem);
+        printf("                         ");
+        printf(" ends\n\n");
+      }
+    } else {
+      printf("Type_Lang equ $%04X\n", typelang);
+      printf("Attr_Rev equ $%04X\n", attrrev);
+      printf("Edition equ $%04X\n", edtion);
+      printf("stksz equ $%08X\n", stksz);
+      printf("mexec equ Z%06x\n", mexec);
+      if (mtrap)
+        printf("mtrap equ $%06X\n", mtrap);
+
+      printf(" psect mname,Type_Lang,Attr_Rev,Edition,stksz,mexec");
+      if (mtrap)
+        printf(",mtrap");
+
+      putchar('\n');
+      if (mmem)
+        printf(" vsect\n ds.b $%06X\n ends\n", mmem);
+    }
+  }
+}
+
 /*
  * print out register symbol tables
  */
 
-static void prnsym()
-{
-	u_int dat;
-	int i, n;
+static void prnsym() {
+  u_int dat;
+  int i, n;
 
-	for (i = 0; i < 8; i++)
-	{
-		if (any_reg_sym(i))
-		{
-			while ((dat = next_reg_sym(i)) != -1)
-			{
-				n = dat;
-				if (prnflg)
-					printf("%04X             a%1d%04x   equ       $%04X\n", n, i, n, n);
-				else
-					printf("a%1d%04x equ $%04X\n", i, n,
-					       n);
-			}
+  for (i = 0; i < 8; i++) {
+    if (any_reg_sym(i)) {
+      while ((dat = next_reg_sym(i)) != -1) {
+        n = dat;
+        if (prnflg)
+          printf("%04X             a%1d%04x   equ       $%04X\n", n, i, n, n);
+        else
+          printf("a%1d%04x equ $%04X\n", i, n, n);
+      }
 
-			putchar('\n');
-		}
-	}
+      putchar('\n');
+    }
+  }
 }
-
 
 /*
  * flush the pc symbol table up to current pc
  */
 
-static void prnpcsym()
-{
-	if ((pass >= 2) && (!pcsflg))
-	{
-		do
-		{
-			nxpcref &= 0xffffff;
-			if (prnflg)
-				printf("%06X           z%06x  equ       $%06X\n", nxpcref, nxpcref, nxpcref);
-			else
-				printf("z%06x equ $%06X\n", nxpcref, nxpcref);
+static void prnpcsym() {
+  if ((pass >= 2) && (!pcsflg)) {
+    do {
+      nxpcref &= 0xffffff;
+      if (prnflg)
+        printf("%06X           z%06x  equ       $%06X\n", nxpcref, nxpcref,
+               nxpcref);
+      else
+        printf("z%06x equ $%06X\n", nxpcref, nxpcref);
 
-			if ((nxpcref = next_pc_sym()) == -1)
-				break;
+      if ((nxpcref = next_pc_sym()) == -1)
+        break;
 
-		}
-		while (nxpcref < ppc);
+    } while (nxpcref < ppc);
 
-		printf("\n\n");
-	}
+    printf("\n\n");
+  }
 }
-
-static void prnsrc()
-{
-	int i, n;
-	char *strptr;
 
-	if (prnflg)
-	{
-		if (!pcsflg)
-		{
-			if (ppc > nxpcref)
-				printf("%06X           z%06x  equ       *-$%X\n", nxpcref, nxpcref, ppc - nxpcref);
-		}
+static void prnsrc() {
+  int i, n;
+  char *strptr;
 
-		printf("%06X %04X ", ppc, *opcode);
-		if (opwcnt <= 1)
-			printf("     ");
-		else
-			printf("%04X ", opcode[1]);
+  if (prnflg) {
+    if (!pcsflg) {
+      if (ppc > nxpcref)
+        printf("%06X           z%06x  equ       *-$%X\n", nxpcref, nxpcref,
+               ppc - nxpcref);
+    }
 
-		if ((ppc == nxpcref) && !pcsflg)
-			printf("z%06x  ", nxpcref);
-		else
-			printf("         ");
+    printf("%06X %04X ", ppc, *opcode);
+    if (opwcnt <= 1)
+      printf("     ");
+    else
+      printf("%04X ", opcode[1]);
 
-		if ((ppc >= nxpcref) && !pcsflg)
-		{
-			if ((nxpcref = next_pc_sym()) == -1)
-				pcsflg = 1;
-			else
-				nxpcref &= 0xffffff;
-		}
+    if ((ppc == nxpcref) && !pcsflg)
+      printf("z%06x  ", nxpcref);
+    else
+      printf("         ");
 
-		if (0 == (strptr = strchr(mnebf, ' ')))
-			printf("%s\n", mnebf);
-		else
-		{
-			*strptr++ = 0;
-			printf("%s", mnebf);
-			n = 10 - strlen(mnebf);
-			for (i = 0; i < n; i++)
-				printf(" ");
+    if ((ppc >= nxpcref) && !pcsflg) {
+      if ((nxpcref = next_pc_sym()) == -1)
+        pcsflg = 1;
+      else
+        nxpcref &= 0xffffff;
+    }
 
-			printf("%s\n", strptr);
-		}
-	}
-	else
-	{
-		if (!pcsflg)
-		{
-			if (ppc > nxpcref)
-				printf("z%06x equ *-$%X\n", nxpcref,
-				       ppc - nxpcref);
+    if (0 == (strptr = strchr(mnebf, ' ')))
+      printf("%s\n", mnebf);
+    else {
+      *strptr++ = 0;
+      printf("%s", mnebf);
+      n = 10 - strlen(mnebf);
+      for (i = 0; i < n; i++)
+        printf(" ");
 
-			if (ppc == nxpcref)
-				printf("z%06x", nxpcref);
+      printf("%s\n", strptr);
+    }
+  } else {
+    if (!pcsflg) {
+      if (ppc > nxpcref)
+        printf("z%06x equ *-$%X\n", nxpcref, ppc - nxpcref);
 
-			if (ppc >= nxpcref)
-			{
-				if ((nxpcref = next_pc_sym()) == -1)
-					pcsflg = 1;
-				else
-					nxpcref &= 0xffffff;
-			}
-		}
+      if (ppc == nxpcref)
+        printf("z%06x", nxpcref);
 
-		printf(" %s\n", mnebf);
-	}
+      if (ppc >= nxpcref) {
+        if ((nxpcref = next_pc_sym()) == -1)
+          pcsflg = 1;
+        else
+          nxpcref &= 0xffffff;
+      }
+    }
+
+    printf(" %s\n", mnebf);
+  }
 }
-
+
 #include <stdarg.h>
 /*
  * generic error message handler
  */
 
-int _errmsg(int code, char *fmt, ...)
-{
-	va_list args;
+int _errmsg(int code, char *fmt, ...) {
+  va_list args;
 
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	return (code);
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+  return (code);
 }
-
-
-
 
 /*
  * Get a hex digit from 's' into 'x'.
@@ -592,22 +533,21 @@ int _errmsg(int code, char *fmt, ...)
 
 #include <ctype.h>
 
-static int htoi(char *s)
-{
-	char ch;
-	u_int x = 0;
+static int htoi(char *s) {
+  char ch;
+  u_int x = 0;
 
-	while (*s == ' ' || *s == '\t')
-		++s;
+  while (*s == ' ' || *s == '\t')
+    ++s;
 
-	if ('0' == *s)
-		++s;
+  if ('0' == *s)
+    ++s;
 
-	if (('X' == toupper((unsigned char)*s)) || ('$' == *s))
-		++s;
+  if (('X' == toupper((unsigned char)*s)) || ('$' == *s))
+    ++s;
 
-	while (isxdigit((unsigned char)(ch = *s++)))
-		x = (x << 4) + toupper((unsigned char)ch) - (ch > '9' ? '7' : '0');
+  while (isxdigit((unsigned char)(ch = *s++)))
+    x = (x << 4) + toupper((unsigned char)ch) - (ch > '9' ? '7' : '0');
 
-	return (x);
+  return (x);
 }

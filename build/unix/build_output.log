@@ -1,0 +1,173 @@
+(cd libtoolshed; make);  (cd libnative; make);  (cd libcecb; make);  (cd librbf; make);  (cd libcoco; make);  (cd libdecb; make);  (cd libmisc; make);  (cd libsys; make);  (cd decb; make);  (cd cecb; make);  (cd os9; make);  (cd makewav; make);  (cd tocgen; make);  (cd lst2cmt; make);  (cd dis68; make);  (cd mamou; make);  (cd ar2; make);  (cd doc; make);  (cd cocofuse; make);  (cd unittest; make);
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o toolshed.o ../../../libtoolshed/toolshed.c
+ar -r libtoolshed.a toolshed.o
+ar: creating archive libtoolshed.a
+ranlib libtoolshed.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativegs.o ../../../libnative/libnativegs.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativedelete.o ../../../libnative/libnativedelete.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativeopen.o ../../../libnative/libnativeopen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativeread.o ../../../libnative/libnativeread.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativerename.o ../../../libnative/libnativerename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativeseek.o ../../../libnative/libnativeseek.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativess.o ../../../libnative/libnativess.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativewrite.o ../../../libnative/libnativewrite.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativereadln.o ../../../libnative/libnativereadln.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libnativemakdir.o ../../../libnative/libnativemakdir.c
+ar -r libnative.a libnativegs.o libnativedelete.o libnativeopen.o libnativeread.o libnativerename.o libnativeseek.o libnativess.o libnativewrite.o libnativereadln.o libnativemakdir.o
+ar: creating archive libnative.a
+ranlib libnative.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbbulkerase.o ../../../libcecb/libcecbbulkerase.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcebcopen.o ../../../libcecb/libcebcopen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbgs.o ../../../libcecb/libcecbgs.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbwav.o ../../../libcecb/libcecbwav.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbcas.o ../../../libcecb/libcecbcas.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbread.o ../../../libcecb/libcecbread.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbwrite.o ../../../libcecb/libcecbwrite.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbtokenize.o ../../../libcecb/libcecbtokenize.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcecbseek.o ../../../libcecb/libcecbseek.c
+ar -r libcecb.a libcecbbulkerase.o libcebcopen.o libcecbgs.o libcecbwav.o libcecbcas.o libcecbread.o libcecbwrite.o libcecbtokenize.o libcecbseek.o
+ar: creating archive libcecb.a
+ranlib libcecb.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfbitmap.o ../../../librbf/librbfbitmap.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfmakdir.o ../../../librbf/librbfmakdir.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfread.o ../../../librbf/librbfread.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfrename.o ../../../librbf/librbfrename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfss.o ../../../librbf/librbfss.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfdelete.o ../../../librbf/librbfdelete.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfgs.o ../../../librbf/librbfgs.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfopen.o ../../../librbf/librbfopen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfreadln.o ../../../librbf/librbfreadln.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfseek.o ../../../librbf/librbfseek.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfwrite.o ../../../librbf/librbfwrite.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o librbfformat.o ../../../librbf/librbfformat.c
+ar -r librbf.a librbfbitmap.o librbfmakdir.o librbfread.o librbfrename.o librbfss.o librbfdelete.o librbfgs.o librbfopen.o librbfreadln.o librbfseek.o librbfwrite.o librbfformat.o
+ar: creating archive librbf.a
+ranlib librbf.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocogs.o ../../../libcoco/libcocogs.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocodelete.o ../../../libcoco/libcocodelete.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocoopen.o ../../../libcoco/libcocoopen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocoread.o ../../../libcoco/libcocoread.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocorename.o ../../../libcoco/libcocorename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocoseek.o ../../../libcoco/libcocoseek.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocoss.o ../../../libcoco/libcocoss.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocowrite.o ../../../libcoco/libcocowrite.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocoreadln.o ../../../libcoco/libcocoreadln.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libcocomakdir.o ../../../libcoco/libcocomakdir.c
+ar -r libcoco.a libcocogs.o libcocodelete.o libcocoopen.o libcocoread.o libcocorename.o libcocoseek.o libcocoss.o libcocowrite.o libcocoreadln.o libcocomakdir.o
+ar: creating archive libcoco.a
+ranlib libcoco.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbgs.o ../../../libdecb/libdecbgs.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbkill.o ../../../libdecb/libdecbkill.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbopen.o ../../../libdecb/libdecbopen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbread.o ../../../libdecb/libdecbread.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbrename.o ../../../libdecb/libdecbrename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbseek.o ../../../libdecb/libdecbseek.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbss.o ../../../libdecb/libdecbss.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbwrite.o ../../../libdecb/libdecbwrite.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbtokenize.o ../../../libdecb/libdecbtokenize.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbbinconcat.o ../../../libdecb/libdecbbinconcat.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbsrec.o ../../../libdecb/libdecbsrec.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libdecbdskini.o ../../../libdecb/libdecbdskini.c
+ar -r libdecb.a libdecbgs.o libdecbkill.o libdecbopen.o libdecbread.o libdecbrename.o libdecbseek.o libdecbss.o libdecbwrite.o libdecbtokenize.o libdecbbinconcat.o libdecbsrec.o libdecbdskini.o
+ar: creating archive libdecb.a
+ranlib libdecb.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libmiscendian.o ../../../libmisc/libmiscendian.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libmisccococonv.o ../../../libmisc/libmisccococonv.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libmiscqueue.o ../../../libmisc/libmiscqueue.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o libmiscutil.o ../../../libmisc/libmiscutil.c
+ar -r libmisc.a libmiscendian.o libmisccococonv.o libmiscqueue.o libmiscutil.o
+ar: creating archive libmisc.a
+ranlib libmisc.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o crc.o ../../../libsys/crc.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o prsnam.o ../../../libsys/prsnam.c
+ar -r libsys.a crc.o prsnam.o
+ar: creating archive libsys.a
+ranlib libsys.a
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decb_main.o ../../../decb/decb_main.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbattr.o ../../../decb/decbattr.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbcopy.o ../../../decb/decbcopy.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbdir.o ../../../decb/decbdir.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbdskini.o ../../../decb/decbdskini.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbfree.o ../../../decb/decbfree.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbfstat.o ../../../decb/decbfstat.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbhdbconv.o ../../../decb/decbhdbconv.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbkill.o ../../../decb/decbkill.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decblist.o ../../../decb/decblist.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbrename.o ../../../decb/decbrename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o os9dump.o ../../../os9/os9dump.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o decbdsave.o ../../../decb/decbdsave.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o os9dsave.o ../../../os9/os9dsave.c
+cc -o decb decb_main.o decbattr.o decbcopy.o decbdir.o decbdskini.o decbfree.o decbfstat.o decbhdbconv.o decbkill.o decblist.o decbrename.o os9dump.o decbdsave.o os9dsave.o -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../librbf -L../libdecb -L../libmisc -L../libsys -ltoolshed -lcoco -lnative -lcecb -lrbf -ldecb -lmisc -lsys -lm
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o cecbbulkerase.o ../../../cecb/cecbbulkerase.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o cecbdir.o ../../../cecb/cecbdir.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o cecbfstat.o ../../../cecb/cecbfstat.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o cecb_main.o ../../../cecb/cecb_main.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o cecbcopy.o ../../../cecb/cecbcopy.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o ../os9/os9dump.o ../../../cecb/../os9/os9dump.c
+cc -o cecb cecbbulkerase.o cecbdir.o cecbfstat.o cecb_main.o cecbcopy.o ../os9/os9dump.o ../decb/decblist.o -L../libtoolshed -L../libcoco -L../libcecb -L../libnative -L../librbf -L../libdecb -L../libmisc -L../libsys -ltoolshed -lcoco -ldecb -lcecb -lnative -lrbf -lmisc -lsys -lm
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9copy.o ../../../os9/os9copy.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9dsave.o ../../../os9/os9dsave.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9gen.o ../../../os9/os9gen.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9modbust.o ../../../os9/os9modbust.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9dcheck.o ../../../os9/os9dcheck.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9id.o ../../../os9/os9id.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9padrom.o ../../../os9/os9padrom.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9_main.o ../../../os9/os9_main.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9del.o ../../../os9/os9del.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9format.o ../../../os9/os9format.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9ident.o ../../../os9/os9ident.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9rename.o ../../../os9/os9rename.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9attr.o ../../../os9/os9attr.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9deldir.o ../../../os9/os9deldir.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9free.o ../../../os9/os9free.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9list.o ../../../os9/os9list.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9cmp.o ../../../os9/os9cmp.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9dir.o ../../../os9/os9dir.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9fstat.o ../../../os9/os9fstat.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o os9makdir.o ../../../os9/os9makdir.c
+cc -o os9 os9copy.o os9dsave.o os9gen.o os9modbust.o os9dcheck.o os9dump.o os9id.o os9padrom.o os9_main.o os9del.o os9format.o os9ident.o os9rename.o os9attr.o os9deldir.o os9free.o os9list.o os9cmp.o os9dir.o os9fstat.o os9makdir.o -L../libtoolshed -L../libcecb -L../libcoco -L../libnative -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -ldecb -lcecb -lmisc -lrbf -lsys -lm
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o makewav.o ../../../makewav/makewav.c
+cc makewav.o -lm -o makewav
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o tocgen_main.o ../../../tocgen/tocgen_main.c
+cc tocgen_main.o -o tocgen -L../libcoco -L../libnative -L../libdecb -L../libmisc -L../librbf -L../libsys -L../libcecb -lcoco -lnative -lcecb -ldecb -lmisc -lrbf -lsys -lm 
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall   -c -o lst2cmt.o ../../../lst2cmt/lst2cmt.c
+cc -o lst2cmt lst2cmt.o 
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o dis68.o ../../../dis68/dis68.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o disasm.o ../../../dis68/disasm.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o addmod.o ../../../dis68/addmod.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror   -c -o symtbl.o ../../../dis68/symtbl.c
+cc -o dis68 dis68.o disasm.o addmod.o symtbl.o 
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o mamou_main.o ../../../mamou/mamou_main.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o evaluator.o ../../../mamou/evaluator.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o pseudo.o ../../../mamou/pseudo.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o h6309.o ../../../mamou/h6309.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o ffwd.o ../../../mamou/ffwd.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o print.o ../../../mamou/print.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o util.o ../../../mamou/util.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DLINUX -I../../../include -g -Wall   -c -o symbol_bucket.o ../../../mamou/symbol_bucket.c
+cc -o mamou mamou_main.o evaluator.o pseudo.o h6309.o ffwd.o print.o util.o symbol_bucket.o -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../librbf -L../libmisc -L../libsys -lcoco -lnative -ldecb -lcecb -lrbf -lmisc -lsys -lm -g
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DSYSV   -c -o ar.o ../../../ar2/ar.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DSYSV   -c -o arsup.o ../../../ar2/arsup.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DSYSV   -c -o lz1.o ../../../ar2/lz1.c
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -DSYSV   -c -o o2u.o ../../../ar2/o2u.c
+cc ar.o arsup.o lz1.o o2u.o -o ar2 
+markdown ../../../doc/ToolShed.md > ToolShed.html
+/bin/sh: markdown: command not found
+make[1]: [ToolShed.html] Error 127 (ignored)
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror -I../../../include -Wall -I/usr/local/include/fuse/fuse -DDEBUG   -c -o cocofuse.o ../../../cocofuse/cocofuse.c
+cc -o cocofuse cocofuse.o -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -lfuse
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror    ../../../unittest/librbftest.c  -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../librbf -L../libnative -L../libmisc -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm -o librbftest
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror    ../../../unittest/libdecbtest.c  -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../librbf -L../libnative -L../libmisc -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm -o libdecbtest
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror    ../../../unittest/libcecbtest.c  -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../librbf -L../libnative -L../libmisc -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm -o libcecbtest
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror    ../../../unittest/libtoolshedtest.c  -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../librbf -L../libnative -L../libmisc -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm -o libtoolshedtest
+cc -Dunix -DUNIX -O3 -I. -I../../../include -Wall -DTOOLSHED_VERSION=\"2.4.2\" -D_FILE_OFFSET_BITS=64 -Wno-unused-result -Werror    ../../../unittest/os9commandtest.c  -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../librbf -L../libnative -L../libmisc -L../libsys -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm -o os9commandtest
+./librbftest
+[1;32mPASSED[0m [../../../unittest/librbftest.c] (total:12)
+./libdecbtest
+[1;32mPASSED[0m [../../../unittest/libdecbtest.c] (total:8)
+./libcecbtest
+[1;32mPASSED[0m [../../../unittest/libcecbtest.c] (total:4)
+./libtoolshedtest
+[1;32mPASSED[0m [../../../unittest/libtoolshedtest.c] (total:3)
+./os9commandtest
+[1;32mPASSED[0m [../../../unittest/os9commandtest.c] (total:1)
