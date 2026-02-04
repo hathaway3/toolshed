@@ -50,7 +50,7 @@ package: install
 	rm -rf toolshed-$(VERSION)
 
 cleandirs:
-	$(foreach dir, $(DIRS), (cd $(dir); $(MAKE) clean);)
+	$(foreach dir, $(DIRS) cocofuse unittest, [ ! -d $(dir) ] || $(MAKE) -C $(dir) clean;)
 	
 clean: cleandirs
 	$(RM) $(PACKAGENAME_WIN) $(PACKAGENAME_UNIX)

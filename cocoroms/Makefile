@@ -22,4 +22,4 @@ checksum:
 	md5 *.rom >md5sums-new.txt
 
 clean:
-	-rm -f bas13.rom cb_equates.asm ecb_equates.asm extbas11.rom disk11.rom coco3.rom md5sums-new.txt
+	-rm -f bas13.rom extbas11.rom disk11.rom coco3.rom *_equates.asm md5sums-new.txt

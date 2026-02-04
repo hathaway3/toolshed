@@ -11,7 +11,7 @@
 AS=mamou
 ASFLAGS=-q -mr
 ZIP=zip
-RM=rm
+RM=rm -f
 FILESD32=dragon32/d32.rom dragon32/ddos10.rom
 FILESD64=dragon64/d64_1.rom dragon64/d64_2.rom dragon64/ddos10.rom
 FILESTANOD64=tanodr64/d64_1.rom tanodr64/d64_2.rom tanodr64/sdtandy.rom
@@ -63,10 +63,10 @@ listing: $(SUPERDOSASM)
 	
 		
 clean:
-		$(RM) -f *.bin *.zip *.lst
-		$(RM) -f $(FILESCOCO2)
-		$(RM) -f $(FILESD32)
-		$(RM) -f $(FILESD64)
-		$(RM) -f $(FILESTANOD64)
-		$(RM) -f $(FILESDALPHA)
+		$(RM) *.bin *.zip *.lst
+		$(RM) $(FILESCOCO2)
+		$(RM) $(FILESD32)
+		$(RM) $(FILESD64)
+		$(RM) $(FILESTANOD64)
+		$(RM) $(FILESDALPHA)
 		

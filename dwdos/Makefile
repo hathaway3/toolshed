@@ -223,5 +223,5 @@ drivewire.zip: $(ALLOBJS)
 	zip $@ $(ALLOBJS)
 
 clean:
-	$(RM) $(ALLOBJS) $(HISPEED) drivewire.zip
+	$(RM) $(ALLOBJS) $(HISPEED) drivewire.zip *.lst
 

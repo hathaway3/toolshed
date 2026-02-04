@@ -233,6 +233,8 @@ hdbdw4dgn.rom: FLAGS = -DDW -DLevel=1 -DDRAGON -DDW4
 # Dragon, IDE LBA for ROM cartridge
 hdblbadgn.rom: FLAGS = -DIDE -DUSELBA -DLevel=1 -DDRAGON
 
+RM ?= rm -f
+
 clean:
-	-rm -f preload postload $(HDBROM) $(HDBBIN) $(HDBCAS) \
-	 $(DRAGONROM) $(DRAGONWAV) $(DRAGONBIN) $(HISPEED)
+	$(RM) preload postload $(HDBROM) $(HDBBIN) $(HDBCAS) \
+	 $(DRAGONROM) $(DRAGONWAV) $(DRAGONBIN) $(HISPEED) *.lst

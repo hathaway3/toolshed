@@ -37,8 +37,11 @@ $ mingw-get install mingw-make
 
 Enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install CC=gcc
+$ make all
+$ make install
 ```
+> [!NOTE]
+> The root `Makefile` automatically delegates to the appropriate build systems. You can also use `make clean` from the root to remove all generated artifacts across the entire project.
 
 ## Building on Linux
 
@@ -49,7 +52,8 @@ $ sudo apt-get install libfuse-dev
 
 Enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install
+$ make all
+$ make install
 ```
 
 ## Building on macOS
@@ -73,7 +77,8 @@ brew install macfuse
 
 Then, enter the unpackaged toolshed directory and run:
 ```
-$ make -C build/unix install
+$ make all
+$ make install
 ```
 
 ## Building HDB-DOS and DriveWire DOS

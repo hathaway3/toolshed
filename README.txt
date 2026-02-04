@@ -30,7 +30,10 @@ but the simpler mingw-make should be good enough:
 $ mingw-get install mingw-make
 
 Enter the unpackaged toolshed directory and run:
-$ make -C build/unix install CC=gcc
+$ make all
+$ make install
+
+NOTE: The root Makefile automatically delegates to the appropriate build systems. You can also use "make clean" from the root to remove all generated artifacts across the entire project.
 
 == HOW TO BUILD FOR WINDOWS ON UNIX or WSL ==
 
@@ -43,7 +46,8 @@ header files installed. On Debian-based systems:
 $ sudo apt-get install libfuse-dev
 
 Enter the unpackaged toolshed directory and run:
-$ make -C build/unix install
+$ make all
+$ make install
 
 
 == HOW TO BUILD hdbdos and dwdos ==
