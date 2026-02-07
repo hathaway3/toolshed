@@ -45,6 +45,11 @@ error_code _cecb_detoken(unsigned char *in_buffer, int in_size,
 	*out_buffer = malloc(BLOCK_QUANTUM);
 	buffer_size = BLOCK_QUANTUM;
 
+	if (*out_buffer == NULL)
+	{
+		return EOS_OM;
+	}
+
 	value = in_buffer[in_pos++] << 8;
 	value += in_buffer[in_pos++];
 
