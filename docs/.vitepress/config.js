@@ -1,4 +1,5 @@
 export default {
+  base: '/toolshed/',
   title: 'ToolShed',
   description: 'A cornucopia of tools for the Tandy Color Computer and Dragon micro.',
   themeConfig: {
