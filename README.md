@@ -1,94 +1,95 @@
-# ToolShed
+# Welcome to ToolShed! 🛠️
 
-ToolShed is a cornucopia of tools and source code for the Tandy Color Computer and Dragon micro.
+ToolShed is your one-stop shop for tools and source code dedicated to the Tandy Color Computer and Dragon microcomputers. Whether you're a seasoned developer or just getting started, you'll find a cornucopia of useful utilities here.
 
-The repository contains:
-- os9 and decb tools for copying files to/from host file systems to disk images.
-- source code for CoCo and Dragon system ROMs.
-- source code for custom ROMs like HDB-DOS, DriveWire DOS, and SuperDOS.
-- source code for the Microware C compiler for cross-hosted compilation (currently needs work).
-- other miscellaneous tools.
-- assemblers to perform cross-development from Windows, Linux, and macOS (see the NOTE below on assembler recommendations).
+## What's Inside?
 
-**NOTE:** while the venerable 6809 cross-assembler, mamou, is part of the repository, it is only kept for historical value. Everyone should really be using William Astle's excellent LWTOOLS which contains the *lwasm* 6809 assembler and *lwlink* linker. [Download the latest version of the source here.](http://lwtools.projects.l-w.ca)
+In this repository, you'll find:
+- **File System Tools**: `os9` and `decb` utilities for easily copying files between your host system and disk images.
+- **System ROMs**: Source code for CoCo and Dragon system ROMs.
+- **Custom ROMs**: Source code for popular custom ROMs like HDB-DOS, DriveWire DOS, and SuperDOS.
+- **Compilers**: Source code for the Microware C compiler (currently a work in progress).
+- **Cross-Development**: Assemblers and other tools to help you build software from Windows, Linux, and macOS.
 
-Find the documentation for some of the command in Toolshed's [Wiki](https://github.com/nitros9project/toolshed/wiki)
+> [!NOTE]
+> **A Note on Assemblers**: While we include the classic `mamou` 6809 cross-assembler for historical preservation, we highly recommend using William Astle's excellent **LWTOOLS**. It includes the modern `lwasm` assembler and `lwlink` linker. [You can download the latest source here.](http://lwtools.projects.l-w.ca)
 
-## Quick Install (Linux and macOS)
+For more detailed documentation on specific commands, please visit our [Wiki](https://github.com/nitros9project/toolshed/wiki).
 
-The easiest way to install ToolShed on Linux or macOS is to use the included installation script. This script will attempt to install any missing dependencies (like FUSE) and then build and install the tools.
+## 🚀 Quick Install (Linux and macOS)
 
-From the root of the Toolshed directory, run:
+The easiest way to get up and running on Linux or macOS is to use our handy installation script. It will automatically check for dependencies (like FUSE) and build everything for you.
+
+Simply run this command from the root of the ToolShed directory:
 ```bash
 ./install.sh
 ```
 
-If you prefer to build manually, follow the platform-specific instructions below.
-## Building on Windows
+Prefer to build manually? No problem! Check out the platform-specific instructions below.
 
-The recommended build environment is [MingW32 or MingW64](http://mingw.org/), [MSYS2](http://msys2.github.io/), or the [WSL subsystem for Windows 10+](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux).
+## 🪟 Building on Windows
 
-The easiest way to install MingW is using a mingw-get-inst.*.exe [from here](http://mingw.org/wiki/Getting_Started).
+For Windows users, we recommend using [MingW32 or MingW64](http://mingw.org/), [MSYS2](http://msys2.github.io/), or the [WSL subsystem for Windows 10+](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux).
 
-Inside MingW, make sure you have "make" installed. There are several options, but the simpler mingw-make should be good enough:
+The easiest way to get MingW is by using the installer [found here](http://mingw.org/wiki/Getting_Started).
+
+Once you're in your MingW environment, ensure you have `make` installed. The simplest option is usually:
 ```
 $ mingw-get install mingw-make
 ```
 
-Enter the unpackaged toolshed directory and run:
+Then, navigate to the toolshed directory and run:
 ```
 $ make all
 $ make install
 ```
-> [!NOTE]
-> The root `Makefile` automatically delegates to the appropriate build systems. You can also use `make clean` from the root to remove all generated artifacts across the entire project.
+> [!TIP]
+> The root `Makefile` handles everything for you by delegating to the appropriate build systems. You can also run `make clean` to tidy up all generated files.
 
-## Building on Linux
+## 🐧 Building on Linux
 
-To build cocofuse you will need to have FUSE libraries and header files installed. On Debian-based systems:
+To build `cocofuse`, you'll need the FUSE libraries and headers. On Debian-based systems (like Ubuntu), you can install them with:
 ```
 $ sudo apt-get install libfuse-dev
 ```
 
-Enter the unpackaged toolshed directory and run:
+Then, just run:
 ```
 $ make all
 $ make install
 ```
 
-## Building on macOS
+## 🍎 Building on macOS
 
-To build cocofuse for the Mac, you will need to have FUSE libraries and header files installed.
+To build `cocofuse` on macOS, you'll also need FUSE libraries. We recommend using [Homebrew](https://brew.sh) to manage this.
 
-The best way to do this is to first [visit the Homebrew page](https://brew.sh) and use the simple one-line ruby command to install Homebrew on your Mac.
-
-Once that's done, you can use the brew command to install macfuse (`osxfuse` has been succeeded by `macfuse` as of version 4.0.0.):
+First, install Homebrew if you haven't already. Then, install `macfuse`:
 
 ```
 brew install macfuse
 ```
 
-If you have previously install osxfuse, you can use brew command to uninstall `oxsfuse` and install `macfuse`
+If you have an older installation of `osxfuse`, you'll need to upgrade:
 
 ```
 brew uninstall osxfuse
 brew install macfuse
 ```
 
-Then, enter the unpackaged toolshed directory and run:
+Finally, enter the toolshed directory and build:
 ```
 $ make all
 $ make install
 ```
 
-## Building Firmware (HDB-DOS, DriveWire DOS, CoCo ROMs, SuperDOS)
+## 💾 Building Firmware (HDB-DOS, DriveWire DOS, CoCo ROMs, SuperDOS)
 
-It is highly recommended to have [LWTOOLS](http://lwtools.projects.l-w.ca/) installed.  You will also need "makewav" from ToolShed installed to build WAV files.  See hdbdos/README.txt and the makefiles for different build options.
+For building firmware, we strongly recommend installing [LWTOOLS](http://lwtools.projects.l-w.ca/). You'll also need the `makewav` tool from this repository (ToolShed) to generating WAV files.
 
 > [!IMPORTANT]
-> The `hdbdos` build depends on equates generated by `cocoroms`, so build `cocoroms` first if building `hdbdos` separately.
+> When building `hdbdos`, make sure to build `cocoroms` first, as it depends on equates generated there.
 
-To build all default flavors:
+To build all the default firmware flavors, run:
 ```
 $ make -C cocoroms
 $ make -C dwdos
@@ -96,10 +97,10 @@ $ make -C hdbdos
 $ make -C superdos
 ```
 
-Instead of LWTOOLS the deprecated mamou can still be used (YMMV):
+If you need to use the legacy `mamou` assembler, you can do so like this (though your mileage may vary):
 ```
 $ make -C dwdos AS="mamou -r -q"
 $ make -C hdbdos AS="mamou -r -q"
 ```
 
-Note that SuperDOS still builds with mamou by default.
+*Note: SuperDOS currently builds with `mamou` by default.*
