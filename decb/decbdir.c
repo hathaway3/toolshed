@@ -3,231 +3,176 @@
  *
  * $Id$
  ********************************************************************/
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "util.h"
 #include "cocotypes.h"
 #include "decbpath.h"
+#include "util.h"
 
 static int do_dir(char **argv, char *p);
 
-
 /* Help Message */
 static char const *const helpMessage[] = {
-	"Syntax: dir {[<opts>]} {<dir> [<...>]} {[<opts>]}\n",
-	"Usage:  Display the contents of a directory.\n",
-	"Options:\n",
-	NULL
-};
+    "Syntax: dir {[<opts>]} {<dir> [<...>]} {[<opts>]}\n",
+    "Usage:  Display the contents of a directory.\n", "Options:\n", NULL};
 
+int decbdir(int argc, char *argv[]) {
+  error_code ec = 0;
+  char *p = NULL;
+  int i;
 
-int decbdir(int argc, char *argv[])
-{
-	error_code ec = 0;
-	char *p = NULL;
-	int i;
+  if (argv[1] == NULL) {
+    show_help(helpMessage);
 
+    return 0;
+  }
 
-	if (argv[1] == NULL)
-	{
-		show_help(helpMessage);
+  /* walk command line for options */
+  for (i = 1; i < argc; i++) {
+    if (argv[i][0] == '-') {
+      for (p = &argv[i][1]; *p != '\0'; p++) {
+        switch (*p) {
+        case '?':
+        case 'h':
+          show_help(helpMessage);
+          return 0;
 
-		return 0;
-	}
+        default:
+          fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
+          return 0;
+        }
+      }
+    }
+  }
 
-	/* walk command line for options */
-	for (i = 1; i < argc; i++)
-	{
-		if (argv[i][0] == '-')
-		{
-			for (p = &argv[i][1]; *p != '\0'; p++)
-			{
-				switch (*p)
-				{
-				case '?':
-				case 'h':
-					show_help(helpMessage);
-					return 0;
+  /* walk command line for pathnames */
+  for (i = 1; i < argc; i++) {
+    if (argv[i][0] == '-') {
+      continue;
+    } else {
+      p = argv[i];
+    }
 
-				default:
-					fprintf(stderr,
-						"%s: unknown option '%c'\n",
-						argv[0], *p);
-					return 0;
-				}
-			}
-		}
-	}
+    ec = do_dir(argv, p);
 
-	/* walk command line for pathnames */
-	for (i = 1; i < argc; i++)
-	{
-		if (argv[i][0] == '-')
-		{
-			continue;
-		}
-		else
-		{
-			p = argv[i];
-		}
+    if (ec != 0) {
+      fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, p);
 
-		ec = do_dir(argv, p);
+      return ec;
+    }
+  }
 
-		if (ec != 0)
-		{
-			fprintf(stderr, "%s: error %d opening '%s'\n",
-				argv[0], ec, p);
-
-			return ec;
-		}
-	}
-
-
-	return 0;
+  return 0;
 }
 
+static int do_dir(char **argv, char *p) {
+  error_code ec = 0;
+  char decbpathlist[256], sector[256];
+  decb_path_id path;
+  decb_dir_entry de;
 
+  /* 1. If a comma isn't present in the string, then add it so that the path is
+   * opened as a non-native path. */
 
-static int do_dir(char **argv, char *p)
-{
-	error_code ec = 0;
-	char decbpathlist[256], sector[256];
-	decb_path_id path;
-	decb_dir_entry de;
+  memset(decbpathlist, 0, 256);
 
+  if (strchr(p, ',') == NULL) {
+    char *q = strchr(p, ':');
 
-	/* 1. If a comma isn't present in the string, then add it so that the path is opened as a non-native path. */
+    if (q == NULL) {
+      snprintf(decbpathlist, sizeof(decbpathlist), "%s,", p);
+    } else {
+      int len = q - p;
+      snprintf(decbpathlist, sizeof(decbpathlist), "%.*s,%s", len, p, q);
+    }
+  } else {
+    snprintf(decbpathlist, sizeof(decbpathlist), "%s", p);
+  }
 
-	memset(decbpathlist, 0, 256);
+  /* 3. Open a path to the device. */
 
-	if (strchr(p, ',') == NULL)
-	{
-		char *q = strchr(p, ':');
+  ec = _decb_open(&path, decbpathlist, FAM_READ);
 
-		if (q == NULL)
-		{
-			strcpy(decbpathlist, p);
-			strcat(decbpathlist, ",");
-		}
-		else
-		{
-			strncpy(decbpathlist, p, q - p);
-			strcat(decbpathlist, ",");
-			strcat(decbpathlist, q);
-		}
-	}
-	else
-	{
-		strcpy(decbpathlist, p);
-	}
+  if (ec != 0) {
+    fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec, decbpathlist);
 
+    return ec;
+  } else {
+    printf("Directory of: %s\n\n", decbpathlist);
+  }
 
-	/* 3. Open a path to the device. */
+  /* 4. Obtain HDB-DOS disk name, if any. */
 
-	ec = _decb_open(&path, decbpathlist, FAM_READ);
+  ec = _decb_gs_sector(path, 17, 17, sector);
 
-	if (ec != 0)
-	{
-		fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec,
-			decbpathlist);
+  if (ec == 0 && sector[0] != '\xFF') {
+    printf("%s\n", sector);
+  }
 
-		return ec;
-	}
-	else
-	{
-		printf("Directory of: %s\n\n", decbpathlist);
-	}
+  /* 5. Read and print each directory entry */
 
+  while ((ec = _decb_readdir(path, &de)) == 0) {
+    char asciiflag;
+    int granule_size = 1, i;
+    int curr_granule;
 
-	/* 4. Obtain HDB-DOS disk name, if any. */
+    if (de.filename[0] == 0 || de.filename[0] == 255) {
+      continue;
+    }
 
-	ec = _decb_gs_sector(path, 17, 17, sector);
+    switch (de.ascii_flag) {
+    case 0x00:
+      asciiflag = 'B';
+      break;
+    case 0xFF:
+      asciiflag = 'A';
+      break;
+    default:
+      asciiflag = '?';
+      break;
+    }
 
-	if (ec == 0 && sector[0] != '\xFF')
-	{
-		printf("%s\n", sector);
-	}
+    curr_granule = de.first_granule;
 
+    while (path->FAT[curr_granule] < 0xC0) {
+      curr_granule = path->FAT[curr_granule];
 
-	/* 5. Read and print each directory entry */
+      granule_size++;
+    }
 
-	while ((ec = _decb_readdir(path, &de)) == 0)
-	{
-		char asciiflag;
-		int granule_size = 1, i;
-		int curr_granule;
+    /* print escaped filename */
 
+    for (i = 0; i < 8; i++) {
+      if (isprint((unsigned char)de.filename[i])) {
+        putchar(de.filename[i]);
+      } else {
+        printf("\\%o", de.filename[i]);
+      }
+    }
 
-		if (de.filename[0] == 0 || de.filename[0] == 255)
-		{
-			continue;
-		}
+    putchar(' ');
 
+    /* print escaped extension */
 
-		switch (de.ascii_flag)
-		{
-		case 0x00:
-			asciiflag = 'B';
-			break;
-		case 0xFF:
-			asciiflag = 'A';
-			break;
-		default:
-			asciiflag = '?';
-			break;
-		}
+    for (i = 0; i < 3; i++) {
+      if (isprint((unsigned char)de.file_extension[i])) {
+        putchar(de.file_extension[i]);
+      } else {
+        printf("\\%o", de.file_extension[i]);
+      }
+    }
 
-		curr_granule = de.first_granule;
+    printf("  %1.1d  %c  %d\n", de.file_type, asciiflag, granule_size);
+  }
 
-		while (path->FAT[curr_granule] < 0xC0)
-		{
-			curr_granule = path->FAT[curr_granule];
+  /* return success if reached end of directory */
 
-			granule_size++;
-		}
+  if (ec == EOS_PNNF)
+    ec = 0;
 
-		/* print escaped filename */
-
-		for (i = 0; i < 8; i++)
-		{
-			if (isprint((unsigned char)de.filename[i]))
-			{
-				putchar(de.filename[i]);
-			}
-			else
-			{
-				printf("\\%o", de.filename[i]);
-			}
-		}
-
-		putchar(' ');
-
-		/* print escaped extension */
-
-		for (i = 0; i < 3; i++)
-		{
-			if (isprint((unsigned char)de.file_extension[i]))
-			{
-				putchar(de.file_extension[i]);
-			}
-			else
-			{
-				printf("\\%o", de.file_extension[i]);
-			}
-		}
-
-		printf("  %1.1d  %c  %d\n", de.file_type, asciiflag,
-		       granule_size);
-	}
-
-	/* return success if reached end of directory */
-
-	if (ec == EOS_PNNF)
-		ec = 0;
-
-	return ec;
+  return ec;
 }

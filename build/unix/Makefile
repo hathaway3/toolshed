@@ -16,11 +16,11 @@ else
 INSTALLDIR	?= $(PREFIX)/bin
 DOCDIR		?= $(PREFIX)/share/doc/toolshed
 endif
-APPS 		= ar2 os9 mamou cecb decb tocgen makewav dis68 lst2cmt
+APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt mamou
 
 DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys \
 		decb cecb os9 makewav tocgen lst2cmt \
-		dis68 mamou ar2 \
+		dis68 ar2 mamou \
 		doc
 
 ifneq ($(WIN),)
