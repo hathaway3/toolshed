@@ -1,0 +1,54 @@
+site_name: ToolShed Documentation
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - introduction.md
+    - Tutorial on Disk Images: getting-started/tutorial.md
+  - Tool Reference:
+    - Disk & Image Tools:
+      - tools/os9.md
+      - tools/decb.md
+      - tools/cecb.md
+      - tools/cocofuse.md
+    - Assemblers & Compilers:
+      - tools/casm.md
+      - tools/mamou.md
+      - tools/c3.md
+      - reference/c3-compiler.md
+    - Utilities:
+      - tools/utilities.md
+      - tools/conversion.md
+  - Technical Reference:
+    - reference/libraries.md
+    - reference/firmware.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nitros9project/toolshed

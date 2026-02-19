@@ -1,4 +1,5 @@
-/* TinyTest: A really really really tiny and simple no-hassle C unit-testing framework.
+/* TinyTest: A really really really tiny and simple no-hassle C unit-testing
+ * framework.
  *
  * Features:
  *   - No library dependencies. Not even itself. Just a header file.
@@ -45,17 +46,29 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Main assertion method */
-#define ASSERTV(msg, value, expression) if (!tt_assert_v(__FILE__, __LINE__, (msg), value, (#expression), (expression) ? 1 : 0)) return
-#define ASSERT(msg, expression) if (!tt_assert(__FILE__, __LINE__, (msg), (#expression), (expression) ? 1 : 0)) return
+#define ASSERTV(msg, value, expression)                                        \
+  if (!tt_assert_v(__FILE__, __LINE__, (msg), value, (#expression),            \
+                   (expression) ? 1 : 0))                                      \
+  return
+#define ASSERT(msg, expression)                                                \
+  if (!tt_assert(__FILE__, __LINE__, (msg), (#expression),                     \
+                 (expression) ? 1 : 0))                                        \
+  return
 
 /* Convenient assertion methods */
-/* TODO: Generate readable error messages for assert_equals or assert_str_equals */
-#define ASSERT_EQUALS(expected, actual) ASSERTV((#actual), actual, (expected) == (actual))
-#define ASSERT_NEQUALS(expected, actual) ASSERTV((#actual), actual, (expected) != (actual))
-#define ASSERT_STRING_EQUALS(expected, actual) ASSERT((#actual), strcmp((expected),(actual)) == 0)
-#define ASSERT_MEM_EQUALS(expected, actual, size) ASSERT((#actual), memcmp((expected),(actual),(size)) == 0)
+#define ASSERT_EQUALS(expected, actual)                                        \
+  ASSERTV((#actual), actual, (expected) == (actual))
+#define ASSERT_NEQUALS(expected, actual)                                       \
+  ASSERTV((#actual), actual, (expected) != (actual))
+#define ASSERT_STRING_EQUALS(expected, actual)                                 \
+  ASSERT((#actual), strcmp((expected), (actual)) == 0)
+#define ASSERT_MEM_EQUALS(expected, actual, size)                              \
+  ASSERT((#actual), memcmp((expected), (actual), (size)) == 0)
+#define ASSERT_TRUE(expression) ASSERT((#expression), (expression))
+#define ASSERT_FALSE(expression) ASSERT((#expression), !(expression))
 
 /* Run a test() function */
 #define RUN(test_function) tt_execute((#test_function), (test_function))
@@ -66,63 +79,20 @@
 #define TT_COLOR_GREEN "[1;32m"
 #define TT_COLOR_RESET "[0m"
 
-int tt_passes = 0;
-int tt_fails = 0;
-int tt_current_test_failed = 0;
-const char* tt_current_msg = NULL;
-long tt_current_value = 0;
-const char* tt_current_expression = NULL;
-const char* tt_current_file = NULL;
-int tt_current_line = 0;
+extern int tt_passes;
+extern int tt_fails;
+extern int tt_current_test_failed;
+extern const char *tt_current_msg;
+extern long tt_current_value;
+extern const char *tt_current_expression;
+extern const char *tt_current_file;
+extern int tt_current_line;
 
-void tt_execute(const char* name, void (*test_function)())
-{
-  tt_current_test_failed = 0;
-  test_function();
-  if (tt_current_test_failed) {
-    printf("failure: %s:%d: In test %s():\n    %s (%ld) (%s)\n",
-      tt_current_file, tt_current_line, name, tt_current_msg, tt_current_value, tt_current_expression);
-    tt_fails++;
-  } else {
-    tt_passes++;
-  }
-}
-
-int tt_assert(const char* file, int line, const char* msg, const char* expression, int pass)
-{
-  tt_current_msg = msg;
-  tt_current_value = 0;
-  tt_current_expression = expression;
-  tt_current_file = file;
-  tt_current_line = line;
-  tt_current_test_failed = !pass;
-  return pass;
-}
-
-int tt_assert_v(const char* file, int line, const char* msg, long value, const char* expression, int pass)
-{
-  tt_current_msg = msg;
-  tt_current_value = value;
-  tt_current_expression = expression;
-  tt_current_file = file;
-  tt_current_line = line;
-  tt_current_test_failed = !pass;
-  return pass;
-}
-
-int tt_report(void)
-{
-  if (tt_fails) {
-    printf("%c%sFAILED%c%s [%s] (passed:%d, failed:%d, total:%d)\n",
-      TT_COLOR_CODE, TT_COLOR_RED, TT_COLOR_CODE, TT_COLOR_RESET,
-      tt_current_file, tt_passes, tt_fails, tt_passes + tt_fails);
-    return -1;
-  } else {
-    printf("%c%sPASSED%c%s [%s] (total:%d)\n",
-      TT_COLOR_CODE, TT_COLOR_GREEN, TT_COLOR_CODE, TT_COLOR_RESET,
-      tt_current_file, tt_passes);
-    return 0;
-  }
-}
+void tt_execute(const char *name, void (*test_function)());
+int tt_assert(const char *file, int line, const char *msg,
+              const char *expression, int pass);
+int tt_assert_v(const char *file, int line, const char *msg, long value,
+                const char *expression, int pass);
+int tt_report(void);
 
 #endif

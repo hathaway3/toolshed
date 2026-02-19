@@ -1,25 +1,31 @@
-all: bas13.rom extbas11.rom disk11.rom coco3.rom checksum
+AS	= lwasm
+ASFLAGS	= --raw
+RM	= rm -f
+
+ROMS	= bas13.rom extbas11.rom disk11.rom coco3.rom
+
+all: $(ROMS) checksum
 
 bas13.rom: equates.asm bas.asm
-	lwasm --raw -o $@ $^
+	$(AS) $(ASFLAGS) -o $@ $^
 
 cb_equates.asm: equates.asm bas.asm
-	lwasm --symbol-dump --no-output $^ > $@
+	$(AS) --symbol-dump --no-output $^ > $@
 
 extbas11.rom: cb_equates.asm extbas.asm
-	lwasm --raw -o $@ $^
+	$(AS) $(ASFLAGS) -o $@ $^
 
 ecb_equates.asm: equates.asm bas.asm extbas.asm
-	lwasm --symbol-dump --no-output $^ > $@
+	$(AS) --symbol-dump --no-output $^ > $@
 
 disk11.rom: ecb_equates.asm disk.asm
-	lwasm --raw --pragma=noindex0tonone -o $@ $^
+	$(AS) $(ASFLAGS) --pragma=noindex0tonone -o $@ $^
 
 coco3.rom: equates.asm coco3.asm
-	lwasm --raw -o $@ $^
+	$(AS) $(ASFLAGS) -o $@ $^
 
 checksum:
-	md5 *.rom >md5sums-new.txt
+	md5 *.rom > md5sums-new.txt
 
 clean:
-	-rm -f bas13.rom extbas11.rom disk11.rom coco3.rom *_equates.asm md5sums-new.txt
+	$(RM) $(ROMS) *_equates.asm md5sums-new.txt

@@ -1,15 +1,5 @@
-# Makefile for libtoolshed.a
+LIBRARY = libtoolshed.a
+OBJS = toolshed.o
+
 include ../rules.mak
-
 vpath %.c ../../../libtoolshed
-
-CFLAGS	+= -I../../../include -Wall
-
-%.a:
-	$(AR) -r $@ $^
-	$(RANLIB) $@
-
-libtoolshed.a:	toolshed.o
-
-clean:
-	$(RM) *.o *.a

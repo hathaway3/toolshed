@@ -1,20 +1,18 @@
-include ../rules.mak
-
 BINARY = cocofuse
+OBJS = $(BINARY).o
 
+include ../rules.mak
 vpath %.c ../../../$(BINARY)
 
+# Platform-specific FUSE flags
 OS := $(shell uname)
 ifeq ($(OS),Darwin)
-CFLAGS	+= -I../../../include -Wall -I/usr/local/include/fuse/fuse -DDEBUG
-LDFLAGS	+= -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -lfuse
+CFLAGS  += -I/usr/local/include/fuse/fuse -DDEBUG
 else
-CFLAGS	+= -I../../../include -Wall -DDEBUG
-LDFLAGS	+= -L/usr/local/lib -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../libdecb -L../libmisc -L../librbf -L../libsys -ltoolshed -lcoco -lnative -lcecb -ldecb -lrbf -lmisc -lsys -lm -lfuse
+CFLAGS  += -DDEBUG
 endif
 
-$(BINARY):	$(BINARY).o
-	-$(CC) -o $@ $^ $(LDFLAGS)
+LDFLAGS += -L/usr/local/lib
+LDLIBS  += -lfuse
 
-clean:
-	$(RM) *.o $(BINARY)
+all: $(BINARY)$(SUFEXE)

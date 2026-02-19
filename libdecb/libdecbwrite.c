@@ -9,302 +9,232 @@
 
 #include "decbpath.h"
 
-
-static error_code _raw_write(decb_path_id path, void *buffer, u_int * size);
+static error_code _raw_write(decb_path_id path, void *buffer, u_int *size);
 static error_code extend_fat_chain(decb_path_id path, int current_size,
-				   int new_size);
+                                   int new_size);
 error_code find_free_granule(decb_path_id path, int *granule, int next_to);
 
+error_code _decb_write(decb_path_id path, void *buffer, u_int *size) {
+  error_code ec = EOS_WRITE;
+  u_int current_size = 0, accum_size = 0, curr_granule, bytes_left;
 
-error_code _decb_write(decb_path_id path, void *buffer, u_int * size)
-{
-	error_code ec = EOS_WRITE;
-	u_int current_size = 0, accum_size = 0, curr_granule, bytes_left;
+  /* 1. Check the mode. */
 
+  if ((path->mode & FAM_WRITE) == 0) {
+    /* 1. Must be writable. */
 
-	/* 1. Check the mode. */
+    return EOS_BMODE;
+  }
 
-	if ((path->mode & FAM_WRITE) == 0)
-	{
-		/* 1. Must be writable. */
+  /* 2. Treat raw path differently. */
 
-		return EOS_BMODE;
-	}
+  if (path->israw == 1) {
+    ec = _raw_write(path, buffer, size);
+  }
 
+  /* 3. Get the file's current size. */
 
-	/* 2. Treat raw path differently. */
+  _decb_gs_size(path, &current_size);
 
-	if (path->israw == 1)
-	{
-		ec = _raw_write(path, buffer, size);
-	}
+  /* 4. If our file position is greater than the file size, return error. */
 
+  if (path->filepos > current_size) {
+    /* 1. End of file. */
 
-	/* 3. Get the file's current size. */
+    return (EOS_EOF);
+  }
 
-	_decb_gs_size(path, &current_size);
+  /* 5. If there is not enough room, we need to extend the FAT chain. */
 
+  if (current_size < path->filepos + *size) {
+    /* 1. We need to enlarge the file. */
 
-	/* 4. If our file position is greater than the file size, return error. */
+    ec = extend_fat_chain(path, current_size, path->filepos + *size);
 
-	if (path->filepos > current_size)
-	{
-		/* 1. End of file. */
+    /* 2. If there is an error, time to abort */
 
-		return (EOS_EOF);
-	}
+    if (ec != 0) {
+      *size = 0;
+      return ec;
+    }
+  }
 
+  /* 6. Determine which granule the offset is in. */
 
-	/* 5. If there is not enough room, we need to extend the FAT chain. */
+  accum_size = 0;
 
-	if (current_size < path->filepos + *size)
-	{
-		/* 1. We need to enlarge the file. */
+  curr_granule = path->dir_entry.first_granule;
 
-		ec = extend_fat_chain(path, current_size,
-				      path->filepos + *size);
+  while (path->FAT[curr_granule] < 0xC0) {
+    accum_size += 2304;
 
+    if (accum_size > path->filepos) {
+      /* 1. This is the granule we begin at. */
 
-		/* 2. If there is an error, time to abort */
+      accum_size -= 2304;
 
-		if (ec != 0)
-		{
-			*size = 0;
-			return ec;
-		}
-	}
+      break;
+    }
 
+    curr_granule = path->FAT[curr_granule];
+  }
 
-	/* 6. Determine which granule the offset is in. */
+  /* 7. Copy user supplied data into the file for 'bytes_left' bytes. */
 
-	accum_size = 0;
+  bytes_left = (path->filepos + *size) - current_size;
 
-	curr_granule = path->dir_entry.first_granule;
+  while (bytes_left > 0) {
+    char granule_buffer[2304];
+    u_int write_size, offset_in_granule;
+    int bytes_in_last_granule = 2304;
 
-	while (path->FAT[curr_granule] < 0xC0)
-	{
-		accum_size += 2304;
+    _decb_gs_granule(path, curr_granule, granule_buffer);
 
-		if (accum_size > path->filepos)
-		{
-			/* 1. This is the granule we begin at. */
+    if (path->FAT[curr_granule] >= 0xC0) {
+      bytes_in_last_granule = (((path->FAT[curr_granule] & 0x3F) - 1) * 256) +
+                              int2(path->dir_entry.last_sector_size);
+    }
 
-			accum_size -= 2304;
+    offset_in_granule = path->filepos % 2304;
 
-			break;
-		}
+    write_size = bytes_in_last_granule - offset_in_granule;
 
-		curr_granule = path->FAT[curr_granule];
-	}
+    if (write_size > bytes_left) {
+      write_size = bytes_left;
+    }
 
+    memcpy(granule_buffer + offset_in_granule, buffer, write_size);
+    _decb_ss_granule(path, curr_granule, granule_buffer);
 
-	/* 7. Copy user supplied data into the file for 'bytes_left' bytes. */
+    bytes_left -= write_size;
+    path->filepos += write_size;
+    buffer += write_size;
 
-	bytes_left = (path->filepos + *size) - current_size;
+    /* Point to next granule for next pass. */
 
+    curr_granule = path->FAT[curr_granule];
+  }
 
-	while (bytes_left > 0)
-	{
-		char granule_buffer[2304];
-		u_int write_size, offset_in_granule;
-		int bytes_in_last_granule = 2304;
+  /* 9. Write updated file descriptor back to image file. */
 
+  _decb_seekdir(path, path->this_directory_entry_index, SEEK_SET);
 
-		_decb_gs_granule(path, curr_granule, granule_buffer);
+  _decb_writedir(path, &path->dir_entry);
 
-		if (path->FAT[curr_granule] >= 0xC0)
-		{
-			bytes_in_last_granule =
-				(((path->FAT[curr_granule] & 0x3F) -
-				  1) * 256) +
-				int2(path->dir_entry.last_sector_size);
-		}
-
-
-		offset_in_granule = path->filepos % 2304;
-
-		write_size = bytes_in_last_granule - offset_in_granule;
-
-		if (write_size > bytes_left)
-		{
-			write_size = bytes_left;
-		}
-
-
-		memcpy(granule_buffer + offset_in_granule, buffer,
-		       write_size);
-		_decb_ss_granule(path, curr_granule, granule_buffer);
-
-
-		bytes_left -= write_size;
-		path->filepos += write_size;
-		buffer += write_size;
-
-		/* Point to next granule for next pass. */
-
-		curr_granule = path->FAT[curr_granule];
-	}
-
-
-	/* 9. Write updated file descriptor back to image file. */
-
-	_decb_seekdir(path, path->this_directory_entry_index, SEEK_SET);
-
-	_decb_writedir(path, &path->dir_entry);
-
-
-	return ec;
+  return ec;
 }
 
+static error_code _raw_write(decb_path_id path, void *buffer, u_int *size) {
+  error_code ec = 0;
+  size_t ret_size;
 
+  ret_size = fwrite(buffer, 1, *size, path->fd);
+  *size = ret_size;
 
-static error_code _raw_write(decb_path_id path, void *buffer, u_int * size)
-{
-	error_code ec = 0;
-	size_t ret_size;
+  if (ret_size != *size) {
+    ec = EOS_WRITE;
+  }
 
-
-	ret_size = fwrite(buffer, 1, *size, path->fd);
-	*size = ret_size;
-
-
-	return ec;
+  return ec;
 }
 
+error_code _decb_writedir(decb_path_id path, decb_dir_entry *dirent) {
+  error_code ec = 0;
+  char buffer[256];
+  int sector = (path->directory_entry_index * sizeof(decb_dir_entry)) / 256;
+  int entry_in_sector;
 
+  /* 1. Check the mode. */
 
-error_code _decb_writedir(decb_path_id path, decb_dir_entry * dirent)
-{
-	error_code ec = 0;
-	char buffer[256];
-	int sector =
-		(path->directory_entry_index * sizeof(decb_dir_entry)) / 256;
-	int entry_in_sector;
+  if ((path->mode & FAM_WRITE) == 0) {
+    return EOS_BMODE;
+  }
 
+  entry_in_sector =
+      (path->directory_entry_index * sizeof(decb_dir_entry)) % 256;
 
-	/* 1. Check the mode. */
+  /* 2. Check if we have passed last entry. */
 
-	if ((path->mode & FAM_WRITE) == 0)
-	{
-		return EOS_BMODE;
-	}
+  if (path->directory_entry_index == 73) {
+    /* 1. Yes.  Return error. */
 
+    return EOS_DF;
+  }
 
-	entry_in_sector =
-		(path->directory_entry_index * sizeof(decb_dir_entry)) % 256;
+  ec = _decb_gs_sector(path, 17, 3 + sector, buffer);
 
+  if (ec == 0) {
+    /* 1. Check if this is an empty entry. */
 
-	/* 2. Check if we have passed last entry. */
+    memcpy(buffer + entry_in_sector, dirent, sizeof(decb_dir_entry));
 
-	if (path->directory_entry_index == 73)
-	{
-		/* 1. Yes.  Return error. */
+    ec = _decb_ss_sector(path, 17, 3 + sector, buffer);
+  }
 
-		return EOS_DF;
-	}
-
-
-	ec = _decb_gs_sector(path, 17, 3 + sector, buffer);
-
-	if (ec == 0)
-	{
-		/* 1. Check if this is an empty entry. */
-
-		memcpy(buffer + entry_in_sector, dirent,
-		       sizeof(decb_dir_entry));
-
-		ec = _decb_ss_sector(path, 17, 3 + sector, buffer);
-	}
-
-
-	return ec;
+  return ec;
 }
-
-
 
 static error_code extend_fat_chain(decb_path_id path, int current_size,
-				   int new_size)
-{
-	int curr_granule = path->dir_entry.first_granule;
-	int max_size_with_curr_granules_allocated = 0;
-	unsigned char tmp_FAT[256];
+                                   int new_size) {
+  int curr_granule = path->dir_entry.first_granule;
+  int max_size_with_curr_granules_allocated = 0;
+  unsigned char tmp_FAT[256];
 
+  /* 1. Save a copy in case we run out of disk space. */
 
-	/* 1. Save a copy in case we run out of disk space. */
+  memcpy(tmp_FAT, path->FAT, 256);
 
-	memcpy(tmp_FAT, path->FAT, 256);
+  /* 2. Compute maximum size of file with current granules allocated. */
 
+  while (path->FAT[curr_granule] < 0xC0) {
+    curr_granule = path->FAT[curr_granule];
 
-	/* 2. Compute maximum size of file with current granules allocated. */
+    max_size_with_curr_granules_allocated += 2304;
+  }
 
-	while (path->FAT[curr_granule] < 0xC0)
-	{
-		curr_granule = path->FAT[curr_granule];
+  max_size_with_curr_granules_allocated += 2304;
 
-		max_size_with_curr_granules_allocated += 2304;
-	}
+  if (new_size > max_size_with_curr_granules_allocated) {
+    int new_granule;
 
-	max_size_with_curr_granules_allocated += 2304;
+    do {
+      /* 3. We're gonna have to find a free granule. */
 
+      if (find_free_granule(path, &new_granule, curr_granule) != 0) {
+        /* 1. Could not find any free granules. */
 
-	if (new_size > max_size_with_curr_granules_allocated)
-	{
-		int new_granule;
+        memcpy(path->FAT, tmp_FAT, 256);
 
+        return EOS_DF;
+      }
 
-		do
-		{
-			/* 3. We're gonna have to find a free granule. */
+      path->FAT[curr_granule] = new_granule;
+      curr_granule = new_granule;
+      path->FAT[curr_granule] = 0xC0;
+      max_size_with_curr_granules_allocated += 2304;
+    } while (new_size > max_size_with_curr_granules_allocated);
+  }
 
-			if (find_free_granule
-			    (path, &new_granule, curr_granule) != 0)
-			{
-				/* 1. Could not find any free granules. */
+  {
+    /* 4. The new size will fit in the currently allocated granules,
+     *    so we'll just extend the last granule entry.
+     */
 
-				memcpy(path->FAT, tmp_FAT, 256);
+    int expand_size = new_size - (max_size_with_curr_granules_allocated - 2304);
 
-				return EOS_DF;
-			}
+    /* 5. Reset the last granule's sector size. */
 
-			path->FAT[curr_granule] = new_granule;
-			curr_granule = new_granule;
-			path->FAT[curr_granule] = 0xC0;
-			max_size_with_curr_granules_allocated += 2304;
-		}
-		while (new_size > max_size_with_curr_granules_allocated);
+    if (expand_size % 256 == 0) {
+      path->FAT[curr_granule] = 0xC0 + (expand_size / 256);
+      _int2(256, path->dir_entry.last_sector_size);
+    } else {
+      path->FAT[curr_granule] = 0xC1 + (expand_size / 256);
+      _int2(expand_size % 256, path->dir_entry.last_sector_size);
+    }
+  }
 
-	}
-
-	{
-		/* 4. The new size will fit in the currently allocated granules,
-		 *    so we'll just extend the last granule entry.
-		 */
-
-		int expand_size =
-			new_size - (max_size_with_curr_granules_allocated -
-				    2304);
-
-
-		/* 5. Reset the last granule's sector size. */
-
-		if (expand_size % 256 == 0)
-		{
-			path->FAT[curr_granule] = 0xC0 + (expand_size / 256);
-			_int2(256, path->dir_entry.last_sector_size);
-		}
-		else
-		{
-			path->FAT[curr_granule] = 0xC1 + (expand_size / 256);
-			_int2(expand_size % 256,
-			      path->dir_entry.last_sector_size);
-		}
-	}
-
-
-	return 0;
+  return 0;
 }
-
-
 
 /*
  * find_free_granule: find a free granule.
@@ -315,60 +245,51 @@ static error_code extend_fat_chain(decb_path_id path, int current_size,
  * This algorithm matchs what the DECB ROM does.
  */
 
-error_code find_free_granule(decb_path_id path, int *granule, int next_to)
-{
-	int counter = 0, direction = 0, save_granule;
-	
-	/* 1. start checking at the start of a track. */
-	*granule = next_to & (~1);
-	
-	while (counter < path->granule_count)
-	{
-		if (path->FAT[*granule] == 0xff)
-		{
-			/* done, we found one */
-			return 0;
-		}
+error_code find_free_granule(decb_path_id path, int *granule, int next_to) {
+  int counter = 0, direction = 0, save_granule;
 
-		counter += 1;
-		*granule += 1;
-	
-		if (*granule & 0x01)
-		{
-			/* 2. Go check granule at end of track. */
-			continue;
-		}
-		
-		save_granule = *granule;
-		
-		/* 3. Back up and reverse direction */
-		*granule -= 2;
-		direction = ~direction;
-		
-		if (direction)
-		{
-			*granule -= counter;
-			
-			if (*granule < 0)
-			{
-				/* 4. If underflow, try previous granule in other direction */
-				*granule = save_granule;
-				direction = ~direction;
-			}
-		}
-		else
-		{
-			*granule += counter;
-			
-			if (*granule >= path->granule_count)
-			{
-				/* 5. If overflow, try previous granule (minus 4), in other direction */
-				*granule = save_granule;
-				*granule -= 4;
-				direction = ~direction;
-			}
-		}
-	}
+  /* 1. start checking at the start of a track. */
+  *granule = next_to & (~1);
 
-	return EOS_DF;
+  while (counter < path->granule_count) {
+    if (path->FAT[*granule] == 0xff) {
+      /* done, we found one */
+      return 0;
+    }
+
+    counter += 1;
+    *granule += 1;
+
+    if (*granule & 0x01) {
+      /* 2. Go check granule at end of track. */
+      continue;
+    }
+
+    save_granule = *granule;
+
+    /* 3. Back up and reverse direction */
+    *granule -= 2;
+    direction = ~direction;
+
+    if (direction) {
+      *granule -= counter;
+
+      if (*granule < 0) {
+        /* 4. If underflow, try previous granule in other direction */
+        *granule = save_granule;
+        direction = ~direction;
+      }
+    } else {
+      *granule += counter;
+
+      if (*granule >= path->granule_count) {
+        /* 5. If overflow, try previous granule (minus 4), in other direction */
+        *granule = save_granule;
+        *granule -= 4;
+        direction = ~direction;
+      }
+    }
+  }
+
+  return EOS_DF;
 }

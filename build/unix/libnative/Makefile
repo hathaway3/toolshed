@@ -1,14 +1,7 @@
-# Makefile for libnative.a
+LIBRARY = libnative.a
+OBJS = libnativegs.o libnativedelete.o libnativeopen.o libnativeread.o \
+       libnativerename.o libnativeseek.o libnativess.o libnativewrite.o \
+       libnativereadln.o libnativemakdir.o
+
 include ../rules.mak
-
 vpath %.c ../../../libnative
-
-CFLAGS	+= -I../../../include -Wall
-
-%.a:
-	$(AR) -r $@ $^
-	$(RANLIB) $@
-
-libnative.a:	libnativegs.o libnativedelete.o libnativeopen.o libnativeread.o libnativerename.o libnativeseek.o libnativess.o libnativeread.o libnativewrite.o libnativereadln.o libnativemakdir.o
-clean:
-	$(RM) *.o *.a

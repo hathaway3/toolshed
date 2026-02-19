@@ -519,15 +519,16 @@ writebuf:
 *   bp = (char *) buf;
         leau   buf,y
  
-* 	for (lim = cnt; lim; --lim)
-* 		putc(*bp++, fp);
-        stb    lim,s
-wb10
-        ldb    ,u+
-        stb    1,s
-        lbsr   putc
-        dec    lim,s
-        bne    wb10   lim != 0?
+* 	fwrite(buf, 1, cnt, fp);
+        pshs   x           stream (fp)
+        ldd    2+2,s       nmemb (cnt)
+        pshs   d
+        ldd    #1          size
+        pshs   d
+        leau   buf,y       ptr
+        pshs   u
+        lbsr   fwrite
+        leas   8,s
 
 * 				lz_bytes += cnt;
         leax   lz_bytes,y

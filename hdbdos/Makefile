@@ -28,9 +28,10 @@ HDBCAS4	= hdbdw4cc3.wav hdbdw4cc2.wav
 ALLOBJS         = preload postload $(HDBROM) $(HDBBIN) $(HDBCAS)
 HISPEED         = $(HDBDW4) $(HDBBIN4) $(HDBCAS4)
 
-#AS		= mamou -r -q
-AS		= lwasm -r --pragma=condundefzero,nodollarlocal,noindex0tonone
+AS		= lwasm
+AFLAGS		= -r --pragma=condundefzero,nodollarlocal,noindex0tonone
 MERGE		= cat
+RM		= rm -f
 MAKEWAV		= makewav -r -c
 CECB		= cecb
 
@@ -47,7 +48,7 @@ postload: postload.asm
 	$(MERGE) $+ > $@
 
 %.rom : hdbdos.asm
-	$(AS) $(EQUATES) hdbdos.asm -o$@ $(FLAGS)
+	$(AS) $(AFLAGS) $(EQUATES) hdbdos.asm -o$@ $(FLAGS)
 
 %.wav : %.bin
 	$(MAKEWAV) -o$@ -n$(LABEL) $<

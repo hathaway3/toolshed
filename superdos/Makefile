@@ -8,10 +8,10 @@
 # 2006-01-30, P.Harvey-Smith, added support for RS-DOS cartridge on CoCo.
 #
 
-AS=mamou
-ASFLAGS=-q -mr
-ZIP=zip
-RM=rm -f
+AS	= mamou
+AFLAGS	= -q -mr
+ZIP	= zip
+RM	= rm -f
 FILESD32=dragon32/d32.rom dragon32/ddos10.rom
 FILESD64=dragon64/d64_1.rom dragon64/d64_2.rom dragon64/ddos10.rom
 FILESTANOD64=tanodr64/d64_1.rom tanodr64/d64_2.rom tanodr64/sdtandy.rom

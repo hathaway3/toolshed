@@ -1,48 +1,18 @@
-# Makefile for casm
+BINARY = casm
+OBJS =  as.o cmdline.o context.o cpu.o do9.o error.o eval.o export.o ffwd.o \
+		input.o label.o macro.o parse.o \
+		output.o output_bin.o output_listing.o output_mod.o \
+		output_obj.o output_os9.o output_rof.o output_rom.o \
+		output_s19.o \
+		proc_branch.o proc_bitxfer.o proc_direct.o proc_extended.o \
+		proc_general.o proc_immediate.o proc_indexed.o proc_inherent.o \
+		proc_logicalmem.o proc_memxfer.o proc_pushpull.o proc_regtoreg.o \
+		proc_util.o \
+		pseudo.o struct.o symtab.o table9.o \
+		util.o
+
 include ../rules.mak
-SDIR	=	../../../casm/src
-ODIR	=	.
-CFLAGS	=	-Wall -O3
+vpath %.c ../../../casm/src
+vpath %.h ../../../casm/src
 
-SRC	=	as.c cmdline.c context.c cpu.c do9.c error.c eval.c export.c ffwd.c \
-		input.c label.c macro.c parse.c \
-		output.c output_bin.c output_listing.c output_mod.c \
-		output_obj.c output_os9.c output_rof.c output_rom.c \
-		output_s19.c \
-		proc_branch.c proc_bitxfer.c proc_direct.c proc_extended.c \
-		proc_general.c proc_immediate.c proc_indexed.c proc_inherent.c \
-		proc_logicalmem.c proc_memxfer.c proc_pushpull.c proc_regtoreg.c \
-		proc_util.c \
-		pseudo.c struct.c symtab.c table9.c \
-		util.c
-
-DEFS	=	as.h config.h cpu.h error.h label.h macro.h \
-		os9.h output.h proc_util.h proto.h pseudo.h \
-		struct.h symtab.h table9.h util.h
-
-DEFINES	:=	$(DEFS:%.h=$(SDIR)/.obj)
-OBJ	:= 	$(SRC:%.c=$(ODIR)/%.o)
-SRC	:=	$(SRC:%.c=$(SDIR)/%.c
-
-
-
-
-$(ODIR)/casm: $(OBJ)
-	@echo Linking...
-	$(CC) -o $(ODIR)/casm $(OBJ)
-
-
-$(ODIR)/%.o: $(SDIR)/%.c $(HEADERS)
-	@echo compiling $<
-	$(CC) -c $< -o $@
-
-$(ODIR):
-	@mkdir $(ODIR)
-
-clean:
-	@echo Cleaning...
-	@$(RM) $(OBJ)
-	@$(RM) casm
-
-install: $(ODIR)/casm
-	cp $(ODIR)/casm $(HOME)/bin
+all: $(BINARY)$(SUFEXE)

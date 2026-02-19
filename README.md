@@ -14,6 +14,9 @@ In this repository, you'll find:
 > [!NOTE]
 > **A Note on Assemblers**: While we include the classic `mamou` 6809 cross-assembler for historical preservation, we highly recommend using William Astle's excellent **LWTOOLS**. It includes the modern `lwasm` assembler and `lwlink` linker. [You can download the latest source here.](http://lwtools.projects.l-w.ca)
 
+Find the documentation for some of the commands in ToolShed's [Wiki](https://github.com/nitros9project/toolshed/wiki).
+Detailed local documentation is also available in the [doc directory](doc/index.md).
+
 For more detailed documentation on specific commands, please visit our [Wiki](https://github.com/nitros9project/toolshed/wiki).
 
 ## 🚀 Quick Install (Linux and macOS)

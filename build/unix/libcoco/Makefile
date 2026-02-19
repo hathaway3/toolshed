@@ -1,16 +1,6 @@
-# Makefile for libcoco.a
+LIBRARY = libcoco.a
+OBJS = libcocogs.o libcocodelete.o libcocoopen.o libcocoread.o libcocorename.o \
+       libcocoseek.o libcocoss.o libcocowrite.o libcocoreadln.o libcocomakdir.o
+
 include ../rules.mak
-
 vpath %.c ../../../libcoco
-
-CFLAGS	+= -I../../../include -Wall
-
-%.a:
-	$(AR) -r $@ $^
-	$(RANLIB) $@
-
-libcoco.a:	libcocogs.o libcocodelete.o libcocoopen.o libcocoread.o libcocorename.o libcocoseek.o libcocoss.o libcocoread.o libcocowrite.o \
-	libcocoreadln.o libcocomakdir.o
-
-clean:
-	$(RM) *.o *.a

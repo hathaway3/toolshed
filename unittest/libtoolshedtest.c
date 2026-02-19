@@ -7,23 +7,26 @@
 
 /* Workaround for nested test functions, needed because the tinytest
  * ASSERT will simply set error variables and return */
-#define REPORT(name) do { if (tt_current_test_failed) { \
-	    printf("failure: While checking \"%s\":\n", name); \
-	    return; }} while (0);
-
+#define REPORT(name)                                                           \
+  do {                                                                         \
+    if (tt_current_test_failed) {                                              \
+      printf("failure: While checking \"%s\":\n", name);                       \
+      return;                                                                  \
+    }                                                                          \
+  } while (0);
 
 /* Adjust size to break CR-LF across two chunks */
 /* Note 5 will still break */
 #define TEST_CHUNKSIZE 11
-#define TEST_CRLF_DATA   "1234\r\n7890\r\n3456\r\n"
-#define TEST_LF_DATA     "1234\n7890\n3456\n"
-#define TEST_COCO_DATA   "1234\r7890\r3456\r"
-
+#define TEST_CRLF_DATA "1234\r\n7890\r\n3456\r\n"
+#define TEST_LF_DATA "1234\n7890\n3456\n"
+#define TEST_COCO_DATA "1234\r7890\r3456\r"
 
 #define TRANSLATE_TO_DISK 1
 #define TRANSLATE_FROM_DISK 2
 void copy_to_disk_and_back(char *original, int translation, char *expected);
 void create_disk(char *name);
+void test_padrom();
 
 /*
  * Native2Coco test method:
@@ -42,127 +45,199 @@ void create_disk(char *name);
  *
  */
 
-void test_via_disk_image()
-{
-	create_disk("test.dsk");
-	REPORT("create_disk");
+void test_via_disk_image() {
+  create_disk("test.dsk");
+  REPORT("create_disk");
 
-	copy_to_disk_and_back(TEST_LF_DATA, TRANSLATE_TO_DISK, TEST_COCO_DATA);
-	REPORT("LF -> Coco");
+  copy_to_disk_and_back(TEST_LF_DATA, TRANSLATE_TO_DISK, TEST_COCO_DATA);
+  REPORT("LF -> Coco");
 
-	copy_to_disk_and_back(TEST_CRLF_DATA, TRANSLATE_TO_DISK, TEST_COCO_DATA);
-	REPORT("CRLF -> Coco");
+  copy_to_disk_and_back(TEST_CRLF_DATA, TRANSLATE_TO_DISK, TEST_COCO_DATA);
+  REPORT("CRLF -> Coco");
 
 #ifdef WIN32
-	copy_to_disk_and_back(TEST_COCO_DATA, TRANSLATE_FROM_DISK, TEST_CRLF_DATA);
+  copy_to_disk_and_back(TEST_COCO_DATA, TRANSLATE_FROM_DISK, TEST_CRLF_DATA);
 #else
-	copy_to_disk_and_back(TEST_COCO_DATA, TRANSLATE_FROM_DISK, TEST_LF_DATA);
+  copy_to_disk_and_back(TEST_COCO_DATA, TRANSLATE_FROM_DISK, TEST_LF_DATA);
 #endif
-	REPORT("Coco -> native");
+  REPORT("Coco -> native");
 
-	remove("test.dsk");
-	remove("test-1.dat");
-	remove("test-2.dat");
+  remove("test.dsk");
+  remove("test-1.dat");
+  remove("test-2.dat");
 }
 
+void copy_to_disk_and_back(char *original, int translation, char *expected) {
+  FILE *f;
+  int eolTranslate;
+  int written;
+  int was_read;
+  int ec;
+  char returned[256];
+  char buffer[TEST_CHUNKSIZE];
 
-void copy_to_disk_and_back(char *original, int translation, char *expected)
-{
-	FILE *f;
-	int eolTranslate;
-	int written;
-	int was_read;
-	int ec;
-	char returned[256];
-	char buffer[TEST_CHUNKSIZE];
+  /* write original test content to local file */
+  f = fopen("test-1.dat", "wb");
+  ASSERT("fopen", f != NULL);
+  written = fwrite(original, 1, strlen(original), f);
+  fclose(f);
+  ASSERT_EQUALS(strlen(original), written);
 
-	/* write original test content to local file */
-	f = fopen("test-1.dat", "wb");
-	ASSERT("fopen", f != NULL);
-	written = fwrite(original, 1, strlen(original), f);
-	fclose(f);
-	ASSERT_EQUALS(strlen(original), written);
+  /* copy to disk image */
+  eolTranslate = (translation == TRANSLATE_TO_DISK);
+  ec = TSCopyFile("test-1.dat", "test.dsk,test.dat", eolTranslate, 1, 0, 0,
+                  buffer, TEST_CHUNKSIZE);
+  ASSERT_EQUALS(0, ec);
 
-	/* copy to disk image */
-	eolTranslate = (translation == TRANSLATE_TO_DISK);
-	ec = TSCopyFile("test-1.dat", "test.dsk,test.dat", eolTranslate,
-	                1, 0, 0, buffer, TEST_CHUNKSIZE);
-	ASSERT_EQUALS(0, ec);
+  /* copy back */
+  eolTranslate = (translation == TRANSLATE_FROM_DISK);
+  ec = TSCopyFile("test.dsk,test.dat", "test-2.dat", eolTranslate, 1, 0, 0,
+                  buffer, TEST_CHUNKSIZE);
+  ASSERT_EQUALS(0, ec);
 
-	/* copy back */
-	eolTranslate = (translation == TRANSLATE_FROM_DISK);
-	ec = TSCopyFile("test.dsk,test.dat", "test-2.dat", eolTranslate,
-	                1, 0, 0, buffer, TEST_CHUNKSIZE);
-	ASSERT_EQUALS(0, ec);
+  /* read content from new local file */
+  f = fopen("test-2.dat", "rb");
+  was_read = fread(returned, 1, sizeof(returned), f);
+  fclose(f);
+  ASSERT("Failed fread", was_read > 0);
 
-	/* read content from new local file */
-	f = fopen("test-2.dat", "rb");
-	was_read = fread(returned, 1, sizeof(returned), f);
-	fclose(f);
-	ASSERT("Failed fread", was_read > 0);
+  if (was_read > 0)
+    returned[was_read] = '\0';
+  else
+    returned[0] = '\0';
 
-	if (was_read > 0)
-		returned[was_read] = '\0';
-	else
-		returned[0] = '\0';
-
-	ASSERT_STRING_EQUALS(expected, returned);
+  ASSERT_STRING_EQUALS(expected, returned);
 }
 
 /* only a helper, disk creation is properly tested in librbf tests */
-void create_disk(char *name)
-{
-	error_code ec;
+void create_disk(char *name) {
+  error_code ec;
 
-	/* Create disk */
-	unsigned int totalSectors, totalBytes;
-	int clusterSize = 0;
-	ec = _os9_format(name, 0, 80, 18, 18, 2, 256, &clusterSize, "Test LTS", 8, 8,
-			 1, 1, 0, 0, 3, &totalSectors, &totalBytes);
-	ASSERT_EQUALS(0, ec);
+  /* Create disk */
+  unsigned int totalSectors, totalBytes;
+  int clusterSize = 0;
+  ec = _os9_format(name, 0, 80, 18, 18, 2, 256, &clusterSize, "Test LTS", 8, 8,
+                   1, 1, 0, 0, 3, &totalSectors, &totalBytes);
+  ASSERT_EQUALS(0, ec);
 }
 
 /* simple test of EOL auto-detection on a single chunk */
-void test_native2coco()
-{
-	char *newBuffer;
-	u_int newSize;
+void test_native2coco() {
+  char *newBuffer;
+  u_int newSize;
 
-	NativeToCoCo(TEST_LF_DATA, strlen(TEST_LF_DATA), &newBuffer, &newSize);
-	ASSERT_EQUALS(strlen(TEST_COCO_DATA), newSize);
-	ASSERT_MEM_EQUALS(TEST_COCO_DATA, newBuffer, newSize);
+  NativeToCoCo(TEST_LF_DATA, strlen(TEST_LF_DATA), &newBuffer, &newSize);
+  ASSERT_EQUALS(strlen(TEST_COCO_DATA), newSize);
+  ASSERT_MEM_EQUALS(TEST_COCO_DATA, newBuffer, newSize);
 
-	free(newBuffer);
+  free(newBuffer);
 
-	NativeToCoCo(TEST_CRLF_DATA, strlen(TEST_CRLF_DATA), &newBuffer, &newSize);
-	ASSERT_EQUALS(strlen(TEST_COCO_DATA), newSize);
-	ASSERT_MEM_EQUALS(TEST_COCO_DATA, newBuffer, newSize);
+  NativeToCoCo(TEST_CRLF_DATA, strlen(TEST_CRLF_DATA), &newBuffer, &newSize);
+  ASSERT_EQUALS(strlen(TEST_COCO_DATA), newSize);
+  ASSERT_MEM_EQUALS(TEST_COCO_DATA, newBuffer, newSize);
 
-	free(newBuffer);
+  free(newBuffer);
 }
 
 /* unfortunately only tests for current native platform */
-void test_coco2native()
-{
-	char *newBuffer;
-	u_int newSize;
+void test_coco2native() {
+  char *newBuffer;
+  u_int newSize;
 
-	CoCoToNative(TEST_COCO_DATA, strlen(TEST_COCO_DATA), &newBuffer, &newSize);
+  CoCoToNative(TEST_COCO_DATA, strlen(TEST_COCO_DATA), &newBuffer, &newSize);
 #ifdef WIN32
-	ASSERT_EQUALS(strlen(TEST_CRLF_DATA), newSize);
-	ASSERT_MEM_EQUALS(TEST_CRLF_DATA, newBuffer, newSize);
+  ASSERT_EQUALS(strlen(TEST_CRLF_DATA), newSize);
+  ASSERT_MEM_EQUALS(TEST_CRLF_DATA, newBuffer, newSize);
 #else
-	ASSERT_EQUALS(strlen(TEST_LF_DATA), newSize);
-	ASSERT_MEM_EQUALS(TEST_LF_DATA, newBuffer, newSize);
+  ASSERT_EQUALS(strlen(TEST_LF_DATA), newSize);
+  ASSERT_MEM_EQUALS(TEST_LF_DATA, newBuffer, newSize);
 #endif
-	free(newBuffer);
+  free(newBuffer);
 }
 
-int main()
-{
-	RUN(test_native2coco);
-	RUN(test_coco2native);
-	RUN(test_via_disk_image);
+void test_copy_edge_cases() {
+  char buffer[TEST_CHUNKSIZE];
+  int ec;
 
-	return TEST_REPORT();
+  /* copy to invalid path */
+  ec = TSCopyFile("nonexistent.dat", "test.dsk,test.dat", 0, 1, 0, 0, buffer,
+                  TEST_CHUNKSIZE);
+  ASSERT_NEQUALS(0, ec);
+
+  /* copy from nonexistent file */
+  ec = TSCopyFile("test.dsk,nonexistent.dat", "test-out.dat", 0, 1, 0, 0,
+                  buffer, TEST_CHUNKSIZE);
+  ASSERT_NEQUALS(0, ec);
+}
+
+void test_padrom() {
+  FILE *f;
+  error_code ec;
+  char buffer[16];
+  u_int size;
+
+  /* Create a small file "test-pad.dat" with 4 bytes */
+  f = fopen("test-pad.dat", "wb");
+  ASSERT("fopen", f != NULL);
+  fwrite("1234", 1, 4, f);
+  fclose(f);
+
+  /* Pad to 10 bytes with 'X' at the end */
+  ec = TSPadROM("test-pad.dat", 10, 'X', 0);
+  ASSERT_EQUALS(0, ec);
+
+  /* Verify size */
+  f = fopen("test-pad.dat", "rb");
+  ASSERT("fopen", f != NULL);
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  ASSERT_EQUALS(10, size);
+
+  /* Verify content */
+  fseek(f, 0, SEEK_SET);
+  fread(buffer, 1, 10, f);
+  fclose(f);
+  buffer[10] = '\0';
+  ASSERT_STRING_EQUALS("1234XXXXXX", buffer);
+
+  /* Clean up */
+  remove("test-pad.dat");
+
+  /* Test padding at start */
+  f = fopen("test-pad.dat", "wb");
+  fwrite("1234", 1, 4, f);
+  fclose(f);
+
+  /* Pad to 8 bytes with 'Y' at the start */
+  ec = TSPadROM("test-pad.dat", 8, 'Y', 1);
+  ASSERT_EQUALS(0, ec);
+
+  /* Verify content */
+  f = fopen("test-pad.dat", "rb");
+  fread(buffer, 1, 8, f);
+  fclose(f);
+  buffer[8] = '\0';
+  ASSERT_STRING_EQUALS("YYYY1234", buffer);
+
+  remove("test-pad.dat");
+}
+
+int main() {
+  remove("test.dsk");
+  remove("test-1.dat");
+  remove("test-2.dat");
+  remove("test-out.dat");
+
+  RUN(test_native2coco);
+  RUN(test_coco2native);
+  RUN(test_via_disk_image);
+  RUN(test_copy_edge_cases);
+  RUN(test_padrom);
+
+  remove("test.dsk");
+  remove("test-1.dat");
+  remove("test-2.dat");
+  remove("test-out.dat");
+
+  return TEST_REPORT();
 }

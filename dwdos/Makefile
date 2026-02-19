@@ -1,9 +1,10 @@
 
 DEPENDS		= ./Makefile
 
-#AS		= mamou -r -q
-AS		= lwasm -r --pragma=condundefzero
+AS		= lwasm
+AFLAGS		= -r --pragma=condundefzero
 ASOUT		= -o
+RM		= rm -f
 ECHO		= echo
 MAKEWAV		= makewav -r -c
 
@@ -217,7 +218,7 @@ dw4dos_cc3.trk:	dw3dos.asm
 	$(AS) $(ASOUT)$@ $< $(AFLAGS) -DCoCo=3 -DDOSTRACK -DDW4=1
 
 dw4dos_cc2.trk:	dw3dos.asm
-	$(AS) $(ASOUT)$@ $< $(AFLAGS) -DCoCo=2 -DDOSTRACK -DDW4=1
+	$(AS) $(AFLAGS) $(ASOUT)$@ $< $(AFLAGS) -DCoCo=2 -DDOSTRACK -DDW4=1
 
 drivewire.zip: $(ALLOBJS)
 	zip $@ $(ALLOBJS)

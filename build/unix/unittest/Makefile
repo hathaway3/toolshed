@@ -1,15 +1,14 @@
-# Makefile for Unit Tests
 include ../rules.mak
 
 vpath %.c ../../../unittest
 
-LDLIBS += -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb \
-          -L../librbf -L../libnative -L../libmisc -L../libsys \
-          -ltoolshed -lcoco -lcecb -ldecb -lrbf -lnative -lmisc -lsys -lm
-
+# Object files needed by all tests
+TINYTEST_OBJ = tinytest.o
 TESTS = librbftest libdecbtest libcecbtest libtoolshedtest os9commandtest
 
-testall: $(TESTS)
+all: $(TINYTEST_OBJ) $(TESTS)
+
+testall: all
 ifeq (,$(NOTEST))
 	./librbftest
 	./libdecbtest
@@ -18,5 +17,15 @@ ifeq (,$(NOTEST))
 	./os9commandtest
 endif
 
-clean:
-	$(RM) *.o *.dsk *.wav *.cas $(TESTS)
+# Rule to build binaries, linking tinytest.o
+$(TESTS): %: %.o $(TINYTEST_OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# Summarized test report
+test: testall
+	@echo "--------------------------------------------------"
+	@echo "Unit Test Summary"
+	@echo "--------------------------------------------------"
+	@for test in $(TESTS); do \
+		./$$test > /dev/null 2>&1 && echo "$$test: PASSED" || echo "$$test: FAILED"; \
+	done
