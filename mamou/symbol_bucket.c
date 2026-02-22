@@ -8,8 +8,8 @@
  * (C) 2004 Boisy G. Pitre
  ***************************************************************************/
 
-#include "h6309.h"
 #include "mamou.h"
+#include "h6309.h"
 #include "pseudo.h"
 #include "util.h"
 

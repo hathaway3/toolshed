@@ -418,7 +418,6 @@ int main(int argc, char **argv) {
   /* Load buffer with all data from file */
 
   unsigned char data_buffer[255];
-  unsigned char data_buffer[255];
 
   rewind(srec);
 

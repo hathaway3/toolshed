@@ -10,7 +10,7 @@ case "${OS}" in
     Darwin*)    OSTYPE=Mac;;
     MINGW*)     OSTYPE=MinGW;;
     MSYS*)      OSTYPE=MinGW;;
-    *)          OSTYPE="UNKNOWN:${OS}"
+    *)          OSTYPE="UNKNOWN:${OS}";;
 esac
 
 echo "Detected OS: $OSTYPE"
@@ -18,13 +18,13 @@ echo "Detected OS: $OSTYPE"
 install_linux_deps() {
     echo "Checking for FUSE libraries..."
     if [ -f /etc/debian_version ]; then
-        if ! dpkg -s libfuse-dev >/dev/null 2>&1; then
-            echo "Installing libfuse-dev..."
+        if ! dpkg -s libfuse-dev build-essential >/dev/null 2>&1; then
+            echo "Installing libfuse-dev and build-essential..."
             sudo apt-get update && sudo apt-get install -y libfuse-dev build-essential
         fi
     elif [ -f /etc/redhat-release ]; then
-        if ! rpm -q fuse-devel >/dev/null 2>&1; then
-            echo "Installing fuse-devel..."
+        if ! rpm -q fuse-devel make gcc >/dev/null 2>&1; then
+            echo "Installing fuse-devel and build tools..."
             sudo yum install -y fuse-devel make gcc
         fi
     else
@@ -34,13 +34,13 @@ install_linux_deps() {
 
 install_mac_deps() {
     echo "Checking for Homebrew..."
-    if ! command -v brew &> /dev/null; then
+    if ! command -v brew > /dev/null 2>&1; then
         echo "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
     echo "Checking for macfuse..."
-    if ! brew list macfuse &> /dev/null; then
+    if ! brew list macfuse > /dev/null 2>&1; then
         echo "Installing macfuse..."
         brew install macfuse
     fi
@@ -52,20 +52,20 @@ case "$OSTYPE" in
         install_linux_deps
         echo "Building and installing..."
         # Running make install which might require sudo for /usr/local/bin
-        if [ -w /usr/local/bin ]; then
+        if [ -w /usr/local/bin ] && [ -w /usr/local/share/doc/toolshed ]; then
              make -C build/unix install
         else
-             echo "Sudo access required to install to /usr/local/bin"
+             echo "Sudo access required to install to /usr/local"
              sudo make -C build/unix install
         fi
         ;;
     Mac)
         install_mac_deps
         echo "Building and installing..."
-        if [ -w /usr/local/bin ]; then
+        if [ -w /usr/local/bin ] && [ -w /usr/local/share/doc/toolshed ]; then
              make -C build/unix install
         else
-             echo "Sudo access required to install to /usr/local/bin"
+             echo "Sudo access required to install to /usr/local"
              sudo make -C build/unix install
         fi
         ;;

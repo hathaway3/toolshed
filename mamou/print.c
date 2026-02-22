@@ -55,6 +55,10 @@ void print_line(assembler *as, int override, char infochar, int counter) {
     /* 1. Print line number. */
     snprintf(Tmp_buff, MAXBUF, "%05d ", (int)as->current_file->current_line);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+
     strncat(Line_buff, Tmp_buff, MAXBUF - strlen(Line_buff) - 1);
 
     /* TODO! warnings, errors will go here later */
@@ -97,6 +101,7 @@ void print_line(assembler *as, int override, char infochar, int counter) {
     }
 
     strncat(Line_buff, "   ", MAXBUF - strlen(Line_buff) - 1);
+#pragma GCC diagnostic pop
   }
 
   as->current_line++;
@@ -124,7 +129,10 @@ void print_line(assembler *as, int override, char infochar, int counter) {
       if (as->line.comment[0] == '*') {
         as->line.comment[0] = ';';
       } else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
         snprintf(tmp, MAXBUF + 1, "; %s", as->line.comment);
+#pragma GCC diagnostic pop
         strncpy(as->line.comment, tmp, MAXBUF - 1);
         as->line.comment[MAXBUF - 1] = EOS;
       }
@@ -139,6 +147,10 @@ void print_line(assembler *as, int override, char infochar, int counter) {
       as->line.Op[i] = toupper((unsigned char)as->line.Op[i]);
     }
   }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wformat-truncation"
 
   if (as->line.type == LINETYPE_COMMENT)
   //	if (*as->line.label == EOS && *as->line.Op == EOS && *as->line.operand
@@ -187,6 +199,8 @@ void print_line(assembler *as, int override, char infochar, int counter) {
       strncat(Line_buff, Tmp_buff, MAXBUF - strlen(Line_buff) - 1);
     }
   }
+
+#pragma GCC diagnostic pop
 
   /* Print out the built up line. */
   strncpy(Tmp_buff, Line_buff, as->o_pagewidth);

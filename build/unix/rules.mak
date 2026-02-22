@@ -23,7 +23,7 @@ CFLAGS		+= -Dunix -DUNIX -O3 -I. -I$(INCDIR) -Wall -DTOOLSHED_VERSION=\"$(VERSIO
 LDFLAGS		+= -L../libtoolshed -L../libcoco -L../libnative -L../libcecb -L../librbf -L../libdecb -L../libmisc -L../libsys
 
 # Default libraries to link against
-LDLIBS		+= -ltoolshed -lcoco -lnative -lcecb -lrbf -ldecb -lmisc -lsys -lm
+LDLIBS		+= -ltoolshed -lcoco -lcecb -lrbf -ldecb -lnative -lmisc -lsys -lm
 
 ifneq ($(WIN),)
 SUFEXE		= .exe
