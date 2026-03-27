@@ -167,7 +167,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 	coco_dir_entry dirent;
 	char command[1024];
 	char sourcePathList[1024];
-	coco_path_id sourcePath;
+	coco_path_id sourcePath = NULL;
 	char *src_path_separator, *dst_path_separator;
 	_path_type type;
 
@@ -214,7 +214,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 		    && (strncmp((const char *) direntry_name_buffer, "..", 3)
 			!= 0))
 		{
-			coco_path_id filePath;
+			coco_path_id filePath = NULL;
 			int isdir = 1;
 
 			sprintf(sourcePathList, "%s%s%s", source,
@@ -230,13 +230,15 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 						FAM_READ);
 				if (ec != 0)
 				{
-					_coco_close(sourcePath);
-
-					return (ec);
+					goto clean;
 				}
 			}
 
-			_coco_close(filePath);
+			if (filePath != NULL)
+			{
+				_coco_close(filePath);
+				filePath = NULL;
+			}
 
 			if (isdir == 1)
 			{
@@ -282,9 +284,7 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 					ec = system(command);
 					if (ec != 0)
 					{
-						_coco_close(sourcePath);
-
-						return (ec);
+						goto clean;
 					}
 				}
 
@@ -299,8 +299,8 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 			else
 			{
 				/* We've encountered a file -- just copy */
-				char ropt[6], bopt[32], *escaped_source,
-					*escaped_dest;
+				char ropt[6], bopt[32], *escaped_source = NULL,
+					*escaped_dest = NULL;
 
 				ropt[0] = 0;
 				bopt[0] = 0;
@@ -360,9 +360,9 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 					ec = system(command);
 					if (ec != 0)
 					{
-						_coco_close(sourcePath);
-
-						return (ec);
+						if (escaped_source != NULL) free(escaped_source);
+						if (escaped_dest != NULL) free(escaped_dest);
+						goto clean;
 					}
 				}
 
@@ -382,7 +382,8 @@ error_code do_dsave(char *pgmname, char *source, char *target, int execute,
 	/* presumably used for debugging */
 	(void) level;
 
-	_coco_close(sourcePath);
+clean:
+	if (sourcePath != NULL) _coco_close(sourcePath);
 
 	return (ec);
 }

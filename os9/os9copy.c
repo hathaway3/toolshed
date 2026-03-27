@@ -39,7 +39,7 @@ int os9copy(int argc, char *argv[]) {
   int rewrite = 0;
   char df[256];
   int owner = 0, owner_set = 0;
-  char *buffer;
+  char *buffer = NULL;
   u_int buffer_size = 32768;
 
   /* 1. Walk command line for options. */
@@ -123,15 +123,12 @@ int os9copy(int argc, char *argv[]) {
 
   if (count == 0) {
     show_help(helpMessage);
-    free(buffer);
-    buffer = NULL;
-    return 0;
+    goto clean;
   }
 
   /* 4. Walk backwards and get the destination first. */
 
   for (i = argc - 1; i > 0; i--) {
-    error_code ec;
     coco_path_id tmp_path;
 
     if (argv[i][0] != '-') {
@@ -140,8 +137,6 @@ int os9copy(int argc, char *argv[]) {
       /* 1. Determine if dest is native */
 
       ec = _coco_open(&tmp_path, desttarget, FAM_DIR | FAM_READ);
-
-      //                      _coco_gs_pathtype(desttarget, &type);
 
       if (ec == 0) {
         targetDirectory = YES;
@@ -205,9 +200,7 @@ int os9copy(int argc, char *argv[]) {
   if (targetDirectory == NO && count > 2) {
     printf("Error: two or more sources requires target to be a directory.\n\n");
     show_help(helpMessage);
-    free(buffer);
-    buffer = NULL;
-    return (0);
+    goto clean;
   }
 
   /* Now look for the source files  */
@@ -256,11 +249,12 @@ int os9copy(int argc, char *argv[]) {
     }
   }
 
+clean:
   if (buffer != NULL) {
     free(buffer);
     buffer = NULL;
   }
-  return 0;
+  return ec;
 }
 
 static char *ExtractFilename(char *path) {

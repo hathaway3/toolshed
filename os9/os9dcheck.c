@@ -141,10 +141,10 @@ int os9dcheck(int argc, char *argv[])
 static int do_dcheck(char **argv, char *p)
 {
 	error_code ec = 0;
-	os9_path_id os9_path;
+	os9_path_id os9_path = NULL;
 	int cluster_size;
-	unsigned char *secondaryBitmap;
-	char *newName;
+	unsigned char *secondaryBitmap = NULL;
+	char *newName = NULL;
 	char os9pathlist[256];
 	double size;
 
@@ -177,7 +177,7 @@ static int do_dcheck(char **argv, char *p)
 	{
 		fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec,
 			os9pathlist);
-		return (ec);
+		goto clean;
 	}
 
 	OS9StringToCString(os9_path->lsn0->dd_nam);
@@ -190,7 +190,8 @@ static int do_dcheck(char **argv, char *p)
 	if (cluster_size == 0)
 	{
 		printf("Disk format error: Sectors per cluster cannot be zero.\n");
-		return -1;
+		ec = -1;
+		goto clean;
 	}
 
 	if (cluster_size == 1)
@@ -214,7 +215,8 @@ static int do_dcheck(char **argv, char *p)
 	if (secondaryBitmap == NULL)
 	{
 		printf("Failed to allocate memory for the secondary bitmap.\n");
-		return -1;
+		ec = -1;
+		goto clean;
 	}
 
 	memset(secondaryBitmap, 0, (int3(os9_path->lsn0->dd_tot) + 1) / 8);
@@ -234,8 +236,13 @@ static int do_dcheck(char **argv, char *p)
 
 	printf("Building secondary allocation map...\n");
 	newName = strcatdup(p, ",.", "");
-	BuildSecondaryAllocationMap(os9_path, int3(os9_path->lsn0->dd_dir),
+	ec = BuildSecondaryAllocationMap(os9_path, int3(os9_path->lsn0->dd_dir),
 				    newName, secondaryBitmap);
+
+	if (ec != 0)
+	{
+		goto clean;
+	}
 
 	printf("Comparing primary and secondary allocation maps...\n");
 	CompareAllocationMap(os9_path->bitmap, secondaryBitmap,
@@ -249,12 +256,6 @@ static int do_dcheck(char **argv, char *p)
 			PathlistsForQuestionableClusters();
 		}
 	}
-	else
-	{
-		FreeQuestionableMemory();
-	}
-
-	free(secondaryBitmap);
 
 	if (sOption == 0)
 	{
@@ -275,8 +276,6 @@ static int do_dcheck(char **argv, char *p)
 		}
 	}
 
-	_os9_close(os9_path);
-
 	if (gFolderCount == 1)
 	{
 		printf("1 directory\n");
@@ -287,6 +286,12 @@ static int do_dcheck(char **argv, char *p)
 	}
 
 	printf("%d files\n", gFileCount);
+
+clean:
+	if (newName != NULL) free(newName);
+	if (secondaryBitmap != NULL) free(secondaryBitmap);
+	FreeQuestionableMemory();
+	if (os9_path != NULL) _os9_close(os9_path);
 
 	return (ec);
 }
@@ -301,11 +306,11 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 					      unsigned char *secondaryBitmap)
 {
 	error_code ec = 0;
-	fd_stats *dir_fd, *file_fd;
+	fd_stats *dir_fd = NULL, *file_fd = NULL;
 	u_int dd_tot, fd_siz, count, i, j, k;
-	os9_dir_entry *dEnt;	/* Each entry is 32 bytes long */
+	os9_dir_entry *dEnt = NULL;	/* Each entry is 32 bytes long */
 	Fd_seg theSeg;
-	char *newPath;
+	char *newPath = NULL;
 	int bps = os9_path->bps;
 
 	/* Check if this directory has already been drilled into */
@@ -330,14 +335,15 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 	if (dir_fd == NULL)
 	{
 		printf("Out of memory, terminating (001).\n");
-		exit(-1);
+		ec = 1;
+		goto clean;
 	}
 
 	if (read_lsn(os9_path, dir_lsn, dir_fd) != bps)
 	{
-		printf("Sector wrong size, terminating (001).\n");
-		printf("LSN: %d\n", dir_lsn);
-		exit(-1);
+		printf("Sector wrong size (LSN: %d).\n", dir_lsn);
+		ec = 1;
+		goto clean;
 	}
 
 	/* Parse segment list of directory, report any problems */
@@ -359,12 +365,12 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 		{
 			theSeg = &(dir_fd->fd_seg[i]);
 
-			if (i > NUM_SEGS)
+			if (i >= NUM_SEGS)
 			{
 				break;
 			}
 
-			if (count > fd_siz)
+			if (count >= fd_siz)
 			{
 				break;
 			}
@@ -378,7 +384,7 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 
 			for (j = 0; j < int2(theSeg->num); j++)
 			{
-				if (count > fd_siz)
+				if (count >= fd_siz)
 					break;
 
 				if (int3(theSeg->lsn) + j > dd_tot)
@@ -393,17 +399,17 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 				if (dEnt == NULL)
 				{
 					printf("Out of memory, terminating (002).\n");
-					exit(-1);
+					ec = 1;
+					goto clean;
 				}
 
 				if (read_lsn
 				    (os9_path, int3(theSeg->lsn) + j,
 				     dEnt) != bps)
 				{
-					int temp = int3(theSeg->lsn) + j;
-
-					printf("Sector wrong size, terminating (002).\nLSN: %d\n", temp);
-					exit(-1);
+					printf("Sector wrong size (LSN: %d).\n", (int)int3(theSeg->lsn) + (int)j);
+					ec = 1;
+					goto clean;
 				}
 
 				for (k = 0; k < (bps / sizeof(os9_dir_entry));
@@ -443,6 +449,7 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 					{
 						printf("File: %s, contains bad LSN\n", newPath);
 						free(newPath);
+						newPath = NULL;
 						continue;
 					}
 
@@ -450,17 +457,17 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 					if (file_fd == NULL)
 					{
 						printf("Out of memory, terminating (003).\n");
-						exit(-1);
+						ec = 1;
+						goto clean;
 					}
 
 					if (read_lsn
 					    (os9_path, int3(dEnt[k].lsn),
 					     file_fd) != bps)
 					{
-						printf("Sector wrong size, terminating (003).\n");
-						printf("LSN: %d\n",
-						       int3(dEnt[k].lsn));
-						exit(-1);
+						printf("Sector wrong size (LSN: %d).\n", int3(dEnt[k].lsn));
+						ec = 1;
+						goto clean;
 					}
 
 					/* If actually a directory? */
@@ -483,22 +490,29 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 						ec = BuildSecondaryAllocationMap(os9_path, int3(dEnt[k].lsn), newPath, secondaryBitmap);
 						if (ec != 0)
 						{
-							return (ec);
+							goto clean;
 						}
 					}
 
 					free(file_fd);
+					file_fd = NULL;
 					free(newPath);
+					newPath = NULL;
 				}
 
 				free(dEnt);
+				dEnt = NULL;
 			}
 
 			i++;
 		}
 	}
 
-	free(dir_fd);
+clean:
+	if (dir_fd != NULL) free(dir_fd);
+	if (file_fd != NULL) free(file_fd);
+	if (dEnt != NULL) free(dEnt);
+	if (newPath != NULL) free(newPath);
 
 	return (ec);
 }

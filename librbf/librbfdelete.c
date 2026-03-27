@@ -13,6 +13,7 @@
 #include "os9path.h"
 #include "cococonv.h"
 #include "util.h"
+#include "debug.h"
 
 
 u_char DecrementLinkCount(os9_path_id path, int fd_lsn);
@@ -22,7 +23,7 @@ static int _os9_freefile(char *filePath, u_char * bitmap);
 error_code _os9_delete_directory(char *pathlist)
 {
 	error_code ec;
-	os9_path_id fold_path;
+	os9_path_id fold_path = NULL;
 	fd_stats fdbuf;
 
 	/* open a path to the device */
@@ -38,7 +39,7 @@ error_code _os9_delete_directory(char *pathlist)
 		u_int i = 0;
 		os9_dir_entry dentry;
 		char *dirpath;
-		os9_path_id path2;
+		os9_path_id path2 = NULL;
 
 		ec = _os9_readdir(fold_path, &dentry);
 
@@ -141,7 +142,7 @@ error_code _os9_delete_directory(char *pathlist)
 error_code _os9_delete(char *pathlist)
 {
 	error_code ec = 0;
-	os9_path_id parent_path;
+	os9_path_id parent_path = NULL;
 	char *filename = NULL;
 	int deleted = 0;
 
@@ -158,6 +159,7 @@ error_code _os9_delete(char *pathlist)
 		 */
 
 		_os9_close(parent_path);
+		parent_path = NULL;
 
 		return EOS_IC;
 	}
@@ -170,9 +172,7 @@ error_code _os9_delete(char *pathlist)
 
 	if (ec != 0)
 	{
-		if (filename != NULL)
-			free(filename);
-		return (ec);
+		goto clean;
 	}
 
 
@@ -180,18 +180,14 @@ error_code _os9_delete(char *pathlist)
 
 	if (!strcasecmp(filename, "."))
 	{
-		free(filename);
-		_os9_close(parent_path);
-
-		return EOS_IA;
+		ec = EOS_IA;
+		goto clean;
 	}
 
 	if (!strcasecmp(filename, ".."))
 	{
-		free(filename);
-		_os9_close(parent_path);
-
-		return EOS_IA;
+		ec = EOS_IA;
+		goto clean;
 	}
 
 
@@ -261,14 +257,14 @@ error_code _os9_delete(char *pathlist)
 		}
 	}
 
-	free(filename);
-	_os9_close(parent_path);
-
-	if (deleted == 0)
+	if (deleted == 0 && ec == 0)
 	{
 		ec = EOS_PNNF;
 	}
 
+clean:
+	if (filename != NULL) free(filename);
+	if (parent_path != NULL) _os9_close(parent_path);
 
 	return ec;
 }
@@ -297,7 +293,7 @@ u_char DecrementLinkCount(os9_path_id path, int fd_lsn)
 
 static int _os9_freefile(char *filePath, u_char * bitmap)
 {
-	os9_path_id path;
+	os9_path_id path = NULL;
 	fd_stats fdbuf;
 	Fd_seg seg;
 	unsigned int spc;
@@ -306,7 +302,14 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 
 
 	ec = _os9_open(&path, filePath, FAM_READ);
+	if (ec != 0) return ec;
+
 	ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
+	if (ec != 0)
+	{
+		_os9_close(path);
+		return ec;
+	}
 
 	spc = path->spc;
 

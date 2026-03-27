@@ -1,0 +1,47 @@
+// Project Context: ToolShed (Tandy CoCo / Dragon 32/64 Toolset)
+// Primary Developer: jimhathaway
+// Core Tech: C (Libraries/Tools), 6809 Assembly (Firmware via LWTOOLS)
+
+// MANDATORY WORKFLOWS
+- ALWAYS run `git pull` and `git status` BEFORE any work.
+- DO NOT start a task without an implementation plan (unless trivial).
+- STRICTLY follow LLM routing rules from `local-preference.md`:
+  - Plan/Architect: Gemini 3 (Cloud)
+  - Execute/Boilerplate/Tests: Gemma 3 (Local)
+  - Context/Batch/Huge Logs: Gemma 3 (Remote Server)
+
+// TECHNICAL DIRECTIVES
+- Prioritize OS9 Path and RBF Caching logic in `librbf`.
+- Follow `libtoolshed`, `libdecb`, and `libcecb` conventions.
+- Use `lwasm` for 6809 firmware; avoid legacy assemblers.
+- Use the central `tests/` directory for any new tests.
+
+// MEMORY SAFETY (CRITICAL — prevents Abort trap: 6)
+- NULL-initialize ALL os9_path_id pointers at declaration.
+- Set pointer to NULL IMMEDIATELY after every term_pd(), _os9_close(), or free().
+- Use "Single Exit" pattern with `goto clean;` — never free at multiple return points.
+- Use DEBUG_PRINT() from `include/debug.h` for allocation tracing (no-op without -DDEBUG).
+
+// TESTING CONVENTIONS
+- Test framework: tinytest (header in `unittest/tinytest.h`).
+- New tests go in `tests/`; build system has dual vpath for `unittest/` and `tests/`.
+- Any librbf pointer change MUST include: NULL-close test, failed-open pointer test, 50x stress test.
+- Run: `cd build/unix/unittest && make test` to verify all suites.
+
+// IDE & TOOLING
+- `.clangd` uses RELATIVE paths only — never hardcode `/Users/username/...`.
+- clangd lint errors about missing headers that compile fine with `-Werror` are IDE config, not source bugs.
+
+// DESIGN DIRECTIVES
+- Web UI: MUST use a "Premium Retro" CRT Terminal aesthetic.
+- Aesthetics: High-end, polished, modern glassmorphism + vintage phosphor effects.
+- Images: Generate high-quality assets via `generate_image`, never use placeholders.
+
+// PERFORMANCE
+- FS changes must be verified with sector read/write stress tests.
+- Latency and sector-aware caching (LSN0) are critical for emulation accuracy.
+
+// DOCUMENTATION
+- References: `AGENT_RULES.md` for detailed guidelines.
+- Build System: Use root `Makefile` (delegates to `build/unix`).
+

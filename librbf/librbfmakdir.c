@@ -19,8 +19,8 @@
 error_code _os9_makdir(char *pathlist)
 {
 	error_code ec = 0;
-	os9_path_id parent_path, dir_path;
-	char *filename;
+	os9_path_id parent_path = NULL, dir_path = NULL;
+	char *filename = NULL;
 	int parentLSN;
 	os9_dir_entry newEntry;
 	char t_path[256];

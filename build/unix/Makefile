@@ -38,6 +38,9 @@ APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
 all:
 	$(foreach dir, $(DIRS), (cd $(dir); $(MAKE));)
 
+test: all
+	$(MAKE) -C unittest test
+
 install: all
 	$(INSTALL) -d $(INSTALLDIR) $(DOCDIR)
 	$(INSTALL) $(APPS) $(INSTALLDIR)

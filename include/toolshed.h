@@ -1,3 +1,6 @@
+#ifndef _TOOLSHED_H
+#define _TOOLSHED_H
+
 /********************************************************************
  * toolshed.h - ToolShed global header
  *
@@ -6,7 +9,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <cocopath.h>
+#include "cocopath.h"
 
 #define TS_MAXSTR	128
 
@@ -36,3 +39,5 @@ error_code TSDECBFree(char *file, u_int *free_granules);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _TOOLSHED_H */

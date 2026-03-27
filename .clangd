@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - -Iinclude
+    - -Dunix
+    - -DUNIX
+    - -D_FILE_OFFSET_BITS=64

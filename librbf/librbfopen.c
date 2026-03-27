@@ -18,6 +18,7 @@
 #include "os9path.h"
 #include "cococonv.h"
 #include "cocosys.h"
+#include "debug.h"
 #include "util.h"
 
 
@@ -41,6 +42,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		       int perms)
 {
 	error_code ec = 0;
+	*path = NULL;
 
 
 	/* 1. Allocate & initialize path descriptor. */
@@ -60,6 +62,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -84,26 +87,22 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 	{
 		fd_stats newFD;
 		time_t now;
-//        struct tm     *tm;
 		int newLSN;
-		char *filename;
-		os9_path_id parent_path;
+		char *filename = NULL;
+		os9_path_id parent_path = NULL;
 		os9_dir_entry newDEntry;
 
-
 		term_pd(*path);
+		*path = NULL;
 
 	      aa:
-		filename = NULL;
 		ec = _os9_open_parent_directory(&parent_path, pathlist,
 						FAM_DIR | FAM_WRITE,
 						&filename);
 
 		if (ec != 0)
 		{
-			if (filename != NULL)
-				free(filename);
-			return ec;
+			goto clean;
 		}
 
 
@@ -113,10 +112,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		if (ec != 0)
 		{
-			free(filename);
-			_os9_close(parent_path);
-
-			return ec;
+			goto clean;
 		}
 
 
@@ -131,28 +127,24 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 			 */
 
 			_os9_close(parent_path);
+			parent_path = NULL;
 
 			ec = _os9_delete(pathlist);
 
 			if (ec == 0)
 			{
 				free(filename);
+				filename = NULL;
 				goto aa;
 			}
 		}
 
 		if (ec != 0)
 		{
-			free(filename);
-
-			_os9_close(parent_path);
-
-			return ec;
+			goto clean;
 		}
 
 		now = time(NULL);
-//        tm = localtime(&now);
-
 
 		/* 3. Populate file descriptor. */
 
@@ -176,10 +168,8 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		if (newLSN < 0)
 		{
-			free(filename);
-			_os9_close(parent_path);
-
-			return EOS_DF;
+			ec = EOS_DF;
+			goto clean;
 		}
 
 		/* 5. If our cluster size > 1, add this cluster and leftover count
@@ -201,6 +191,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		memset(&newDEntry, 0, sizeof(os9_dir_entry));
 		strcpy((char *) &(newDEntry.name), filename);
 		free(filename);
+		filename = NULL;
 		CStringToOS9String((u_char *) & (newDEntry.name));
 		_int3(newLSN, newDEntry.lsn);
 
@@ -225,6 +216,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 			if (ec != 0)
 			{	/* Error */
+				break;
 			}
 
 			if (dentry.name[0] == '\0')
@@ -235,6 +227,10 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 			}
 		}
 
+		if (ec != 0 && ec != EOS_EOF)
+		{
+			goto clean;
+		}
 
 		/* 8. Write the directory entry back to the image. */
 
@@ -243,18 +239,33 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		if (ec != 0)
 		{
 			_os9_delbit(parent_path->bitmap, newLSN, 1);
-			_os9_close(parent_path);
-
-			return ec;
+			goto clean;
 		}
 
 		ec = _os9_close(parent_path);
+		parent_path = NULL;
 
 		if (ec != 0)
 		{		/* Error */
+			goto clean;
 		}
 
 		return (_os9_open(path, pathlist, mode));
+
+	clean:
+		if (filename != NULL)
+			free(filename);
+
+		if (parent_path != NULL)
+			_os9_close(parent_path);
+
+		if (*path != NULL)
+		{
+			_os9_close(*path);
+			*path = NULL;
+		}
+
+		return ec;
 	}
 
 
@@ -281,8 +292,9 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 {
 	error_code ec = 0;
+	*path = NULL;
 	char *p;
-	char *tmppathlist;
+	char *tmppathlist = NULL;
 
 
 	/* 1. Strip off FAM_NOCREATE if passed -- irrelavent to _os9_open. */
@@ -307,6 +319,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -329,7 +342,6 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	{
 		/* 1. Open a path to the image file. */
-
 		char *open_mode;
 
 		if (mode & FAM_WRITE)
@@ -346,9 +358,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		if ((*path)->fd == NULL)
 		{
 			ec = UnixToCoCoError(errno);
-			term_pd(*path);
-
-			return ec;
+			goto clean;
 		}
 	}
 
@@ -359,10 +369,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		fclose((*path)->fd);
-		term_pd(*path);
-
-		return ec;
+		goto clean;
 	}
 
 
@@ -372,13 +379,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		if ((*path)->bitmap)
-			free((*path)->bitmap);
-		term_lsn0(*path);
-		fclose((*path)->fd);
-		term_pd(*path);
-
-		return ec;
+		goto clean;
 	}
 
 
@@ -388,6 +389,8 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 	{
 		return 0;
 	}
+
+	tmppathlist = NULL;
 
 
 	/* 9. Walk the pathlist to find the FD LSN of the last element
@@ -448,21 +451,11 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		free(tmppathlist);
-
-		free((*path)->bitmap);
-		term_lsn0(*path);
-
-		fclose((*path)->fd);
-
-		term_pd(*path);
-
 		if (ec == EOS_EOF)
 		{
-			return EOS_PNNF;
+			ec = EOS_PNNF;
 		}
-
-		return ec;
+		goto clean;
 	}
 
 
@@ -491,36 +484,38 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		if (andresult != mode
 		    || ((fd_sector.fd_att & FAM_DIR) != (mode & FAM_DIR)))
 		{
-			free(tmppathlist);
-
-			free((*path)->bitmap);
-			term_lsn0(*path);
-
-			fclose((*path)->fd);
-
-			term_pd(*path);
-
-			return EOS_FNA;
+			ec = EOS_FNA;
+			goto clean;
 		}
 	}
 
 	free(tmppathlist);
 
-
 	return 0;
+
+clean:
+	if (tmppathlist != NULL)
+	{
+		free(tmppathlist);
+	}
+
+	if (*path != NULL)
+	{
+		_os9_close(*path);
+		*path = NULL;
+	}
+
+	return ec;
 }
 
-
-/* _os9_open_parent_directory()
- *
- * Open a path to the file's directory
- */
 error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
 				      int mode, char **filename)
 {
 	char *pathcopy, *lastPathComponent, *lastPathSeperator;
 
 	/* 1. Generate path to parent. */
+	DEBUG_PRINT("Initializing *path to NULL");
+	*path = NULL;
 
 	pathcopy = strdup(pathlist);
 
@@ -556,57 +551,41 @@ error_code _os9_close(os9_path_id path)
 	int pad_size, i;
 	char pad = 0xff;
 
+	if (path == NULL)
+		return 0;
+
 	if (path->fd != NULL)
 	{
 		/* 1. This is a valid path. */
 
+		if (path->israw == 0)
 		{
-			if (path->israw == 0)
-			{
-				_os9_truncate_seg_list(path);
-			}
-
-			term_bitmap(path);
-			term_lsn0(path);
-
-			/* 1. Make sure file length is an exact multiple of 256. */
-			/* Extend file length if not */
-
-			fseek(path->fd, 0, SEEK_END);
-			pad_size = 256 - (ftell(path->fd) % 256);
-			if (pad_size == 256)
-			{
-				pad_size = 0;
-			}
-
-			for (i = 0; i < pad_size; i++)
-			{
-				fwrite(&pad, 1, 1, path->fd);
-			}
-
-			fclose(path->fd);
+			_os9_truncate_seg_list(path);
 		}
-#if 0
-		else
+
+		term_bitmap(path);
+		term_lsn0(path);
+
+		/* 1. Make sure file length is an exact multiple of 256. */
+		/* Extend file length if not */
+
+		fseek(path->fd, 0, SEEK_END);
+		pad_size = 256 - (ftell(path->fd) % 256);
+		if (pad_size == 256)
 		{
-			if (path->mode & FAM_DIR)
-			{
-#if defined(WIN32)
-				path->dirhandle = 0;
-#else
-				closedir(path->dirhandle);
-#endif
-			}
-			else
-			{
-				fclose(path->fd);
-			}
+			pad_size = 0;
 		}
-#endif
 
-		term_pd(path);
+		for (i = 0; i < pad_size; i++)
+		{
+			fwrite(&pad, 1, 1, path->fd);
+		}
+
+		fclose(path->fd);
+		path->fd = NULL;
 	}
 
+	term_pd(path);
 
 	return 0;
 }
@@ -829,6 +808,7 @@ static int init_pd(os9_path_id * path, int mode)
 	/* 1. Allocate path structure and initialize it. */
 
 	*path = malloc(sizeof(struct _os9_path_id));
+    printf("DEB: init_pd allocated path %p\n", *path);
 
 	if (*path == NULL)
 	{
@@ -853,11 +833,13 @@ static int term_pd(os9_path_id path)
 	/* 1. Deallocate path structure. */
 	if (path->imgfile != NULL)
 	{
+        printf("DEB: term_pd freeing imgfile %p\n", path->imgfile);
 		free(path->imgfile);
 	}
 
 	if (path->pathlist != NULL)
 	{
+        printf("DEB: term_pd freeing pathlist %p\n", path->pathlist);
 		free(path->pathlist);
 	}
 

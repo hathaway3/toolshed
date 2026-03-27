@@ -85,7 +85,7 @@ error_code _os9_gs_fd(os9_path_id path, int count, fd_stats * fdbuf)
 error_code _os9_gs_fd_pathlist(char *pathlist, int count, fd_stats * fdbuf)
 {
 	error_code ec = 0;
-	os9_path_id path;
+	os9_path_id path = NULL;
 
 	/* Open a path to the pathlist */
 

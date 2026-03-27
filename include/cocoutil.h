@@ -1,3 +1,6 @@
+#ifndef _COCOUTIL_H
+#define _COCOUTIL_H
+
 /********************************************************************
  * cocoutil.h - CoCo Utility header file
  *
@@ -15,7 +18,7 @@ extern "C" {
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <cocotypes.h>
+#include "cocotypes.h"
 
 /* Function prototypes for supported CoCo commands are here */
 
@@ -46,3 +49,5 @@ void show_help(char **helpMessage);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _COCOUTIL_H */

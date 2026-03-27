@@ -1,3 +1,6 @@
+#ifndef _ROF_H
+#define _ROF_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -121,3 +124,5 @@ typedef struct
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _ROF_H */

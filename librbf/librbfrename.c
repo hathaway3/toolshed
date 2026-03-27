@@ -26,7 +26,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name,
 			  os9_dir_entry * dentry)
 {
 	error_code ec = 0;
-	os9_path_id parent_path;
+	os9_path_id parent_path = NULL;
 	char *filename = NULL;
 
 	if (strcasecmp(new_name, ".") == 0

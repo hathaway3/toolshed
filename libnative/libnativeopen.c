@@ -139,6 +139,8 @@ error_code _native_open(native_path_id * path, char *pathlist, int mode)
 		if (ec != 0)
 		{
 			term_pd(*path);
+			*path = NULL;
+
 			return UnixToCoCoError(errno);
 		}
 
@@ -152,6 +154,7 @@ error_code _native_open(native_path_id * path, char *pathlist, int mode)
 		else
 		{
 			term_pd(*path);
+			*path = NULL;
 
 			ec = EOS_BMODE;
 		}
