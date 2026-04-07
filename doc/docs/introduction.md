@@ -27,6 +27,9 @@ Here's a quick look at the key tools in your shed:
 - **`os9`**: Your Swiss Army knife for manipulating OS-9 formatted disk images.
 - **`decb`**: The go-to tool for handling RSDOS (Disk BASIC) disk images.
 - **`cecb`**: Perfect for managing Color BASIC and Micro Color BASIC cassette files.
-- **`mamou`**: The classic relocatable macro assembler for 6809/6309 development.
+- **`mamou` & `casm`**: Classic 6809/6309 assemblers for development.
+- **`dis68`**: A specialized disassembler for 68000 modules.
+- **`makewav`**: Effortlessly convert your code into audio WAV files for real hardware.
 - **`ar2`**: An efficient archiver utility originally by Carl Kreider.
-- **`cocofuse`**: A FUSE-based file system that lets you mount CoCo disk images directly on your computer!
+- **`lst2cmt`**: Convert LWASM listing files to MAME debugger comments.
+- **`cocofuse`**: A FUSE-based tool to mount CoCo disk images directly on your modern computer!

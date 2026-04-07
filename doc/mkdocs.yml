@@ -36,14 +36,18 @@ nav:
       - tools/decb.md
       - tools/cecb.md
       - tools/cocofuse.md
+      - tools/makewav.md
     - Assemblers & Compilers:
       - tools/casm.md
       - tools/mamou.md
+      - tools/dis68.md
       - tools/c3.md
       - reference/c3-compiler.md
     - Utilities:
       - tools/utilities.md
       - tools/conversion.md
+      - tools/lst2cmt.md
+      - tools/tocgen.md
   - Technical Reference:
     - reference/libraries.md
     - reference/firmware.md

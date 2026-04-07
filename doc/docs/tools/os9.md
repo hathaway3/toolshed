@@ -253,6 +253,9 @@ Creates an exact copy of a file on either an RBF disk image or on the host file 
 | `-o` | add reference and local offset info |
 | `-a` | all of the above |
 
+> [!NOTE]
+> **Note on RDUMP**: This utility is primarily for 6809 relocatable object files. While documented here as a subcommand, it may not be included in all builds of the `os9` tool by default.
+
 ---
 
 ### RENAME - Give a file a new filename

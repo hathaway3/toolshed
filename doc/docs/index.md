@@ -26,12 +26,16 @@ Our toolset is organized into several specialized utilities:
     *   [os9](tools/os9.md): For OS-9/RBF formatted disk images.
     *   [decb](tools/decb.md): For RSDOS (Disk BASIC) disk images.
     *   [cecb](tools/cecb.md): For cassette images (WAV, CAS, C10).
+    *   [makewav](tools/makewav.md): Create audio WAV files from binaries.
 *   **Archiving & Utilities**:
     *   [ar2](tools/utilities.md#ar2-archiver): Lempel-Zev based archiver.
     *   [cocofuse](tools/cocofuse.md): Mount disk images as local filesystems.
-*   **Development**:
+    *   [tocgen](tools/tocgen.md): Table of contents generator for Sierra AGI.
+*   **Development & Disassembly**:
     *   [casm](tools/casm.md) & [mamou](tools/mamou.md): Assemblers for 6809/6309.
+    *   [dis68](tools/dis68.md): A disassembler for 68000 modules.
     *   [c3](tools/c3.md): The C3 C Compiler.
+    *   [lst2cmt](tools/lst2cmt.md): Convert LWASM listings to MAME comments.
 
 ---
 
