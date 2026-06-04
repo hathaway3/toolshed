@@ -42,10 +42,10 @@ crakofs macro
         endm
 
 compofs macro
-        pshs    d
+        std    <_dtmp
         dasl
         dasl
-        addd    ,s++
+        addd   <_dtmp
         endm
 
 * 
@@ -59,6 +59,7 @@ offset   rmb   2      offset			/* cursor into buf (units of bits)	*/
 * 
 CompTbl  rmb   2      COMPTBL *CompTbl;
 CrakTbl  rmb   2      DCOMPTBL *CrakTbl;
+_dtmp    rmb   2      scratch for compofs macro
          ends
 
          vsect
@@ -369,9 +370,9 @@ addent50
 * 
 * 		free_ent++;
 addent60
-        ldd    <free_ent
-        addd   #1
-        std    <free_ent
+        inc    <free_ent+1
+        bne    addent90
+        inc    <free_ent
 
 * 		}
 * 	}
@@ -899,9 +900,9 @@ de_lz_1d
         ldd finchar,s
         std 2,x
 * 			free_ent++;
-        ldd <free_ent
-        addd #1
-        std <free_ent
+        inc <free_ent+1
+        bne de_lz_1e
+        inc <free_ent
 * 			}
 * 
 * 		oldcode = incode;						/* Remember previous code.	*/
@@ -1167,8 +1168,7 @@ fetch20
 * FILE	*fp;
 * 	{
 readbuf:
-* 	register char	*bp = (char *) buf;
-* 	int	c;
+* 	fread(buf, cnt, 1, fp);
 * 
         csect  0
 fp      set    *
@@ -1181,25 +1181,24 @@ locals  set    *  size of local
 
         pshs   b,u
         pshs   x
-        leau   buf,y
-* 	while (cnt--)
-* 		if (EOF != (c = getc(fp)))
-* 			*bp++ = c;
-* 		else
-* 			return (c);
-* 
+* 	fread(buf, cnt, 1, fp);
+        pshs   x           stream (fp)
+        ldd    #1
+        pshs   d           nitems (1)
+        clra
+        ldb    cnt+4,s     cnt (adjusted for 4 bytes pushed)
+        pshs   d           size (cnt)
+        leax   buf,y       ptr
+        pshs   x
+        lbsr   fread
+        leas   8,s
+* 	if (result != 1) return EOF;
+        cmpd   #1
+        beq    rb80
+        ldd    #-1
+        bra    rb90
 * 	return (0);
-* 	}
-
-rb10
-        lbsr   getc
-        cmpd   #-1
-        beq    rb90
-
-        stb    ,u+
-        dec    cnt,s
-        bne    rb10
-
+rb80
         clra
         clrb
 rb90
