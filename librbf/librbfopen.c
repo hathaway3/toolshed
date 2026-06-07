@@ -808,7 +808,7 @@ static int init_pd(os9_path_id * path, int mode)
 	/* 1. Allocate path structure and initialize it. */
 
 	*path = malloc(sizeof(struct _os9_path_id));
-    printf("DEB: init_pd allocated path %p\n", *path);
+    DEBUG_PRINT("init_pd allocated path %p", *path);
 
 	if (*path == NULL)
 	{
@@ -833,13 +833,13 @@ static int term_pd(os9_path_id path)
 	/* 1. Deallocate path structure. */
 	if (path->imgfile != NULL)
 	{
-        printf("DEB: term_pd freeing imgfile %p\n", path->imgfile);
+        DEBUG_PRINT("term_pd freeing imgfile %p", path->imgfile);
 		free(path->imgfile);
 	}
 
 	if (path->pathlist != NULL)
 	{
-        printf("DEB: term_pd freeing pathlist %p\n", path->pathlist);
+        DEBUG_PRINT("term_pd freeing pathlist %p", path->pathlist);
 		free(path->pathlist);
 	}
 
