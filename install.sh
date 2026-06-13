@@ -53,20 +53,20 @@ case "$OSTYPE" in
         echo "Building and installing..."
         # Running make install which might require sudo for /usr/local/bin
         if [ -w /usr/local/bin ] && [ -w /usr/local/share/doc/toolshed ]; then
-             make -C build/unix install
+             make -C build/unix install PREFIX=/usr/local
         else
              echo "Sudo access required to install to /usr/local"
-             sudo make -C build/unix install
+             sudo make -C build/unix install PREFIX=/usr/local
         fi
         ;;
     Mac)
         install_mac_deps
         echo "Building and installing..."
         if [ -w /usr/local/bin ] && [ -w /usr/local/share/doc/toolshed ]; then
-             make -C build/unix install
+             make -C build/unix install PREFIX=/usr/local
         else
              echo "Sudo access required to install to /usr/local"
-             sudo make -C build/unix install
+             sudo make -C build/unix install PREFIX=/usr/local
         fi
         ;;
     MinGW)
