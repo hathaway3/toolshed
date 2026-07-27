@@ -50,3 +50,29 @@ jobs:
         [ -f build/unix/toolshed-*.tgz ] && ls build/unix/toolshed-*.tgz | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; tar tzvf {}'
         [ -f build/unix/toolshed-*.zip ] && ls build/unix/toolshed-*.zip | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; unzip -l -v {}'
 
+  build-macos:
+    runs-on: macos-latest
+
+    permissions:
+      contents: read
+
+    defaults:
+        run:
+            shell: bash {0}
+
+    steps:
+    - name: Install dependencies
+      run: |
+        brew install lwtools
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build
+      run: |
+        make -C build/unix all
+
+    - name: Run tests
+      run: |
+        make -C build/unix test
+

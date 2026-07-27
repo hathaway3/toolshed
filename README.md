@@ -1,5 +1,7 @@
 # Welcome to ToolShed! 🛠️
 
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org) [![Build](https://github.com/nitros9project/toolshed/actions/workflows/build.yml/badge.svg)](https://github.com/nitros9project/toolshed/actions/workflows/build.yml) [![Documentation](https://img.shields.io/badge/docs-mkdocs%20material-blue)](https://nitros9project.github.io/toolshed/)
+
 ToolShed is a comprehensive suite of utilities and source code dedicated to the **Tandy Color Computer (CoCo)** and **Dragon** microcomputers. It provides modern cross-development tools for managing disk images, building firmware, and developing software for these classic systems.
 
 ---

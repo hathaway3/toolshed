@@ -53,3 +53,29 @@ jobs:
         files: |
           build/unix/toolshed-*.tgz
           build/unix/toolshed-*.zip
+
+  build-macos:
+    runs-on: macos-latest
+
+    permissions:
+      contents: write
+
+    defaults:
+        run:
+            shell: bash {0}
+
+    steps:
+    - name: Install dependencies
+      run: |
+        brew install lwtools
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build
+      run: |
+        make -C build/unix all
+
+    - name: Run tests
+      run: |
+        make -C build/unix test
