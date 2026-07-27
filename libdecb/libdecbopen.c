@@ -103,6 +103,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
 
   if (ec != 0) {
     term_pd(*path);
+    *path = NULL;
 
     return ec;
   }
@@ -119,6 +120,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
 
   if ((*path)->fd == NULL) {
     term_pd(*path);
+    *path = NULL;
 
     return (EOS_BPNAM);
   }
@@ -150,6 +152,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
       fclose((*path)->fd);
 
       term_pd(*path);
+      *path = NULL;
 
       return EOS_DF;
     }
@@ -226,10 +229,12 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
           if (mode & FAM_NOCREATE) {
             fclose((*path)->fd);
             term_pd(*path);
+            *path = NULL;
             return EOS_FAE;
           } else {
             fclose((*path)->fd);
             term_pd(*path);
+            *path = NULL;
             _decb_kill(pathlist);
             return _decb_create(path, pathlist, mode, file_type, data_type);
           }
@@ -243,6 +248,7 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
       fclose((*path)->fd);
 
       term_pd(*path);
+      *path = NULL;
 
       return EOS_DF;
     }
@@ -311,6 +317,7 @@ error_code _decb_open(decb_path_id *path, char *pathlist, int mode) {
 
   if (ec != 0) {
     term_pd(*path);
+    *path = NULL;
 
     return ec;
   }
@@ -328,6 +335,7 @@ error_code _decb_open(decb_path_id *path, char *pathlist, int mode) {
     /* If mode is FAM_DIR, then we need to error */
     if (mode & FAM_DIR) {
       term_pd(*path);
+      *path = NULL;
       return EOS_SN;
     }
   }
@@ -344,6 +352,7 @@ error_code _decb_open(decb_path_id *path, char *pathlist, int mode) {
 
   if ((*path)->fd == NULL) {
     term_pd(*path);
+    *path = NULL;
 
     return (EOS_BPNAM);
   }

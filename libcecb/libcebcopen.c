@@ -46,6 +46,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -68,6 +69,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if ((*path)->fd == NULL)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return (EOS_BPNAM);
 	}
@@ -85,6 +87,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -157,6 +160,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -168,6 +172,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -179,6 +184,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -190,6 +196,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -201,6 +208,7 @@ error_code _cecb_create(cecb_path_id * path, char *pathlist, int mode,
 		if (ec != 0)
 		{
 			term_pd(*path);
+			*path = NULL;
 
 			return ec;
 		}
@@ -254,6 +262,7 @@ error_code _cecb_open(cecb_path_id * path, char *pathlist, int mode)
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}
@@ -275,6 +284,7 @@ error_code _cecb_open(cecb_path_id * path, char *pathlist, int mode)
 		if (mode & FAM_DIR)
 		{
 			term_pd(*path);
+			*path = NULL;
 			return EOS_SN;
 		}
 	}
@@ -296,6 +306,7 @@ error_code _cecb_open(cecb_path_id * path, char *pathlist, int mode)
 	if ((*path)->fd == NULL)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return (EOS_BPNAM);
 	}
@@ -312,6 +323,7 @@ error_code _cecb_open(cecb_path_id * path, char *pathlist, int mode)
 	if (ec != 0)
 	{
 		term_pd(*path);
+		*path = NULL;
 
 		return ec;
 	}

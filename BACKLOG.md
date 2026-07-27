@@ -16,10 +16,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
   - `casm/src/pseudo.c:1505` — `REORG` behavior is marked as unconfirmed correct.
   - `casm/src/proc_logicalmem.c:62` — a compatibility warning path is marked incomplete.
   - `casm/src/parse.c:175` — flagged by the original author as not understood (`/* FIXME - dunno why but FIXME */`); worth a real investigation before it's touched again.
-- **Memory-safety convention not yet applied uniformly.** Commit `a91388e` ("Fix Abort trap: 6") established the project's pattern — NULL-initialize handle pointers at declaration, NULL them immediately after `free()`/`term_pd()`/`_os9_close()`, single-exit `goto clean` — and applied it to `librbf/librbfopen.c`, `librbf/librbfdelete.c`, `os9/os9copy.c`, and `os9/os9dcheck.c`. Two structurally identical sibling files still don't follow it:
-  - `libdecb/libdecbopen.c` — `term_pd()` (line 557) frees the path struct's contents and the struct itself but never NULLs the caller's `*path` (see call sites at lines 105, 121, 152, 228, 232, 245, 313, 330, 346). Every current caller happens to return immediately afterward, so this isn't a live use-after-free today, but it's inconsistent with the project's own documented invariant and is a landmine for the next person who adds a code path after one of those calls.
-  - `libcecb/libcebcopen.c` — same shape: `term_pd()` (line 535) with the identical set of call sites (lines 48, 70, 87, 159, 170, 181, 192, 203, 256, 277, 298, 314, 388, 420) never nulls the caller's pointer either.
-  - Worth a follow-up pass applying the same fix used in `libdecbopen.c`/`libcebcopen.c`'s siblings, plus adding the "NULL-close" and "failed-open leaves pointer NULL" tests AGENT_RULES.md already mandates for `librbf`/`libnative` changes.
+- [x] **Memory-safety pattern applied to `libdecb/libdecbopen.c` and `libcecb/libcebcopen.c`** — all `term_pd(*path)` error paths in `_decb_open()` and `_cecb_open()` now set `*path = NULL` immediately after freeing, matching the pattern already established in `librbf/librbfopen.c`.
 
 ## Performance improvements
 
