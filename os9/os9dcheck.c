@@ -313,6 +313,30 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 	char *newPath = NULL;
 	int bps = os9_path->bps;
 
+	/* Allocate reusable buffers once per recursive invocation instead
+	 * of malloc/free per directory sector and per file entry */
+	dir_fd = (fd_stats *) malloc(bps);
+	if (dir_fd == NULL)
+	{
+		printf("Out of memory, terminating (001).\n");
+		ec = 1;
+		goto clean;
+	}
+	dEnt = (os9_dir_entry *) malloc(bps);
+	if (dEnt == NULL)
+	{
+		printf("Out of memory, terminating (002).\n");
+		ec = 1;
+		goto clean;
+	}
+	file_fd = (fd_stats *) malloc(bps);
+	if (file_fd == NULL)
+	{
+		printf("Out of memory, terminating (003).\n");
+		ec = 1;
+		goto clean;
+	}
+
 	/* Check if this directory has already been drilled into */
 
 	if (_os9_ckbit(secondaryBitmap, dir_lsn) != 0)
@@ -330,14 +354,6 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 	gFolderCount++;
 
 	dd_tot = int3(os9_path->lsn0->dd_tot);
-
-	dir_fd = (fd_stats *) malloc(bps);
-	if (dir_fd == NULL)
-	{
-		printf("Out of memory, terminating (001).\n");
-		ec = 1;
-		goto clean;
-	}
 
 	if (read_lsn(os9_path, dir_lsn, dir_fd) != bps)
 	{
@@ -395,14 +411,6 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 					break;
 				}
 
-				dEnt = (os9_dir_entry *) malloc(bps);
-				if (dEnt == NULL)
-				{
-					printf("Out of memory, terminating (002).\n");
-					ec = 1;
-					goto clean;
-				}
-
 				if (read_lsn
 				    (os9_path, int3(theSeg->lsn) + j,
 				     dEnt) != bps)
@@ -453,14 +461,6 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 						continue;
 					}
 
-					file_fd = (fd_stats *) malloc(bps);
-					if (file_fd == NULL)
-					{
-						printf("Out of memory, terminating (003).\n");
-						ec = 1;
-						goto clean;
-					}
-
 					if (read_lsn
 					    (os9_path, int3(dEnt[k].lsn),
 					     file_fd) != bps)
@@ -494,14 +494,10 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 						}
 					}
 
-					free(file_fd);
-					file_fd = NULL;
 					free(newPath);
 					newPath = NULL;
 				}
 
-				free(dEnt);
-				dEnt = NULL;
 			}
 
 			i++;
