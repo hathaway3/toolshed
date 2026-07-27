@@ -272,12 +272,20 @@ error_code _decb_srec_decode(unsigned char *in_buffer, int in_size,
 
     if (type == 1) {
       int i;
+      int computed_cs;
 
+      /* Build binary output */
       (*out_buffer)[out_buffer_position++] = PREAMBLE;
       (*out_buffer)[out_buffer_position++] = ((count - 3) >> 8) & 0xff;
       (*out_buffer)[out_buffer_position++] = ((count - 3) >> 0) & 0xff;
       (*out_buffer)[out_buffer_position++] = ((address) >> 8) & 0xff;
       (*out_buffer)[out_buffer_position++] = ((address) >> 0) & 0xff;
+
+      /* Verify checksum */
+      computed_cs = 0xff;
+      computed_cs -= count;
+      computed_cs -= (address >> 8) & 0xff;
+      computed_cs -= address & 0xff;
 
       for (i = 0; i < count - 3; i++) {
         u_char byte;
@@ -286,25 +294,60 @@ error_code _decb_srec_decode(unsigned char *in_buffer, int in_size,
         byte <<= 4;
         byte += digittoint(in_buffer[in_buffer_position++]);
 
+        computed_cs -= byte;
         (*out_buffer)[out_buffer_position++] = byte;
       }
 
+      /* cs_accum already consumed the data bytes; now read the stored checksum */
+      checksum = digittoint(in_buffer[in_buffer_position++]);
+      checksum <<= 4;
+      checksum += digittoint(in_buffer[in_buffer_position++]);
+
+      if ((computed_cs & 0xff) != checksum)
+      {
+        fprintf(stderr, "_decb_srec_decode: checksum mismatch (read %02x, computed %02x)\n",
+                checksum, computed_cs & 0xff);
+        free(*out_buffer);
+        *out_buffer = NULL;
+        return -1;
+      }
+
     } else if (type == 9) {
+      int computed_cs;
+
+      /* Verify S9 checksum before accepting it */
+      computed_cs = 0xff;
+      computed_cs -= count;
+      computed_cs -= (address >> 8) & 0xff;
+      computed_cs -= address & 0xff;
+
+      checksum = digittoint(in_buffer[in_buffer_position++]);
+      checksum <<= 4;
+      checksum += digittoint(in_buffer[in_buffer_position++]);
+
+      if ((computed_cs & 0xff) != checksum)
+      {
+        fprintf(stderr, "_decb_srec_decode: S9 checksum mismatch (read %02x, computed %02x)\n",
+                checksum, computed_cs & 0xff);
+        free(*out_buffer);
+        *out_buffer = NULL;
+        return -1;
+      }
+
       (*out_buffer)[out_buffer_position++] = POSTAMBLE;
       (*out_buffer)[out_buffer_position++] = 0;
       (*out_buffer)[out_buffer_position++] = 0;
       (*out_buffer)[out_buffer_position++] = ((address) >> 8) & 0xff;
       (*out_buffer)[out_buffer_position++] = ((address) >> 0) & 0xff;
       return ec;
-    } else
-      out_buffer_position += count * 2;
-
-    checksum = digittoint(in_buffer[in_buffer_position++]);
-    checksum <<= 4;
-    checksum += digittoint(in_buffer[in_buffer_position++]);
-
-    /* TODO check checksum */
-    (void)checksum;
+    } else {
+      /* Unknown S-record type — skip record body + checksum */
+      in_buffer_position += (count - 3) * 2;
+      checksum = digittoint(in_buffer[in_buffer_position++]);
+      checksum <<= 4;
+      checksum += digittoint(in_buffer[in_buffer_position++]);
+      (void)checksum;
+    }
   }
 
   (*out_buffer)[out_buffer_position++] = POSTAMBLE;
