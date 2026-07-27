@@ -5,7 +5,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 ## Known issues
 
 - [x] **`os9rdump` was not wired into the `os9` tool** — fixed, already in `struct cmdtbl` as of `4df1961`.
-- **Four built tools have no user docs**: `dis68`, `lst2cmt`, `makewav`, `tocgen` have no page under `doc/docs/tools/`. `doc/docs/documentation_review.md` already extracted usage text for all four from source — turning that into doc pages is most of the work.
+- [x] **Four built tools have no user docs** — `dis68`, `lst2cmt`, `makewav`, `tocgen` pages were all added in `6c39116`.
 - [x] **`librbf/librbfwrite.c:190` — mtime on write** — fixed, `_os9_write()` now calls `UnixToOS9Time(time(NULL), ...)` on the FD sector before writing it back.
 - [x] **`libdecb/libdecbsrec.c:306` — S-record checksum** — fixed, checksum is now verified on S1 records with mismatch causing decode failure.
 - [x] **`os9/os9gen.c:311` — bitmap bits not deallocated before re-allocation** — `_os9_delbit()` now frees the boot track clusters before `_os9_allbit()` re-allocates them, preventing leaked sectors on repeated `gen` runs.
@@ -22,7 +22,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 ## Performance improvements
 
 - [x] **`ar2/lz1.c:90` — per-byte getc() hot path** — `LZ_1()` now reads the entire input into a buffer with a single `fread()` call and iterates in memory, matching the OSK path and the 6809-side optimization from `4e40152`.
-- [x] **`os9/os9rdump.c` per-byte getc()** — `os9rdump` is now wired in (see above), so `os9rdump.c` per-byte reads at lines 221, 262, 276, 398 are worth fixing. Low priority.
+- [x] **`os9/os9rdump.c` per-byte getc()** — not a hot path. The tool reads small ROF module headers (typically a few KB); per-byte I/O for symbol names, flags, and 2-byte words is negligible overhead.
 
 ## Reducing memory churn
 
