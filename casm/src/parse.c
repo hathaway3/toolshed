@@ -172,7 +172,7 @@ bool ProcessLine(EnvContext *ctx)
 			}
 		}
 
-		ProcOpcode(ctx, mne); /* FIXME - dunno why but FIXME */
+		ProcOpcode(ctx, mne);
 
 		ctx->m_CycleTotal += ctx->m_CycleCount;
 	}

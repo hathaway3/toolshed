@@ -203,10 +203,11 @@ int main(int argc, char **argv) {
       case 'o':
         /* Output file */
         p = &argv[j][2];
+        free(as.object_name);
         if (*p == EOS) {
-          as.object_name = "mamouobj";
+          as.object_name = strdup("mamouobj");
         } else {
-          as.object_name = p;
+          as.object_name = strdup(p);
         }
         as.object_output = 1;
         break;

@@ -1212,7 +1212,7 @@ int _opt(assembler *as)
 		case 'o':	/* object file name */
 			if (opt_state == 0)
 			{
-				/* FIXME won't be freed */
+				free(as->object_name);
 				as->object_name = strdup(as->line.optr + 1);
 			}
 			else

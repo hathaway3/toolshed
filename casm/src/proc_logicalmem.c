@@ -59,7 +59,7 @@ void ProcLogicalMem(EnvContext *ctx, const Mneumonic *op)
 			:	-	CLS-97 dialect
 	*/
 	if(',' != *ctx->m_Ptr && ';' != *ctx->m_Ptr && ':' != *ctx->m_Ptr) {
-		/* FIXME - warn compat */
+		
 		error(ctx, ERR_SYNTAX, "value for logical memory operation must be followed by a comma, semi-colon, or colon");
 		return;
 	} 
