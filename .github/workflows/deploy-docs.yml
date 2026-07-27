@@ -3,9 +3,10 @@ name: Deploy Documentation
 on:
   push:
     branches:
-      - main # Or main, depending on the default branch name
+      - main
     paths:
-      - 'docs/**'
+      - 'doc/**'
+      - '.github/workflows/deploy-docs.yml'
 
 permissions:
   contents: read
@@ -13,28 +14,26 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
-      
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-node: '20'
-          cache: 'npm'
-          cache-dependency-path: docs/package.json
+          python-version: '3.x'
 
       - name: Install dependencies
-        run: npm install
-        working-directory: docs
+        run: pip install -r doc/requirements.txt
 
       - name: Build site
-        run: npm run docs:build
-        working-directory: docs
+        run: mkdocs build
+        working-directory: doc
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -42,15 +41,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: doc/site
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
