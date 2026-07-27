@@ -11,6 +11,8 @@ ToolShed is a suite of cross-development tools and firmware source for the Tandy
 
 Don't assume conventions from one side apply to the other.
 
+User documentation lives under `doc/docs/` (MkDocs site, `tools/` subdirectory has per-tool pages). `BACKLOG.md` tracks known issues, performance opportunities, and memory-churn hotspots. `AGENT_RULES.md` has detailed conventions for AI agents working on this repo.
+
 ## Build commands
 
 Root `Makefile` delegates to `build/unix` (used even for Windows cross-builds via MinGW — `build/win32` is deprecated).
@@ -31,6 +33,14 @@ cd build/unix/os9 && make        # e.g. rebuild just the `os9` tool
 
 `cocofuse` (Linux/macOS FUSE mount) and `unittest` are only built on non-Windows targets (`WIN` unset).
 
+Built binaries land in `build/unix/<name>/<name>` (subdirectory named after the tool).
+
+### Assemblers
+
+- **`lwasm`** (LWTOOLS): preferred assembler for 6809/6309 firmware. Not in this repo — install separately.
+- **`mamou`**: deprecated 6809 assembler shipped as part of ToolShed. Still works as a fallback (`AS="mamou -r -q"`) but `lwasm` is preferred.
+- **`casm`**: a separate C-based 6809/6309 cross-assembler included as part of the tool suite. Has its own build system.
+
 ### Firmware
 
 Requires [LWTOOLS](http://lwtools.projects.l-w.ca/) (`lwasm`) — the deprecated `mamou` assembler still works as a fallback (`AS="mamou -r -q"`) but `lwasm` is preferred for new work.
@@ -46,15 +56,14 @@ make -C superdos
 
 ```bash
 cd build/unix && make test              # builds everything, then runs unittest/Makefile's `test` target
-cd build/unix/unittest && make test     # unit tests + tests/os9_test.sh CLI integration test
+cd build/unix/unittest && make test     # unit tests
 ./librbftest                            # run a single suite directly (also libdecbtest, libcecbtest,
                                          #   libtoolshedtest, os9commandtest, os9_tool_test)
 ```
 
 - Test framework is **tinytest** (`unittest/tinytest.h`, header-only + `tinytest.c`) — `ASSERT`, `ASSERT_EQUALS`, `RUN(test_fn)`, `TEST_REPORT()`.
 - `build/unix/unittest/Makefile` has a dual `vpath` for both `unittest/` and `tests/`, and adds `-I../../../unittest` so new tests placed in `tests/` can still `#include "tinytest.h"`.
-- Follow the pattern in `os9_tool_test.c` / `librbftest.c`: clean slate (`remove("test.dsk")`) before and after, one `test_*` function per behavior, `RUN()` each in `main()`.
-- Some tests shell out to the built CLI tools (e.g. `system("../os9/os9 format ...")`), so `make test` needs `all` to have run first.
+- Follow the pattern in `tests/os9_tool_test.c` / `unittest/librbftest.c`: clean slate (`remove("test.dsk")`) before and after, one `test_*` function per behavior, `RUN()` each in `main()`.
 
 ## Architecture: the path abstraction layer
 
@@ -69,11 +78,11 @@ include/cocopath.h   -- coco_path_id: tagged union over the four backends below,
   include/cecbpath.h   -> libcecb/    (Color BASIC / MC-10 cassette .cas/.wav)
 ```
 
-`libtoolshed/toolshed.c` (declared in `include/toolshed.h`, prefixed `TS*`) builds higher-level operations (copy, rename, pad ROM, attr get/set, free-space reporting) on top of `_coco_*`.
-
 The CLI tools (`os9/`, `decb/`, `cecb/`) are thin command dispatchers: each has a `<tool>_main.c` with a `struct cmdtbl` mapping subcommand keywords (`attr`, `copy`, `dir`, `format`, `free`, ...) to a function implemented in a same-named file in that directory (e.g. `os9copy.c` implements `os9copy`). Each backend library (`libnative`, `librbf`, `libdecb`, `libcecb`) mirrors this: one file per operation, named `lib<backend><op>.c`.
 
 `libmisc` holds cross-cutting helpers (CoCo↔native text conversion, endian handling, a queue, `UnixToCoCoError()` for mapping host `errno` to CoCo error codes). `libcoco` holds hardware/BASIC-token-adjacent logic. `libsys` has low-level shared bits (CRC, path-string parsing).
+
+`libtoolshed/toolshed.c` (declared in `include/toolshed.h`, prefixed `TS*`) builds higher-level operations (copy, rename, pad ROM, attr get/set, free-space reporting) on top of `_coco_*`.
 
 `cocofuse` mounts a CoCo disk image as a real FUSE filesystem using this same `_coco_*` layer, rather than duplicating filesystem logic.
 

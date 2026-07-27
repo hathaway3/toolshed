@@ -4,9 +4,9 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 
 ## Known issues
 
-- **`os9rdump` is built as source but never wired into the `os9` tool.** `os9/os9rdump.c` exists but isn't in the `struct cmdtbl` in `os9/os9_main.c` or in `APPS` in `build/unix/Makefile`. Either add it as a real subcommand or drop the source (per `doc/docs/documentation_review.md`).
+- [x] **`os9rdump` was not wired into the `os9` tool** — fixed, already in `struct cmdtbl` as of `4df1961`.
 - **Four built tools have no user docs**: `dis68`, `lst2cmt`, `makewav`, `tocgen` have no page under `doc/docs/tools/`. `doc/docs/documentation_review.md` already extracted usage text for all four from source — turning that into doc pages is most of the work.
-- **`librbf/librbfwrite.c:190`** — modification date/time is not updated on write (`/* 11. TODO - Update modification date/time */`). Files written through `_os9_write` can end up with a stale mtime in the directory entry.
+- [x] **`librbf/librbfwrite.c:190` — mtime on write** — fixed, `_os9_write()` now calls `UnixToOS9Time(time(NULL), ...)` on the FD sector before writing it back.
 - **`libdecb/libdecbsrec.c:306`** — S-record checksum is read but not verified (`/* TODO check checksum */`). A corrupted `.srec`/`.hex` input can be silently accepted.
 - **`os9/os9gen.c:311`** — when regenerating an OS-9 image, bits for replaced files are not deallocated in the bitmap sector (`/* TODO: Deallocate appropriate bits in bitmap sector */`). Regenerated images likely leak allocated-but-unreferenced sectors over repeated `gen` runs.
 - **`mamou/pseudo.c:1215`** — explicit known leak: `/* FIXME won't be freed */`.

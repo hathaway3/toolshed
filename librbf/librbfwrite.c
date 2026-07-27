@@ -6,9 +6,11 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "cocotypes.h"
 #include "os9path.h"
+#include "cococonv.h"
 
 
 static int _os9_extendSegList(os9_path_id path, Fd_seg segptr, int *delta);
@@ -187,7 +189,9 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 		}
 
 
-		/* 11. TODO - Update modification date/time */
+		/* 11. Update modification date/time */
+
+		UnixToOS9Time(time(NULL), (char *) fd_sector.fd_dat);
 
 
 		/* 12. Write updated file descriptor back to image file */
