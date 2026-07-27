@@ -312,6 +312,10 @@ static int do_os9gen(char **argv, char *device, char *bootfile,
 		/* Is not necesary on Dragon, but wouldn't harm */
 
 		sectors = (size + sectorSize - 1) / sectorSize;
+		/* Deallocate any previously-allocated bitmap bits then re-allocate to avoid leaking clusters across repeated gen runs */
+		_os9_delbit(opath->bitmap,
+			    (startlsn + clusterSize - 1) / clusterSize,
+			    (sectors + clusterSize - 1) / clusterSize);
 		_os9_allbit(opath->bitmap,
 			    (startlsn + clusterSize - 1) / clusterSize,
 			    (sectors + clusterSize - 1) / clusterSize);

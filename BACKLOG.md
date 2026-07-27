@@ -8,7 +8,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 - **Four built tools have no user docs**: `dis68`, `lst2cmt`, `makewav`, `tocgen` have no page under `doc/docs/tools/`. `doc/docs/documentation_review.md` already extracted usage text for all four from source — turning that into doc pages is most of the work.
 - [x] **`librbf/librbfwrite.c:190` — mtime on write** — fixed, `_os9_write()` now calls `UnixToOS9Time(time(NULL), ...)` on the FD sector before writing it back.
 - [x] **`libdecb/libdecbsrec.c:306` — S-record checksum** — fixed, checksum is now verified on S1 records with mismatch causing decode failure.
-- **`os9/os9gen.c:311`** — when regenerating an OS-9 image, bits for replaced files are not deallocated in the bitmap sector (`/* TODO: Deallocate appropriate bits in bitmap sector */`). Regenerated images likely leak allocated-but-unreferenced sectors over repeated `gen` runs.
+- [x] **`os9/os9gen.c:311` — bitmap bits not deallocated before re-allocation** — `_os9_delbit()` now frees the boot track clusters before `_os9_allbit()` re-allocates them, preventing leaked sectors on repeated `gen` runs.
 - **`mamou/pseudo.c:1215`** — explicit known leak: `/* FIXME won't be freed */`.
 - **casm parser rough edges**, all self-flagged in source and still open:
   - `casm/src/eval.c:674` — operator priority handling is admittedly incomplete.
