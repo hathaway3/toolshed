@@ -81,13 +81,34 @@ int LZ_1(FILE *infile, FILE *outfile, long *bytes) {
   WORD c, ent, tag = TAG;
   WORD n_ent;
   register COMPTBL *ctp;
+  unsigned char *inbuf;
+  long in_size;
+  int pos;
+
+  /* Read entire input into buffer instead of per-byte getc() */
+  fseek(infile, 0, SEEK_END);
+  in_size = ftell(infile);
+  rewind(infile);
+
+  inbuf = malloc(in_size);
+  if (inbuf == NULL)
+    return RERR;
+
+  if (fread(inbuf, 1, in_size, infile) != (size_t)in_size)
+  {
+    free(inbuf);
+    return RERR;
+  }
 
   lz1_init(COMP);
   lz_bytes = sizeof(tag);
   writeshort(outfile, tag); /* mark as LZ */
 
-  ent = getc(infile);
-  while (!feof(infile) && (c = getc(infile)) != EOF) {
+  pos = 0;
+  ent = (pos < in_size) ? inbuf[pos++] : EOF;
+  while (pos < in_size)
+  {
+    c = inbuf[pos++];
     /*
      * Find the entry corresponding to the current entry suffixed
      * with c.  Since the entries are sorted, suffix > c is as
@@ -114,6 +135,7 @@ int LZ_1(FILE *infile, FILE *outfile, long *bytes) {
   output(ent, outfile); /* put out final code			*/
   output(-1, outfile);  /* and -1 to flush and finish	*/
   *bytes = lz_bytes;
+  free(inbuf);
   return (0);
 }
 /*page*/

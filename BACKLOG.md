@@ -20,7 +20,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 
 ## Performance improvements
 
-- **`ar2/lz1.c:90`** — the host-side (non-6809) LZW compressor still reads its input one byte at a time via `while (!feof(infile) && (c = getc(infile)) != EOF)`. This is the exact hot path that was just optimized on the 6809 side in commit `4e40152` ("readbuf: replace per-byte getc loop with single fread() call, ~400 cycles saved per buffer fill"). The same fix (buffered `fread()` instead of per-byte `getc()`) applies here too, and since `lz1.c` is the OSK/host reference implementation, worth checking whether its decompression path has the same pattern.
+- [x] **`ar2/lz1.c:90` — per-byte getc() hot path** — `LZ_1()` now reads the entire input into a buffer with a single `fread()` call and iterates in memory, matching the OSK path and the 6809-side optimization from `4e40152`.
 - **`os9/os9rdump.c`** also does per-byte `getc()` reads (lines 221, 262, 276, 398), though since `os9rdump` isn't currently wired into the built `os9` tool (see Known Issues above), this is lower priority until/unless it's actually shipped.
 
 ## Reducing memory churn
