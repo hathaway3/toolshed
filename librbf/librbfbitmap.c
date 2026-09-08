@@ -130,14 +130,17 @@ int _os9_getfreebit(u_char * bitmap, int total_sectors)
 error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 {
 	unsigned int pd_sas = int1(path->lsn0->pd_sas);
-	unsigned int pd_tot = int3(path->lsn0->dd_tot);
+	unsigned int total_sectors = int3(path->lsn0->dd_tot);
+	unsigned int total_clusters = total_sectors / path->spc;
 	u_int i, count;
 	u_int prev_free;
+	u_int req_clusters;
+	int best_start = -1, best_count = 0;
 
 
 	/* Sanity check pd_sas */
 
-	if (pd_sas < 1 || pd_sas > (pd_tot / 2))
+	if (pd_sas < 1 || pd_sas > (total_sectors / 2))
 	{
 		pd_sas = 1;
 
@@ -150,24 +153,27 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 	 */
 
 	pd_sas = NextHighestMultiple(pd_sas, path->spc);
+	req_clusters = pd_sas / path->spc;
 
 
-	/* Now go and find pd_sas number of contiguous clusters */
+	/* Now go and find pd_sas number of contiguous clusters.
+	 * If not found, fall back to the largest contiguous block available.
+	 */
 
 	prev_free = 0;		/* to reassure compiler */
 	i = count = 0;
 
-	while (count < (pd_sas / path->spc))
+	while (i < total_clusters)
 	{
-		if (i == pd_tot)
-		{
-			return -1;	/* none found */
-		}
-
 		/* Check if same allocation map sector (6x09 RBF limitation) */
 
 		if (count != 0 && i / 2048 != prev_free / 2048)
 		{
+			if ((int)count > best_count)
+			{
+				best_count = count;
+				best_start = i - count;
+			}
 			/* Restart counting from here if free */
 			count = 0;
 		}
@@ -178,21 +184,42 @@ error_code _os9_getSASSegment(os9_path_id path, int *cluster, int *size)
 
 			count += 1;
 			prev_free = i;
+
+			if (count == req_clusters)
+			{
+				*cluster = (i - count + 1) * path->spc;
+				*size = count * path->spc;
+				_os9_allbit(path->bitmap, i - count + 1, count);
+				return 0;
+			}
 		}
 		else
 		{
+			if ((int)count > best_count)
+			{
+				best_count = count;
+				best_start = i - count;
+			}
 			count = 0;
 		}
 		i++;
 	}
 
-	*cluster = (i - count) * path->spc;
-	*size = count * path->spc;
+	if ((int)count > best_count)
+	{
+		best_count = count;
+		best_start = i - count;
+	}
 
-	_os9_allbit(path->bitmap, i - count, count);
+	if (best_count > 0)
+	{
+		*cluster = best_start * path->spc;
+		*size = best_count * path->spc;
+		_os9_allbit(path->bitmap, best_start, best_count);
+		return 0;
+	}
 
-
-	return 0;
+	return -1;
 }
 
 

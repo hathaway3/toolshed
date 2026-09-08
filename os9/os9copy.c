@@ -31,6 +31,7 @@ static char const *const helpMessage[] = {
 
 int os9copy(int argc, char *argv[]) {
   error_code ec = 0;
+  error_code return_ec = 0;
   char *p = NULL, *q, *desttarget = NULL;
   int i, j;
   int targetDirectory = NO;
@@ -200,6 +201,7 @@ int os9copy(int argc, char *argv[]) {
   if (targetDirectory == NO && count > 2) {
     printf("Error: two or more sources requires target to be a directory.\n\n");
     show_help(helpMessage);
+    ec = 1;
     goto clean;
   }
 
@@ -231,11 +233,13 @@ int os9copy(int argc, char *argv[]) {
       if (snprintf(df, sizeof(df), "%s%s%s", desttarget, separator,
                    ExtractFilename(argv[j])) >= sizeof(df)) {
         fprintf(stderr, "%s: destination path too long: %s\n", argv[0], df);
+        return_ec = 1;
         continue;
       }
     } else {
       if (snprintf(df, sizeof(df), "%s", desttarget) >= sizeof(df)) {
         fprintf(stderr, "%s: destination path too long: %s\n", argv[0], df);
+        return_ec = 1;
         continue;
       }
     }
@@ -244,6 +248,7 @@ int os9copy(int argc, char *argv[]) {
                     buffer, buffer_size);
 
     if (ec != 0) {
+      return_ec = ec;
       fprintf(stderr, "%s: error %d on file '%s' to '%s': %s\n", argv[0], ec,
               argv[j], df, TSReportError(ec));
     }
@@ -254,7 +259,7 @@ clean:
     free(buffer);
     buffer = NULL;
   }
-  return ec;
+  return return_ec != 0 ? return_ec : ec;
 }
 
 static char *ExtractFilename(char *path) {

@@ -16,7 +16,7 @@ else
 INSTALLDIR	?= $(PREFIX)/bin
 DOCDIR		?= $(PREFIX)/share/doc/toolshed
 endif
-APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt cocofuse
+APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt
 
 DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys \
 		decb cecb os9 makewav tocgen lst2cmt \

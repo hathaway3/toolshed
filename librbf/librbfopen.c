@@ -163,7 +163,8 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		/* 4. Allocate new cluster on 'sectors per cluster' boundary. */
 
 		newLSN = _os9_getfreebit(parent_path->bitmap,
-					 int3(parent_path->lsn0->dd_tot)) *
+					 int3(parent_path->lsn0->dd_tot) /
+					 parent_path->spc) *
 			parent_path->spc;
 
 		if (newLSN < 0)

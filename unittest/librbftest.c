@@ -406,6 +406,10 @@ void test_os9_full_disk() {
   os9_path_id p;
   char *data = malloc(1024);
   unsigned int size;
+  char dname[64];
+  u_int month, day, year, bps, total_sectors, bytes_free;
+  u_int free_sectors_before, free_sectors_after;
+  u_int largest_free_block, sectors_per_cluster, largest_count, sector_count;
 
   memset(data, 0xAA, 1024);
 
@@ -415,6 +419,12 @@ void test_os9_full_disk() {
   ec = _os9_format("test_full.dsk", 0, 5, 18, 18, 1, 256, &clusterSize,
                    "Full Testing", 8, 8, 1, 1, 0, 0, 3, &totalSectors,
                    &totalBytes);
+  ASSERT_EQUALS(0, ec);
+
+  ec = TSRBFFree("test_full.dsk", dname, &month, &day, &year, &bps,
+                 &total_sectors, &bytes_free, &free_sectors_before,
+                 &largest_free_block, &sectors_per_cluster,
+                 &largest_count, &sector_count);
   ASSERT_EQUALS(0, ec);
 
   ec = _os9_create(&p, "test_full.dsk,BIGFILE", FAM_READ | FAM_WRITE,
@@ -434,6 +444,17 @@ void test_os9_full_disk() {
 
   _os9_close(p);
   free(data);
+
+  /* Deleting the filled file must succeed and restore disk consistency */
+  ec = _os9_delete("test_full.dsk,BIGFILE");
+  ASSERT_EQUALS(0, ec);
+
+  ec = TSRBFFree("test_full.dsk", dname, &month, &day, &year, &bps,
+                 &total_sectors, &bytes_free, &free_sectors_after,
+                 &largest_free_block, &sectors_per_cluster,
+                 &largest_count, &sector_count);
+  ASSERT_EQUALS(0, ec);
+  ASSERT_EQUALS(free_sectors_before, free_sectors_after);
 }
 
 int main() {

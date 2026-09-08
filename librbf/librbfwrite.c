@@ -76,6 +76,8 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 		}
 
 
+		fd_stats orig_fd_sector = fd_sector;
+
 		/* 6a. Determine maximum file size by adding up the segment list */
 
 		accum_size = _os9_maximum_file_size(fd_sector, path->bps);
@@ -93,10 +95,35 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 			ec = _os9_extendSegList(path, segptr, &delta);
 
 
-			/* 1. If there is an error, time to abort. */
+			/* 1. If there is an error, rollback any allocated clusters and abort. */
 
 			if (ec != 0)
 			{
+				int k;
+
+				for (k = 0; k < NUM_SEGS; k++)
+				{
+					int orig_lsn = int3(orig_fd_sector.fd_seg[k].lsn);
+					int orig_num = int2(orig_fd_sector.fd_seg[k].num);
+					int curr_lsn = int3(fd_sector.fd_seg[k].lsn);
+					int curr_num = int2(fd_sector.fd_seg[k].num);
+
+					if (orig_lsn == 0 && curr_lsn != 0)
+					{
+						_os9_delbit(path->bitmap,
+							    curr_lsn / path->spc,
+							    curr_num / path->spc);
+					}
+					else if (orig_lsn != 0 && curr_lsn == orig_lsn && curr_num > orig_num)
+					{
+						_os9_delbit(path->bitmap,
+							    (orig_lsn + orig_num) / path->spc,
+							    (curr_num - orig_num) / path->spc);
+					}
+				}
+
+				fd_sector = orig_fd_sector;
+				*size = 0;
 				return (ec);
 			}
 
@@ -127,7 +154,7 @@ error_code _os9_write(os9_path_id path, void *buffer, u_int * size)
 		 *    ran out of sectors in the segment list to search.
 		 */
 
-		if (int3(segptr[i].lsn) == 0 || i == NUM_SEGS)
+		if (i == NUM_SEGS || int3(segptr[i].lsn) == 0)
 		{
 			/* 1. Apparently, the file position in the path was too
 			 * large, because we couldn't find a sector.
@@ -238,9 +265,10 @@ static int _os9_extendSegList(os9_path_id path, Fd_seg segptr, int *delta)
 			/* Calculate LSN for new sector */
 			newLSN = int3(segptr[i].lsn) + newNum - 1;
 
-			/* Is it allocated? Also check if it is in the same
+			/* Is it allocated? Also check if it is within disk bounds and in the same
 			   allocation map sector (due to OS-9 6x09 RBF limitation) */
-			if (newLSN / path->spc / 2048 ==
+			if (newLSN < int3(path->lsn0->dd_tot) &&
+			    newLSN / path->spc / 2048 ==
 			    int3(segptr[i].lsn) / path->spc / 2048
 			    && !_os9_ckbit(path->bitmap, newLSN / path->spc))
 			{

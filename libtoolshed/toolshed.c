@@ -388,6 +388,14 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
     }
   }
 
+  if (ec != 0) {
+    /* Copy failed (short on space, read error, or interrupted) */
+    _coco_close(destpath);
+    _coco_delete(dstfile);
+    _coco_close(path);
+    return ec;
+  }
+
   /* Copy meta data from file descriptor of source to destination */
 
   _coco_gs_fd(path, &fdesc);

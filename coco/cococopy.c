@@ -345,6 +345,14 @@ static error_code CopyFile(char *srcfile, char *dstfile, int eolTranslate,
 		}
 	}
 
+	if (ec != 0)
+	{
+		_os9_close(destpath);
+		_os9_delete(dstfile);
+		_os9_close(path);
+		return ec;
+	}
+
 	/* Copy meta data from file descriptor of source to destination */
 
 	_os9_gs_fd(path, sizeof(fd_stats), &srcFD);
