@@ -141,7 +141,7 @@ int os9copy(int argc, char *argv[]) {
     count++;
   }
 
-  if (count < 2) {
+  if (count == 0) {
     show_help(helpMessage);
     ec = 1;
     goto clean;
@@ -217,6 +217,12 @@ int os9copy(int argc, char *argv[]) {
 #endif
       break;
     }
+  }
+
+  if (targetDirectory == NO && count < 2) {
+    show_help(helpMessage);
+    ec = 1;
+    goto clean;
   }
 
   if (targetDirectory == NO && count > 2) {

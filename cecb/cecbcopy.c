@@ -160,7 +160,7 @@ int cecbcopy(int argc, char *argv[]) {
     count++;
   }
 
-  if (count < 2) {
+  if (count == 0) {
     show_help(helpMessage);
 
     return 1;
@@ -193,10 +193,15 @@ int cecbcopy(int argc, char *argv[]) {
     }
   }
 
+  if (targetDirectory == NO && count < 2) {
+    show_help(helpMessage);
+    return (1);
+  }
+
   if (targetDirectory == NO && count > 2) {
     printf("Error: two or more sources requires target to be a directory.\n\n");
     show_help(helpMessage);
-    return (0);
+    return (1);
   }
 
   /* Now look for the source files  */

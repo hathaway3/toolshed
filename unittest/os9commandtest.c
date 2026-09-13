@@ -1397,6 +1397,19 @@ void test_os9_command_line_parameters(void)
 	status = system(cmd);
 	ASSERT_TRUE(status != 0);
 
+	/* Copying zero files to an existing directory is a valid no-op (Make variable expansion) */
+	snprintf(cmd, sizeof(cmd), "%s makdir test_param.dsk,DIR > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	snprintf(cmd, sizeof(cmd), "%s copy test_param.dsk,DIR > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	snprintf(cmd, sizeof(cmd), "%s copy -o=0 test_param.dsk,DIR > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
 	/* Missing buffer argument to -b without crash */
 	snprintf(cmd, sizeof(cmd), "%s copy -b file1 file2 > /dev/null 2>&1", get_os9_bin());
 	status = system(cmd);

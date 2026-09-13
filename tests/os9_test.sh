@@ -114,6 +114,10 @@ test_dirs_and_copy() {
     # Copy multiple files to subdirectory
     "$OS9_BIN" copy f1.txt f2.txt ss.dsk,SUBDIR/ >/dev/null 2>&1
 
+    # Copy zero files to directory is a valid no-op (Makefiles with empty variable expansion)
+    "$OS9_BIN" copy ss.dsk,SUBDIR/ >/dev/null 2>&1
+    "$OS9_BIN" copy -o=0 ss.dsk,SUBDIR/ >/dev/null 2>&1
+
     # Verify listings
     "$OS9_BIN" dir ss.dsk, | grep -q "f1.txt"
     "$OS9_BIN" dir -e ss.dsk, | grep -q "SUBDIR"
