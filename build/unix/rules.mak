@@ -37,7 +37,7 @@ endif
 all: $(BINARY)$(SUFEXE) $(LIBRARY)
 
 # Default clean target
-clean:
+clean::
 	$(RM) *.o *.a *.d $(CLEAN_FILES) $(BINARY) $(BINARY)$(SUFEXE) $(LIBRARY)
 
 # Include dependency files if they exist

@@ -2,20 +2,13 @@
 
 include rules.mak
 
-vpath %.c ../../mamou:../../os9
-
 PACKAGENAME_UNIX	= toolshed-unix64-$(VERSION).tgz
 PACKAGENAME_WIN		= toolshed-win64-$(VERSION).zip
 
 PREFIX		?= $(HOME)/.local
+INSTALLDIR	?= $(DESTDIR)$(PREFIX)/bin
+DOCDIR		?= $(DESTDIR)$(PREFIX)/share/doc/toolshed
 
-ifneq ($(DESTDIR),)
-INSTALLDIR	?= $(DESTDIR)$(HOME)/.local/bin
-DOCDIR		?= $(DESTDIR)$(HOME)/.local/share/doc/toolshed
-else
-INSTALLDIR	?= $(PREFIX)/bin
-DOCDIR		?= $(PREFIX)/share/doc/toolshed
-endif
 APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt
 
 DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys \
@@ -29,8 +22,11 @@ MAKEPACKAGE = zip -9
 else
 PACKAGENAME	= $(PACKAGENAME_UNIX)
 MAKEPACKAGE = tar czvf
-DIRS		:= $(DIRS) cocofuse unittest
+DIRS		:= $(DIRS) unittest
+ifneq ($(NO_FUSE),1)
+DIRS		:= $(DIRS) cocofuse
 APPS		:= $(APPS) cocofuse
+endif
 endif
 
 APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
@@ -38,7 +34,7 @@ APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
 .PHONY: all test install package cleandirs clean unixpackage winpackage allpackages
 
 all:
-	$(foreach dir, $(DIRS), (cd $(dir); $(MAKE));)
+	@set -e; for dir in $(DIRS); do $(MAKE) -C $$dir; done
 
 test: all
 ifneq ($(WIN),)
@@ -61,7 +57,7 @@ package: install
 cleandirs:
 	$(foreach dir, $(DIRS) cocofuse unittest, [ ! -d $(dir) ] || $(MAKE) -C $(dir) clean;)
 	
-clean: cleandirs
+clean:: cleandirs
 	$(RM) $(PACKAGENAME_WIN) $(PACKAGENAME_UNIX)
 
 unixpackage:

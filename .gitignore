@@ -68,6 +68,7 @@ build/unix/*/cocofuse
 build/unix/*/tocgen
 build/unix/*/makewav
 build/unix/*/lst2cmt
+build/unix/*/casm
 build/unix/unittest/os9_tool_test
 build/unix/unittest/librbftest
 build/unix/unittest/libdecbtest

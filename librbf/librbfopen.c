@@ -433,7 +433,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 			/* 2. Try to match up the pathlist element to this entry. */
 
-			strncpy(q, (char *) diskent.name, sizeof(diskent.name));
+			memcpy(q, (char *) diskent.name, sizeof(diskent.name));
 			q[sizeof(diskent.name)] = '\0';
 
 			if (strcasecmp
