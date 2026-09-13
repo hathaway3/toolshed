@@ -24,7 +24,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 		       unsigned int *totalSectors, unsigned int *totalBytes)
 {
 	error_code ec = 0;
-	native_path_id path;
+	native_path_id path = NULL;
 	lsn0_sect s0;
 	unsigned int sectorsLeft;
 	int b;
@@ -67,13 +67,13 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 	if (int3(s0.dd_tot) > MAX_SECTORS)
 	{
 		fprintf(stderr, "Disk too large\n");
-
+		_native_close(path);
 		return (1);
 	}
 	else if (int3(s0.dd_tot) < 4)
 	{
 		fprintf(stderr, "Too few sectors\n");
-
+		_native_close(path);
 		return (1);
 	}
 
@@ -156,14 +156,25 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 	{
 		u_int i;
 		char sizedDiskName[33];
-		memset(sizedDiskName, 0, 33);
-		strncpy(sizedDiskName, diskName, 32);
+		size_t nameLen;
+		const char *nameSource = diskName;
 
-		for (i = 0; i < strlen(sizedDiskName) - 1; i++)
+		if (nameSource == NULL || *nameSource == '\0')
+		{
+			nameSource = "CoCo Disk";
+		}
+		memset(sizedDiskName, 0, sizeof(sizedDiskName));
+		strncpy(sizedDiskName, nameSource, 32);
+		nameLen = strlen(sizedDiskName);
+
+		for (i = 0; i + 1 < nameLen; i++)
 		{
 			s0.dd_nam[i] = sizedDiskName[i];
 		}
-		s0.dd_nam[i] = sizedDiskName[i] | 128;
+		if (nameLen > 0)
+		{
+			s0.dd_nam[i] = sizedDiskName[i] | 128;
+		}
 	}
 
 	_int1(DT_os9, s0.pd_dtp);
@@ -322,6 +333,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 		if (allocedSectors == NULL)
 		{
+			_native_close(path);
 			return (1);
 		}
 

@@ -166,6 +166,7 @@ unsigned int NextHighestMultiple(unsigned int value, unsigned int multiple);
 #define EOS_IC		192
 #define EOS_PTHFUL	200
 #define EOS_BMODE	203
+#define EOS_MF		207
 #define	EOS_EOF		211
 #define EOS_FNA		214
 #define EOS_BPNAM	215

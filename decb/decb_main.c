@@ -71,6 +71,8 @@ int main(int argc, char *argv[])
 				switch (*p)
 				{
 				case 'g':
+					if (*(p + 1) == '=')
+						p++;
 					decb_granule_count = atoi(p + 1);
 					while (*(p + 1) != '\0') p++;
 					break;
@@ -79,6 +81,12 @@ int main(int argc, char *argv[])
 				case '?':
 					show_decb_help(helpMessage);
 					return (0);
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (1);
 				}
 			}
 		}

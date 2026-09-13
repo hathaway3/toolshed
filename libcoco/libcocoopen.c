@@ -353,7 +353,11 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 	*buffer = malloc(size3);
 
 	if (*buffer == NULL)
+	{
+		_coco_close(*path);
+		*path = NULL;
 		return -1;
+	}
 
 	while (_coco_gs_eof(*path) == 0)
 	{
@@ -363,7 +367,13 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 			buffer2 = realloc(*buffer, size3);
 
 			if (buffer2 == NULL)
+			{
+				free(*buffer);
+				*buffer = NULL;
+				_coco_close(*path);
+				*path = NULL;
 				return -1;
+			}
 
 			*buffer = buffer2;
 		}
@@ -372,7 +382,18 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 		ec = _coco_read(*path, &((*buffer)[*size]), &size2);
 		*size += size2;
 		if (ec != 0)
+		{
+			if (ec == EOS_EOF)
+			{
+				ec = 0;
+				break;
+			}
+			free(*buffer);
+			*buffer = NULL;
+			_coco_close(*path);
+			*path = NULL;
 			return ec;
+		}
 	}
 
 	return ec;

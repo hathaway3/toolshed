@@ -10,7 +10,7 @@ https://sourceforge.net/projects/toolshed/
 
 The easiest way to install ToolShed on Linux or macOS is to use the included
 installation script. This script will attempt to install any missing 
-dependencies (like FUSE) and then build and install the tools.
+dependencies (like FUSE) and then build, run tests, and install the tools.
 
 From the root of the Toolshed directory, run:
 $ ./install.sh
@@ -30,10 +30,13 @@ but the simpler mingw-make should be good enough:
 $ mingw-get install mingw-make
 
 Enter the unpackaged toolshed directory and run:
-$ make all
 $ make install
 
-NOTE: The root Makefile automatically delegates to the appropriate build systems. You can also use "make clean" from the root to remove all generated artifacts across the entire project.
+NOTE: Running "make install" automatically compiles the tools, runs the full
+test suite, and deploys binaries and documentation (defaults to $HOME/.local,
+or pass PREFIX=/usr/local for system-wide installation). You can also run
+"make test" to execute tests without installing, "make all" to compile only,
+or "make clean" to remove all generated artifacts across the entire project.
 
 == HOW TO BUILD FOR WINDOWS ON UNIX or WSL ==
 
@@ -46,8 +49,9 @@ header files installed. On Debian-based systems:
 $ sudo apt-get install libfuse-dev
 
 Enter the unpackaged toolshed directory and run:
-$ make all
 $ make install
+
+(or run "make test" to compile and run tests without installing).
 
 
 == HOW TO BUILD firmware (hdbdos, dwdos, cocoroms, superdos) ==

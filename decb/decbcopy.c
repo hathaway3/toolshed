@@ -103,7 +103,7 @@ int decbcopy(int argc, char *argv[]) {
 
         default:
           fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return (0);
+          return (1);
         }
       }
     }
@@ -123,10 +123,10 @@ int decbcopy(int argc, char *argv[]) {
     count++;
   }
 
-  if (count == 0) {
+  if (count < 2) {
     show_help(helpMessage);
 
-    return 0;
+    return 1;
   }
 
   /* 3. Walk backwards and get the destination first. */
@@ -230,11 +230,11 @@ static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
                                int tokTranslate, int binary_concat, int rewrite,
                                int file_type, int data_type) {
   error_code ec = 0;
-  coco_path_id path;
-  coco_path_id destpath;
+  coco_path_id path = NULL;
+  coco_path_id destpath = NULL;
   int mode = FAM_NOCREATE | FAM_WRITE;
   unsigned char *buffer = NULL;
-  char *translation_buffer;
+  char *translation_buffer = NULL;
   u_int new_translation_size;
   u_int buffer_size;
   coco_file_stat fstat;

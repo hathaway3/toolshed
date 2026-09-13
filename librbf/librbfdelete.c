@@ -25,6 +25,7 @@ error_code _os9_delete_directory(char *pathlist)
 	error_code ec;
 	os9_path_id fold_path = NULL;
 	fd_stats fdbuf;
+	u_int entry_offset = 0;
 
 	/* open a path to the device */
 	ec = _os9_open(&fold_path, pathlist, FAM_READ | FAM_DIR);
@@ -36,8 +37,8 @@ error_code _os9_delete_directory(char *pathlist)
 
 	while (_os9_gs_eof(fold_path) == 0)
 	{
-		u_int i = 0;
 		os9_dir_entry dentry;
+		char dname[32];
 		char *dirpath;
 		os9_path_id path2 = NULL;
 
@@ -45,32 +46,41 @@ error_code _os9_delete_directory(char *pathlist)
 
 		if (ec != 0)
 		{
+			_os9_close(fold_path);
+			fold_path = NULL;
 			return ec;
 		}
 
-		OS9StringToCString(dentry.name);
+		entry_offset += sizeof(os9_dir_entry);
+
+		strncpy(dname, (char *) dentry.name, 29);
+		dname[29] = '\0';
+		OS9StringToCString((u_char *) dname);
 
 		/* Skip over dot directories and empty entries. */
-		if (dentry.name[0] == '\0')
+		if (dname[0] == '\0')
 			continue;
-		if (strcmp((char *) dentry.name, ".") == 0)
+		if (strcmp(dname, ".") == 0)
 			continue;
-		if (strcmp((char *) dentry.name, "..") == 0)
+		if (strcmp(dname, "..") == 0)
 			continue;
 
 		dirpath =
-			malloc(strlen((char *) pathlist) +
-			       strlen((char *) dentry.name) + 2);
+			malloc(strlen(pathlist) +
+			       strlen(dname) + 2);
 		if (dirpath == NULL)
 		{
-			return 1;
+			_os9_close(fold_path);
+			fold_path = NULL;
+			return EOS_MF;
 		}
 
 		_os9_close(fold_path);
+		fold_path = NULL;
 
 		strcpy(dirpath, pathlist);
 		strcat(dirpath, "/");
-		strcat(dirpath, (char *) dentry.name);
+		strcat(dirpath, dname);
 
 		/* Determine if file is really another directory */
 		ec = _os9_open(&path2, dirpath, FAM_DIR | FAM_READ);
@@ -78,6 +88,7 @@ error_code _os9_delete_directory(char *pathlist)
 		{
 			/* Yup it is a directory, we need to delete it */
 			_os9_close(path2);
+			path2 = NULL;
 			ec = _os9_delete_directory(dirpath);
 
 			if (ec != 0)
@@ -87,20 +98,35 @@ error_code _os9_delete_directory(char *pathlist)
 				return ec;
 			}
 		}
-
-		/* Delete file */
-		ec = _os9_delete(dirpath);
+		else
+		{
+			/* Delete file */
+			ec = _os9_delete(dirpath);
+			if (ec != 0)
+			{
+				free(dirpath);
+				return ec;
+			}
+		}
 		free(dirpath);
 
-		/* Open orginal directory */
-		ec = _os9_open(&fold_path, pathlist, FAM_WRITE | FAM_DIR);
-		ec = _os9_seek(fold_path, i * sizeof(fd_stats), SEEK_SET);
-
-		/* Incement directory entry count */
-		i++;
+		/* Open original directory */
+		ec = _os9_open(&fold_path, pathlist, FAM_READ | FAM_DIR);
+		if (ec != 0)
+		{
+			return ec;
+		}
+		ec = _os9_seek(fold_path, entry_offset, SEEK_SET);
+		if (ec != 0)
+		{
+			_os9_close(fold_path);
+			fold_path = NULL;
+			return ec;
+		}
 	}
 
 	_os9_close(fold_path);
+	fold_path = NULL;
 
 	/* All directory entries have been deleted.
 	   Turn off directory attribute, and delete directory file */
@@ -117,6 +143,7 @@ error_code _os9_delete_directory(char *pathlist)
 	if (ec != 0)
 	{
 		_os9_close(fold_path);
+		fold_path = NULL;
 		return ec;
 	}
 	fdbuf.fd_att &= ~FAP_DIR;
@@ -124,10 +151,12 @@ error_code _os9_delete_directory(char *pathlist)
 	if (ec != 0)
 	{
 		_os9_close(fold_path);
+		fold_path = NULL;
 		return ec;
 	}
 
 	ec = _os9_close(fold_path);
+	fold_path = NULL;
 	if (ec != 0)
 	{
 		return ec;
@@ -297,6 +326,7 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 	fd_stats fdbuf;
 	Fd_seg seg;
 	unsigned int spc;
+	int fd_cluster;
 	int i;
 	int ec = 0;
 
@@ -312,20 +342,39 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 	}
 
 	spc = path->spc;
+	fd_cluster = path->pl_fd_lsn / spc;
 
 	ec = _os9_close(path);
+	path = NULL;
 
 	seg = fdbuf.fd_seg;
 
 	for (i = 0; i < NUM_SEGS; i++)
 	{
-		if (int3(seg[i].lsn) == 0)
+		int seg_lsn = int3(seg[i].lsn);
+		int seg_num = int2(seg[i].num);
+
+		if (seg_lsn == 0 || seg_num == 0)
 		{
 			break;
 		}
 
-		ec = _os9_delbit(bitmap, int3(seg[i].lsn) / spc,
-				 int2(seg[i].num) / spc);
+		int start_cluster = seg_lsn / spc;
+		int end_cluster = (seg_lsn + seg_num - 1) / spc;
+
+		if (start_cluster == fd_cluster)
+		{
+			if (end_cluster > fd_cluster)
+			{
+				ec = _os9_delbit(bitmap, fd_cluster + 1,
+						 end_cluster - fd_cluster);
+			}
+		}
+		else
+		{
+			ec = _os9_delbit(bitmap, start_cluster,
+					 end_cluster - start_cluster + 1);
+		}
 
 		if (ec != 0)
 		{

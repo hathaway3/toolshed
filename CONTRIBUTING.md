@@ -18,12 +18,17 @@ Use the [feature request form](https://github.com/nitros9/toolshed/issues/new?te
 
 2. **Build:**
    ```bash
-   make -C build/unix all
+   make all
    ```
 
 3. **Test:**
    ```bash
-   cd build/unix/unittest && make test
+   make test
+   ```
+
+4. **Install:**
+   ```bash
+   make install    # automatically compiles, runs test suite, and deploys
    ```
 
 ## Coding Style
@@ -31,14 +36,16 @@ Use the [feature request form](https://github.com/nitros9/toolshed/issues/new?te
 - **Host-side tools** (root-level `os9`, `decb`, `cecb`, `ar2`, `lib*` directories, etc.): C99 with tabs for indentation (width 8).
 - **Firmware** (`hdbdos`, `dwdos`, `cocoroms`, `superdos`): 6809/6309 assembly. `lwasm` is the preferred assembler; the legacy `mamou` assembler works as a fallback.
 
-### Memory Safety (C code)
+### Memory Safety & Robust C Code
 
-The C codebase has a history of pointer misuse crashes. Follow these conventions:
+The C codebase has a history of pointer misuse and bounds errors. Follow these conventions:
 
 - **NULL-initialize** every `os9_path_id` and similar heap-backed handle at declaration.
 - **Set pointers to `NULL`** immediately after every `term_pd()`, `_os9_close()`, or `free()` call.
 - Use a **single-exit `goto clean;`** pattern; the `clean:` block checks `if (ptr != NULL)` before freeing.
 - Never `free()` at multiple return points.
+- **Guard input and file loops**: always bound loops reading from files or streams against buffer limits and check for `EOF` (e.g. `while ((c = getc(in)) != EOF && c != '\0' && len < MAXLEN)`).
+- **Defensive CLI parsing**: always verify `argc` bounds before accessing `argv[i + 1]` or option argument strings.
 
 ## Pull Request Process
 

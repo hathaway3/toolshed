@@ -292,10 +292,10 @@ int main(int argc, char **argv) {
     if (*argv[j] == '-') {
       switch (tolower((unsigned char)argv[j][1])) {
       case 'l':
-        seconds = strtol(&(argv[j][2]), NULL, 0);
+        seconds = strtol(argv[j][2] == '=' ? &(argv[j][3]) : &(argv[j][2]), NULL, 0);
         break;
       case 's':
-        sample_rate = strtol(&(argv[j][2]), NULL, 0);
+        sample_rate = strtol(argv[j][2] == '=' ? &(argv[j][3]) : &(argv[j][2]), NULL, 0);
         break;
       case 'r':
         binary = 1;
@@ -306,11 +306,12 @@ int main(int argc, char **argv) {
       case 'n':
         memset(filename, ' ', 8);
         {
-          int len = strlen(&argv[j][2]);
+          const char *n_str = argv[j][2] == '=' ? &argv[j][3] : &argv[j][2];
+          int len = strlen(n_str);
 
           if (len > 8)
             len = 8;
-          memcpy(filename, &(argv[j][2]), len);
+          memcpy(filename, n_str, len);
         }
         break;
       case '0':
@@ -329,22 +330,22 @@ int main(int argc, char **argv) {
         data_type = 0xff;
         break;
       case 'o':
-        out_filename = &argv[j][2];
+        out_filename = argv[j][2] == '=' ? &argv[j][3] : &argv[j][2];
         break;
       case 'v':
         verbose = 1;
         break;
       case 'd':
-        start_address = strtoul(&(argv[j][2]), NULL, 0);
+        start_address = strtoul(argv[j][2] == '=' ? &(argv[j][3]) : &(argv[j][2]), NULL, 0);
         break;
       case 'e':
-        exec_address = strtoul(&(argv[j][2]), NULL, 0);
+        exec_address = strtoul(argv[j][2] == '=' ? &(argv[j][3]) : &(argv[j][2]), NULL, 0);
         break;
       case 'p':
-        pause = atof(&argv[j][2]);
+        pause = atof(argv[j][2] == '=' ? &argv[j][3] : &argv[j][2]);
         break;
       case 'g':
-        group = strtoul(&argv[j][2], NULL, 0);
+        group = strtoul(argv[j][2] == '=' ? &argv[j][3] : &argv[j][2], NULL, 0);
         if (group < 1)
           fprintf(stderr, "-g group must be bigger than 1\n");
         break;
@@ -354,11 +355,16 @@ int main(int argc, char **argv) {
       default:
         /* Bad option */
         fprintf(stderr, "Unknown option\n");
-        exit(0);
+        exit(1);
       }
     } else {
       in_filename = argv[j];
     }
+  }
+
+  if (in_filename == NULL) {
+    fprintf(stderr, "makewav: no input file specified\n\n");
+    return 1;
   }
 
   if (verbose) {

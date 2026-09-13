@@ -70,7 +70,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 	/* 3. Determine if disk is being open in raw mode. */
 
-	if (pathlist[strlen(pathlist) - 1] == '@')
+	if (strlen(pathlist) > 0 && pathlist[strlen(pathlist) - 1] == '@')
 	{
 		/* 1. Yes, raw mode. */
 
@@ -328,7 +328,7 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	/* 4. Determine if disk is being open in raw mode. */
 
-	if (pathlist[strlen(pathlist) - 1] == '@')
+	if (strlen(pathlist) > 0 && pathlist[strlen(pathlist) - 1] == '@')
 	{
 		/* 1. Yes, raw mode. */
 
@@ -433,7 +433,8 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 			/* 2. Try to match up the pathlist element to this entry. */
 
-			strcpy(q, (char *) diskent.name);
+			strncpy(q, (char *) diskent.name, sizeof(diskent.name));
+			q[sizeof(diskent.name)] = '\0';
 
 			if (strcasecmp
 			    ((char *) p,
@@ -513,14 +514,31 @@ error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
 				      int mode, char **filename)
 {
 	char *pathcopy, *lastPathComponent, *lastPathSeperator;
+	char *comma;
 
 	/* 1. Generate path to parent. */
 	DEBUG_PRINT("Initializing *path to NULL");
 	*path = NULL;
 
-	pathcopy = strdup(pathlist);
+	if (pathlist == NULL)
+	{
+		return EOS_BPNAM;
+	}
 
-	lastPathComponent = strchr(pathcopy, ',') + 1;
+	pathcopy = strdup(pathlist);
+	if (pathcopy == NULL)
+	{
+		return EOS_MF;
+	}
+
+	comma = strchr(pathcopy, ',');
+	if (comma == NULL)
+	{
+		free(pathcopy);
+		return EOS_BPNAM;
+	}
+
+	lastPathComponent = comma + 1;
 	lastPathSeperator = strrchr(lastPathComponent, '/');
 
 	if (lastPathSeperator != NULL)
@@ -529,7 +547,11 @@ error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
 	}
 
 	*filename = strdup(lastPathComponent);
-//    strcpy(filename, lastPathComponent);
+	if (*filename == NULL)
+	{
+		free(pathcopy);
+		return EOS_MF;
+	}
 	pathcopy[lastPathComponent - pathcopy] = '.';
 	pathcopy[lastPathComponent - pathcopy + 1] = '\0';
 
@@ -559,7 +581,7 @@ error_code _os9_close(os9_path_id path)
 	{
 		/* 1. This is a valid path. */
 
-		if (path->israw == 0)
+		if ((path->mode & FAM_WRITE) && path->israw == 0)
 		{
 			_os9_truncate_seg_list(path);
 		}
@@ -568,18 +590,21 @@ error_code _os9_close(os9_path_id path)
 		term_lsn0(path);
 
 		/* 1. Make sure file length is an exact multiple of 256. */
-		/* Extend file length if not */
+		/* Extend file length if not, but only if open for write */
 
-		fseek(path->fd, 0, SEEK_END);
-		pad_size = 256 - (ftell(path->fd) % 256);
-		if (pad_size == 256)
+		if (path->mode & FAM_WRITE)
 		{
-			pad_size = 0;
-		}
+			fseek(path->fd, 0, SEEK_END);
+			pad_size = 256 - (ftell(path->fd) % 256);
+			if (pad_size == 256)
+			{
+				pad_size = 0;
+			}
 
-		for (i = 0; i < pad_size; i++)
-		{
-			fwrite(&pad, 1, 1, path->fd);
+			for (i = 0; i < pad_size; i++)
+			{
+				fwrite(&pad, 1, 1, path->fd);
+			}
 		}
 
 		fclose(path->fd);
@@ -597,8 +622,7 @@ static void _os9_truncate_seg_list(os9_path_id path)
 {
 	fd_stats fd_sector;
 	int i;
-	unsigned int file_size, rounded_size, max_size, truncation;
-	unsigned int clusters_to_truncate = 0;
+	unsigned int file_size, sectors_needed, total_sectors;
 
 
 	/* 1. Seek to file descriptor sector for this file and get it in memory. */
@@ -615,55 +639,51 @@ static void _os9_truncate_seg_list(os9_path_id path)
 	}
 
 
-	/* 3. Get size of file. */
+	/* 3. Get size of file and sectors needed. */
 
 	file_size = int4(fd_sector.fd_siz);
+	sectors_needed = (file_size + path->bps - 1) / path->bps;
 
 
-	/* 4. Get number of bytes when rounded to next cluster. */
+	/* 4. Get total sectors currently represented by segment list. */
 
-	rounded_size = NextHighestMultiple(file_size, path->cs);
-
-
-	/* 5. Get number of bytes as currently represented by segment list. */
-
-	max_size = _os9_maximum_file_size(fd_sector, path->bps);
+	total_sectors = _os9_maximum_file_size(fd_sector, path->bps) / path->bps;
 
 
-	/* 6. If the size that the segment list conveys is larger than our round size,
-	 * then compute the truncation value (how much we will cut).
-	 */
+	/* 5. Truncate trailing clusters while the remaining sectors suffice. */
 
-	if (max_size > rounded_size)
+	while (total_sectors >= path->spc && (total_sectors - path->spc) >= sectors_needed)
 	{
-		truncation =
-			_os9_maximum_file_size(fd_sector,
-					       path->bps) - rounded_size;
-		clusters_to_truncate = truncation / path->cs;
-	}
-
-
-	while (clusters_to_truncate--)
-	{
-		/* 1. Remove one cluster from end of segement list. */
+		int truncated = 0;
 
 		for (i = NUM_SEGS - 1; i >= 0; i--)
 		{
 			if (int3(fd_sector.fd_seg[i].lsn) != 0)
 			{
-				_os9_delbit(path->bitmap,
-					    (int3(fd_sector.fd_seg[i].lsn) +
-					     int2(fd_sector.fd_seg[i].num) -
-					     1) / path->spc, 1);
-				_int2(int2(fd_sector.fd_seg[i].num) -
-				      path->spc, fd_sector.fd_seg[i].num);
+				unsigned int min_sectors = (i == 0 && path->spc > 1) ? (path->spc - 1) : 0;
+				unsigned int cur_num = int2(fd_sector.fd_seg[i].num);
 
-				if (int2(fd_sector.fd_seg[i].num) == 0)
+				if (cur_num >= path->spc && (cur_num - path->spc) >= min_sectors)
 				{
-					_int3(0, fd_sector.fd_seg[i].lsn);
+					_os9_delbit(path->bitmap,
+						    (int3(fd_sector.fd_seg[i].lsn) +
+						     cur_num - 1) / path->spc, 1);
+					_int2(cur_num - path->spc, fd_sector.fd_seg[i].num);
+
+					if (int2(fd_sector.fd_seg[i].num) == 0)
+					{
+						_int3(0, fd_sector.fd_seg[i].lsn);
+					}
+					total_sectors -= path->spc;
+					truncated = 1;
 				}
 				break;
 			}
+		}
+
+		if (!truncated)
+		{
+			break;
 		}
 	}
 
@@ -711,58 +731,43 @@ int _os9_maximum_file_size(fd_stats fd_sector, int bytesPerSector)
  */
 int validate_pathlist(os9_path_id * path, char *pathlist)
 {
-	char *p;
-	char *tmppathlist;
+	char *comma;
 
-
-	if (strchr(pathlist, ',') == NULL)
+	if ((comma = strchr(pathlist, ',')) == NULL)
 	{
 		return EOS_BPNAM;
 	}
 
-
-	/* 2. Check validity of pathlist. */
-
-	tmppathlist = strdup(pathlist);
-
-	p = strtok(tmppathlist, ",");
-
-	if (p == NULL)
+	size_t imglen = comma - pathlist;
+	(*path)->imgfile = malloc(imglen + 1);
+	if ((*path)->imgfile == NULL)
 	{
-		free(tmppathlist);
+		return EOS_MF;
+	}
+	memcpy((*path)->imgfile, pathlist, imglen);
+	(*path)->imgfile[imglen] = '\0';
 
-		return (EOS_BPNAM);
+	char *p = comma + 1;
+	while (*p == '/')
+	{
+		p++;
 	}
 
-
-	/* 3. Copy OS-9 pathlist element. */
-
-	(*path)->imgfile = strdup(p);
-
-	p = strtok(NULL, ",");
-
-	if (p == NULL)
+	if (*p == '\0')
 	{
-		/* 1. There was nothing following the native/os9 delimiter, assume root. */
-
-
 		(*path)->pathlist = strdup(".");
 	}
 	else
 	{
-		/* 1. If here, there is something following the native/os9 delimiter */
-		/* skip over any leading slashes after the , delimiter */
-
-		while (*p == '/')
-		{
-			p++;
-		}
-
 		(*path)->pathlist = strdup(p);
 	}
 
-	free(tmppathlist);
-
+	if ((*path)->pathlist == NULL)
+	{
+		free((*path)->imgfile);
+		(*path)->imgfile = NULL;
+		return EOS_MF;
+	}
 
 	return 0;
 }
@@ -780,6 +785,7 @@ error_code _os9_file_exists(os9_path_id folder_path, char *filename)
 	while (_os9_gs_eof(folder_path) == 0)
 	{
 		int mode = folder_path->mode;
+		char dname[32];
 
 		folder_path->mode |= FAM_DIR | FAM_READ;
 		ec = _os9_readdir(folder_path, &dentry);
@@ -790,9 +796,11 @@ error_code _os9_file_exists(os9_path_id folder_path, char *filename)
 			return ec;
 		}
 
+		strncpy(dname, (char *) dentry.name, 29);
+		dname[29] = '\0';
+		OS9StringToCString((u_char *) dname);
 
-		if (strcasecmp
-		    (filename, (char *) OS9StringToCString(dentry.name)) == 0)
+		if (strcasecmp(filename, dname) == 0)
 		{
 			return EOS_FAE;
 		}
@@ -894,12 +902,16 @@ static int init_bitmap(os9_path_id path)
  */
 static int term_bitmap(os9_path_id path)
 {
-	/* 1. Write back out bitmap. */
+	/* 1. Write back out bitmap if open for write. */
 
-	_os9_lsn_fseek(path, 1);
-	fwrite(path->bitmap, 1, path->bitmap_bytes, path->fd);
+	if (path->mode & FAM_WRITE)
+	{
+		_os9_lsn_fseek(path, 1);
+		fwrite(path->bitmap, 1, path->bitmap_bytes, path->fd);
+	}
 
 	free(path->bitmap);
+	path->bitmap = NULL;
 
 
 	return 0;

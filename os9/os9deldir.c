@@ -55,7 +55,7 @@ int os9deldir(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -89,10 +89,10 @@ int os9deldir(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
-	return (0);
+	return (ec);
 }
 
 
@@ -107,7 +107,7 @@ static int do_deldir(char **argv, char *path, int interaction)
 			printf("\nDeleting directory: %s\n", path);
 			printf("List directory, delete directory, or quit? (l/d/q) ");
 
-			if (scanf("%s", c) > 0)
+			if (scanf("%9s", c) > 0)
 			{
 				switch (c[0])
 				{

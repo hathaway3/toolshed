@@ -99,7 +99,7 @@ int os9dcheck(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -127,13 +127,13 @@ int os9dcheck(int argc, char *argv[])
 		}
 	}
 
-	if (argv[1] == NULL)
+	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
-	return (0);
+	return (ec);
 }
 
 
@@ -146,6 +146,7 @@ static int do_dcheck(char **argv, char *p)
 	unsigned char *secondaryBitmap = NULL;
 	char *newName = NULL;
 	char os9pathlist[256];
+	char diskName[33];
 	double size;
 
 	if (strchr(p, ',') != 0)
@@ -180,8 +181,10 @@ static int do_dcheck(char **argv, char *p)
 		goto clean;
 	}
 
-	OS9StringToCString(os9_path->lsn0->dd_nam);
-	printf("Volume - '%s' in file: %s\n", os9_path->lsn0->dd_nam, p);
+	memset(diskName, 0, sizeof(diskName));
+	memcpy(diskName, os9_path->lsn0->dd_nam, sizeof(os9_path->lsn0->dd_nam));
+	OS9StringToCString((u_char *) diskName);
+	printf("Volume - '%s' in file: %s\n", diskName, p);
 	printf("$%4.4X bytes in allocation map\n",
 	       int2(os9_path->lsn0->dd_map));
 
@@ -209,7 +212,7 @@ static int do_dcheck(char **argv, char *p)
    It also makes it easier to determine if sectors are allocated multiple times.
 */
 	secondaryBitmap =
-		(unsigned char *) malloc((int3(os9_path->lsn0->dd_tot) + 1) /
+		(unsigned char *) malloc((int3(os9_path->lsn0->dd_tot) + 7) /
 					 8);
 
 	if (secondaryBitmap == NULL)
@@ -219,7 +222,7 @@ static int do_dcheck(char **argv, char *p)
 		goto clean;
 	}
 
-	memset(secondaryBitmap, 0, (int3(os9_path->lsn0->dd_tot) + 1) / 8);
+	memset(secondaryBitmap, 0, (int3(os9_path->lsn0->dd_tot) + 7) / 8);
 
 	/* Allocate LSN0 in secondary bitmap */
 	_os9_allbit(secondaryBitmap, 0, 1);
@@ -267,12 +270,13 @@ static int do_dcheck(char **argv, char *p)
 		if (gPreAllo > 0 || gFnotA > 0 || gBadFD > 0)
 		{
 			printf("\n'%s' file structure is NOT intact\n",
-			       os9_path->lsn0->dd_nam);
+			       diskName);
+			ec = 1;
 		}
 		else
 		{
 			printf("\n'%s' file structure is intact\n",
-			       os9_path->lsn0->dd_nam);
+			       diskName);
 		}
 	}
 
@@ -434,24 +438,23 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 						continue;
 					}
 
-					OS9StringToCString(dEnt[k].name);
+					char entName[32];
+					memset(entName, 0, sizeof(entName));
+					memcpy(entName, dEnt[k].name, sizeof(dEnt[k].name));
+					OS9StringToCString((u_char *) entName);
 
-					if (strcmp((char *) dEnt[k].name, ".")
-					    == 0)
+					if (strcmp(entName, ".") == 0)
 					{
 						continue;
 					}
-					if (strcmp
-					    ((char *) dEnt[k].name,
-					     "..") == 0)
+					if (strcmp(entName, "..") == 0)
 					{
 						continue;
 					}
 
 					newPath =
 						strcatdup(path, "/",
-							  (char *) dEnt[k].
-							  name);
+							  entName);
 
 					if (int3(dEnt[k].lsn) > dd_tot)
 					{

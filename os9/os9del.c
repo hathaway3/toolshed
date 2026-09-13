@@ -52,7 +52,7 @@ int os9del(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -74,7 +74,7 @@ int os9del(int argc, char *argv[])
 
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error %d opening '%s'\n",
+			fprintf(stderr, "%s: error %d deleting '%s'\n",
 				argv[0], ec, p);
 			return (ec);
 		}
@@ -83,8 +83,8 @@ int os9del(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
-	return (0);
+	return (ec);
 }

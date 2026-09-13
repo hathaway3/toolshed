@@ -145,7 +145,7 @@ error_code TSDelete(char *pathlist) {
 
 error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
   error_code ec = 0;
-  coco_path_id path;
+  coco_path_id path = NULL;
   int j;
   u_int fileSize;
 
@@ -159,19 +159,19 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
 
   if (ec != 0) {
     _coco_close(path);
-
+    path = NULL;
     return ec;
   }
 
   if (padSize == fileSize) {
     _coco_close(path);
-
+    path = NULL;
     return 0;
   }
 
   if (padSize < fileSize) {
     _coco_close(path);
-
+    path = NULL;
     return EOS_PADROM;
   }
 
@@ -181,13 +181,17 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
     for (j = 0; j < padSize - fileSize; j++) {
       u_int size = 1;
 
-      _coco_write(path, &padChar, &size);
+      ec = _coco_write(path, &padChar, &size);
+      if (ec != 0) {
+        break;
+      }
     }
   } else {
     // read contents
     char *contents = malloc(fileSize);
     if (contents == NULL) {
       _coco_close(path);
+      path = NULL;
       return EOS_MF;
     }
 
@@ -200,14 +204,18 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
         _coco_seek(path, 0, SEEK_SET);
 
         for (j = 0; j < padSize - fileSize; j++) {
-          u_int size = 1;
+          u_int psize = 1;
 
-          _coco_write(path, &padChar, &size);
+          ec = _coco_write(path, &padChar, &psize);
+          if (ec != 0) {
+            break;
+          }
         }
 
-        size = fileSize;
-
-        _coco_write(path, contents, &fileSize);
+        if (ec == 0) {
+          size = fileSize;
+          ec = _coco_write(path, contents, &size);
+        }
       }
 
       free(contents);
@@ -216,13 +224,14 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
   }
 
   _coco_close(path);
+  path = NULL;
 
-  return 0;
+  return ec;
 }
 
 error_code TSRBFAttrGet(char *p, char *attr, char *strattr) {
   error_code ec = 0;
-  os9_path_id path;
+  os9_path_id path = NULL;
 
   /* open a path to the device */
   ec = _os9_open(&path, p, FAM_READ);
@@ -238,7 +247,7 @@ error_code TSRBFAttrGet(char *p, char *attr, char *strattr) {
     fd_stats fdbuf;
     int size = sizeof(fdbuf);
 
-    _os9_gs_fd(path, size, &fdbuf);
+    ec = _os9_gs_fd(path, size, &fdbuf);
 
     *attr = fdbuf.fd_att;
 
@@ -248,14 +257,15 @@ error_code TSRBFAttrGet(char *p, char *attr, char *strattr) {
   }
 
   _os9_close(path);
+  path = NULL;
 
-  return (0);
+  return ec;
 }
 
 error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask,
                         char *attr, char *strattr) {
   error_code ec = 0;
-  os9_path_id path;
+  os9_path_id path = NULL;
 
   /* open a path to the device */
   ec = _os9_open(&path, file, FAM_WRITE);
@@ -272,42 +282,53 @@ error_code TSRBFAttrSet(char *file, int attrSetMask, int attrResetMask,
     int size = sizeof(fdbuf);
 
     ec = _os9_gs_fd(path, size, &fdbuf);
+    if (ec == 0) {
+      if (attrSetMask != 0) {
+        fdbuf.fd_att |= attrSetMask;
+      }
 
-    if (attrSetMask != 0) {
-      fdbuf.fd_att |= attrSetMask;
-    }
+      if (attrResetMask != 0) {
+        fdbuf.fd_att &= ~attrResetMask;
+      }
 
-    if (attrResetMask != 0) {
-      fdbuf.fd_att &= ~attrResetMask;
-    }
+      ec = _os9_ss_fd(path, size, &fdbuf);
 
-    ec = _os9_ss_fd(path, size, &fdbuf);
+      *attr = fdbuf.fd_att;
 
-    *attr = fdbuf.fd_att;
-
-    if (strattr != NULL) {
-      OS9AttrToString(*attr, strattr);
+      if (strattr != NULL) {
+        OS9AttrToString(*attr, strattr);
+      }
     }
   }
 
   _os9_close(path);
+  path = NULL;
 
-  return (0);
+  return ec;
 }
 
 error_code TSMoveFile(char *srcfile, char *dstfile) {
   error_code ec = 0;
-  char buff[32768];
+  char *buff = malloc(32768);
+
+  if (buff == NULL) {
+    return EOS_MF;
+  }
 
   /* determine if srcfile is a directory, delete the make */
   if (TSIsDirectory(srcfile) == 1) {
-    TSMakeDirectory(dstfile);
-    TSDelete(srcfile);
-  } else if (TSCopyFile(srcfile, dstfile, 0, 1, 0, 0, buff, sizeof(buff)) ==
-             0) {
-    TSDelete(srcfile);
+    ec = TSMakeDirectory(dstfile);
+    if (ec == 0) {
+      ec = TSDelete(srcfile);
+    }
+  } else {
+    ec = TSCopyFile(srcfile, dstfile, 0, 1, 0, 0, buff, 32768);
+    if (ec == 0) {
+      ec = TSDelete(srcfile);
+    }
   }
 
+  free(buff);
   return ec;
 }
 
@@ -315,8 +336,8 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
                       int rewrite, int owner, int owner_set, char *buffer,
                       u_int buffer_size) {
   error_code ec = 0;
-  coco_path_id path;
-  coco_path_id destpath;
+  coco_path_id path = NULL;
+  coco_path_id destpath = NULL;
   coco_file_stat fdesc;
   int mode = FAM_NOCREATE | FAM_WRITE;
   coco_file_stat fstat;
@@ -342,18 +363,27 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
 
   if (ec != 0) {
     _coco_close(path);
-
+    path = NULL;
     return ec;
   }
 
   while (_coco_gs_eof(path) == 0) {
-    char *newBuffer;
+    char *newBuffer = NULL;
     u_int newSize;
     u_int size = buffer_size;
 
     ec = _coco_read(path, buffer, &size);
 
+    if (ec == EOS_EOF) {
+      ec = 0;
+      break;
+    }
+
     if (ec != 0) {
+      break;
+    }
+
+    if (size == 0) {
       break;
     }
 
@@ -391,8 +421,10 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
   if (ec != 0) {
     /* Copy failed (short on space, read error, or interrupted) */
     _coco_close(destpath);
+    destpath = NULL;
     _coco_delete(dstfile);
     _coco_close(path);
+    path = NULL;
     return ec;
   }
 
@@ -408,7 +440,9 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
   _coco_ss_fd(destpath, &fdesc);
 
   _coco_close(path);
+  path = NULL;
   _coco_close(destpath);
+  destpath = NULL;
 
   return ec;
 }
@@ -724,7 +758,7 @@ error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day,
   error_code ec = 0;
   int i;
   char os9pathlist[256];
-  os9_path_id path;
+  os9_path_id path = NULL;
   int bytes_in_bitmap;
   lsn0_sect sector0;
   u_int size;
@@ -801,14 +835,20 @@ error_code TSRBFFree(char *file, char *dname, u_int *month, u_int *day,
 
   *bytes_free = *free_sectors * *bps;
 
-  strcpy(dname, (char *)sector0.dd_nam);
-  OS9StringToCString((u_char *)dname);
+  {
+    char local_dname[sizeof(sector0.dd_nam) + 1];
+    memset(local_dname, 0, sizeof(local_dname));
+    memcpy(local_dname, sector0.dd_nam, sizeof(sector0.dd_nam));
+    OS9StringToCString((u_char *)local_dname);
+    strcpy(dname, local_dname);
+  }
 
   *month = sector0.dd_dat[1];
   *day = sector0.dd_dat[2];
   *year = sector0.dd_dat[0] + 1900;
 
   _os9_close(path);
+  path = NULL;
 
   return (0);
 }

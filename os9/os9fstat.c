@@ -26,6 +26,7 @@ static char const *const helpMessage[] = {
 
 int os9fstat(int argc, char *argv[])
 {
+	error_code ec = 0;
 	char *p = NULL;
 	int i;
 
@@ -47,7 +48,7 @@ int os9fstat(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -64,7 +65,11 @@ int os9fstat(int argc, char *argv[])
 		{
 			p = argv[i];
 
-			do_fstat(argv, p);
+			ec = do_fstat(argv, p);
+			if (ec != 0)
+			{
+				return (ec);
+			}
 			printf("\n");
 		}
 	}
@@ -75,14 +80,14 @@ int os9fstat(int argc, char *argv[])
 		return (0);
 	}
 
-	return (0);
+	return (ec);
 }
 
 
 static int do_fstat(char **argv, char *p)
 {
 	error_code ec = 0;
-	os9_path_id path;
+	os9_path_id path = NULL;
 	char plural;
 
 	/* open a path to the device */
@@ -147,6 +152,7 @@ static int do_fstat(char **argv, char *p)
 	}
 
 	_os9_close(path);
+	path = NULL;
 
 	return (0);
 }

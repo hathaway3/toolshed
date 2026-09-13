@@ -134,11 +134,19 @@ int OS9Strlen(u_char * f)
 {
 	int count = 0;
 
-	do
+	if (f == NULL)
+	{
+		return 0;
+	}
+
+	while (*f != '\0')
 	{
 		count++;
+		if (*f++ & 0x80)
+		{
+			break;
+		}
 	}
-	while (!(*f++ & 0x80));
 
 	return (count);
 }
@@ -153,6 +161,11 @@ u_char *OS9StringToCString(u_char * f)
 {
 	u_char *p;
 
+	if (f == NULL)
+	{
+		return NULL;
+	}
+
 	p = f;
 	while (*p != '\0')
 	{
@@ -160,6 +173,7 @@ u_char *OS9StringToCString(u_char * f)
 		{
 			*p &= ~0x80;
 			*(p + 1) = '\0';
+			break;
 		}
 		p++;
 	}
@@ -178,20 +192,30 @@ void CStringToDECBString(u_char * filename, u_char * ext, u_char * string)
 	memset(filename, 32, 8);
 	memset(ext, 32, 3);
 
+	if (string == NULL)
+	{
+		return;
+	}
+
 	fp = string;
 	fpp = filename;
-	while (*fp != '.' && *fp != '\0')
+	while (*fp != '.' && *fp != '\0' && (fpp - filename) < 8)
 	{
 		*fpp = *fp;
 		fp++;
 		fpp++;
 	}
 
+	while (*fp != '.' && *fp != '\0')
+	{
+		fp++;
+	}
+
 	if (*fp == '.')
 	{
 		fpp = ext;
 		fp++;
-		while (*fp != '\0')
+		while (*fp != '\0' && (fpp - ext) < 3)
 		{
 			*fpp = *fp;
 			fp++;

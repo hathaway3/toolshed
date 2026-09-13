@@ -101,6 +101,11 @@ int os9rdump(int argc, char **argv)
 	char *p;
 	int i;
 
+	if (argc < 2)
+	{
+		show_help(helpMessage);
+		return (1);
+	}
 
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
@@ -129,18 +134,20 @@ int os9rdump(int argc, char **argv)
 					return (0);
 				default:
 					fprintf(stderr,
-						"rdump: unknown option -%c",
+						"rdump: unknown option -%c\n",
 						*p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+	int path_count = 0;
+
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
 	{
-		if (argv[0][0] == '-')
+		if (argv[i][0] == '-')
 		{
 			continue;
 		}
@@ -149,9 +156,15 @@ int os9rdump(int argc, char **argv)
 			p = argv[i];
 		}
 
+		path_count++;
 		do_rdump(p);
 	}
 
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return (1);
+	}
 
 	return (0);
 }
@@ -214,13 +227,17 @@ unsigned int o9_int(u16 nbr)
 void showhead(void)
 {
 	int c;
-
+	int len = 0;
 
 	puts("\nModule name: ");
 
-	while ((c = getc(in)))
+	while ((c = getc(in)) != EOF && c != '\0')
 	{
-		putchar(c);
+		if (len < MAXNAME)
+		{
+			putchar(c);
+			len++;
+		}
 	}
 
 	if (ferror(in))
@@ -251,14 +268,21 @@ void showglobs(void)
 	unsigned int count, offset;
 	char sym[SYMLEN + 1], flag;
 
+	if (feof(in) || ferror(in))
+		return;
 
 	count = getwrd(in);	/* global def count */
+	if (feof(in) || ferror(in))
+		return;
+
 	if (gflag)
 		printf("\n%u global symbols defined:\n", count);
 
-	while (count--)
+	while (count-- && !feof(in) && !ferror(in))
 	{
 		getname(sym);
+		if (feof(in) || ferror(in))
+			break;
 		flag = getc(in);
 		offset = getwrd(in);
 		if (gflag)
@@ -273,7 +297,17 @@ void showglobs(void)
 
 void getname(char *s)
 {
-	while ((*s++ = getc(in)));
+	int c;
+	int len = 0;
+
+	while ((c = getc(in)) != EOF && c != '\0')
+	{
+		if (len < SYMLEN)
+		{
+			*s++ = c;
+			len++;
+		}
+	}
 	*s = '\0';
 	if (ferror(in))
 		ferr(fname);
@@ -323,17 +357,23 @@ void showrefs(void)
 	char sym[SYMLEN + 1];
 	int fflag;
 
+	if (feof(in) || ferror(in))
+		return;
 
 	count = getwrd(in);
+	if (feof(in) || ferror(in))
+		return;
 
 	if (rflag)
 	{
 		printf("\n%u external references:\n", count);
 	}
 
-	while (count--)
+	while (count-- && !feof(in) && !ferror(in))
 	{
 		getname(sym);
+		if (feof(in) || ferror(in))
+			break;
 		rcount = getwrd(in);
 		if (rflag)
 		{
@@ -341,9 +381,10 @@ void showrefs(void)
 		}
 		fflag = 0;
 
-		while (rcount--)
+		while (rcount-- && !feof(in) && !ferror(in))
 		{
-			fread(&ref, sizeof(ref), 1, in);
+			if (fread(&ref, sizeof(ref), 1, in) != 1)
+				break;
 			if (ferror(in))
 				ferr(fname);
 			if (rflag && oflag)
@@ -367,16 +408,23 @@ void showlcls(void)
 {
 	unsigned count;
 	def_ref ref;
+
+	if (feof(in) || ferror(in))
+		return;
+
 	count = getwrd(in);
+	if (feof(in) || ferror(in))
+		return;
 
 	if (oflag)
 	{
 		printf("\n%u local references\n", count);
 	}
 
-	while (count--)
+	while (count-- && !feof(in) && !ferror(in))
 	{
-		fread(&ref, sizeof(ref), 1, in);
+		if (fread(&ref, sizeof(ref), 1, in) != 1)
+			break;
 
 		if (ferror(in))
 			ferr(fname);

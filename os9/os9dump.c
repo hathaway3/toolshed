@@ -67,7 +67,7 @@ int os9dump(int argc, char **argv)
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
@@ -122,11 +122,13 @@ int os9dump(int argc, char **argv)
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
+
+	int path_count = 0;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -140,6 +142,7 @@ int os9dump(int argc, char **argv)
 			p = argv[i];
 		}
 
+		path_count++;
 		ec = do_dump(argv, p, format);
 
 		if (ec != 0)
@@ -148,6 +151,12 @@ int os9dump(int argc, char **argv)
 				argv[0], ec, p);
 			return (ec);
 		}
+	}
+
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return (1);
 	}
 
 	return (0);

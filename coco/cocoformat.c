@@ -395,13 +395,28 @@ static int do_format(char **argv, char *vdisk, int os968k, int quiet,
 	UnixToOS9Time(time(NULL), s0.dd_dat);
 
 	{
-		int i;
+		size_t i;
+		const char *nameSource = diskName;
+		size_t nameLen;
 
-		for (i = 0; i < strlen(diskName) - 1; i++)
+		if (nameSource == NULL || *nameSource == '\0')
 		{
-			s0.dd_nam[i] = diskName[i];
+			nameSource = "CoCo Disk";
 		}
-		s0.dd_nam[i] = diskName[i] + 128;
+		nameLen = strlen(nameSource);
+		if (nameLen > 32)
+		{
+			nameLen = 32;
+		}
+
+		for (i = 0; i + 1 < nameLen; i++)
+		{
+			s0.dd_nam[i] = nameSource[i];
+		}
+		if (nameLen > 0)
+		{
+			s0.dd_nam[i] = nameSource[i] + 128;
+		}
 	}
 
 	_int1(DT_RBF, s0.pd_dtp);

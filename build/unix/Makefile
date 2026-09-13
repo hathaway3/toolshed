@@ -35,13 +35,19 @@ endif
 
 APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
 
+.PHONY: all test install package cleandirs clean unixpackage winpackage allpackages
+
 all:
 	$(foreach dir, $(DIRS), (cd $(dir); $(MAKE));)
 
 test: all
+ifneq ($(WIN),)
+	@echo "Tests skipped for Windows target"
+else
 	$(MAKE) -C unittest test
+endif
 
-install: all
+install: test
 	$(INSTALL) -d $(INSTALLDIR) $(DOCDIR)
 	$(INSTALL) $(APPS) $(INSTALLDIR)
 	$(INSTALL) -m 0644 doc/ToolShed.html $(DOCDIR)

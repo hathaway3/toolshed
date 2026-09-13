@@ -46,18 +46,24 @@ int cecbbulkerase(int argc, char *argv[])
 				switch (*p)
 				{
 				case 'l':
+					if (*(p + 1) == '=')
+						p++;
 					silence_length = atof(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
 					break;
 
 				case 's':
+					if (*(p + 1) == '=')
+						p++;
 					sample_rate = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
 					break;
 
 				case 'b':
+					if (*(p + 1) == '=')
+						p++;
 					bits_per_sample = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
@@ -77,12 +83,13 @@ int cecbbulkerase(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+	p = NULL;
 
 	/* 2. Walk command line for pathnames. */
 
@@ -121,7 +128,7 @@ int cecbbulkerase(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 

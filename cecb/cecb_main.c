@@ -76,71 +76,98 @@ int main(int argc, char *argv[])
 					break;
 
 				case 't':
-					if (strlen(argv[i]) == 2)
+					p++;
+					if (*p == '=') p++;
+					if (*p == '\0')
 					{
-						i++;
-						cecb_threshold =
-							strtod(argv[i], NULL);
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							i++;
+							p = argv[i];
+						}
+						else
+						{
+							fprintf(stderr, "%s: option -t requires an argument\n", argv[0]);
+							return 1;
+						}
 					}
-					else
-						cecb_threshold =
-							strtod(&(argv[i][2]),
-							       NULL);
+					cecb_threshold = strtod(p, NULL);
+					p += strlen(p) - 1;
 					break;
 
 				case 'f':
-					if (strlen(argv[i]) == 2)
+					p++;
+					if (*p == '=') p++;
+					if (*p == '\0')
 					{
-						i++;
-						cecb_frequency =
-							strtod(argv[i], NULL);
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							i++;
+							p = argv[i];
+						}
+						else
+						{
+							fprintf(stderr, "%s: option -f requires an argument\n", argv[0]);
+							return 1;
+						}
 					}
-					else
-						cecb_frequency =
-							strtod(&(argv[i][2]),
-							       NULL);
+					cecb_frequency = strtod(p, NULL);
+					p += strlen(p) - 1;
 					break;
 
 				case 's':
-					if (strlen(argv[i]) == 2)
+					p++;
+					if (*p == '=') p++;
+					if (*p == '\0')
 					{
-						i++;
-						cecb_start_sample =
-							strtol(argv[i], NULL,
-							       0);
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							i++;
+							p = argv[i];
+						}
+						else
+						{
+							fprintf(stderr, "%s: option -s requires an argument\n", argv[0]);
+							return 1;
+						}
 					}
-					else
-						cecb_start_sample =
-							strtol(&(argv[i][2]),
-							       NULL, 0);
+					cecb_start_sample = strtol(p, NULL, 0);
+					p += strlen(p) - 1;
 					break;
 
 				case 'p':
-					if (strlen(argv[i]) == 2)
+					p++;
+					if (*p == '=') p++;
+					if (*p == '\0')
 					{
-						i++;
-						if (argv[i][0] == 'e')
-							cecb_wave_parity =
-								EVEN;
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							i++;
+							p = argv[i];
+						}
 						else
-							cecb_wave_parity =
-								ODD;
+						{
+							fprintf(stderr, "%s: option -p requires an argument\n", argv[0]);
+							return 1;
+						}
 					}
+					if (*p == 'e' || *p == 'E')
+						cecb_wave_parity = EVEN;
 					else
-					{
-						if (argv[i][2] == 'e')
-							cecb_wave_parity =
-								EVEN;
-						else
-							cecb_wave_parity =
-								ODD;
-					}
+						cecb_wave_parity = ODD;
+					p += strlen(p) - 1;
 					break;
 
 				case 'z':
 					cecb_suggest_mc10 =
 						1;
 					break;
+
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (1);
 				}
 			}
 		}
@@ -188,7 +215,7 @@ static int do_command(int argc, char **argv)
 		fprintf(stderr, "cecb: unknown command '%s'\n", argv[0]);
 	}
 
-	return (0);
+	return (1);
 }
 
 

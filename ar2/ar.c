@@ -196,10 +196,13 @@ int main(int argc, char **argv) {
 
   /* case-insensitive comparison of the archive suffix (.ar) 5/27/10 Christian
    * Lesage */
-  strcpy(lc_suf, archfile + n - SUFSIZ);
-
-  for (i = 0; i < SUFSIZ; i++)
-    lc_suf[i] = tolower(lc_suf[i]);
+  if (n >= SUFSIZ) {
+    strcpy(lc_suf, archfile + n - SUFSIZ);
+    for (i = 0; i < SUFSIZ; i++)
+      lc_suf[i] = tolower((unsigned char)lc_suf[i]);
+  } else {
+    lc_suf[0] = '\0';
+  }
 
   if ((strcmp(lc_suf, suf)) != 0)
     archfile = strcat(strcpy(emalloc(n + SUFSIZ + 1), archfile), suf);

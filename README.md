@@ -29,32 +29,45 @@ For more detailed command references, please visit our [Wiki](https://github.com
 
 ### Quick Install (Linux and macOS)
 
-The easiest way to get up and running is with our installation script:
+The easiest way to get up and running is with our installation script, which detects dependencies, compiles, runs tests, and installs:
 
 ```bash
 ./install.sh
 ```
 
-### Manual Build
+### Manual Build & Installation
+
+Running `make install` automatically compiles all tools, executes the full test suite, and installs the executables and documentation:
 
 #### 🐧 Linux
-Install FUSE dependencies:
+Install FUSE dependencies, then build and install:
 ```bash
 $ sudo apt-get install libfuse-dev
-$ make all && make install
+$ make install
 ```
 
 #### 🍎 macOS
-Install [macFUSE](https://osxfuse.github.io/):
+Install [macFUSE](https://osxfuse.github.io/), then build and install:
 ```bash
 $ brew install macfuse
-$ make all && make install
+$ make install
 ```
 
 #### 🪟 Windows
-We recommend using **MSYS2** or **WSL**.
+We recommend using **MSYS2** or **WSL**:
 ```bash
-$ make all && make install
+$ make install
+```
+
+> [!NOTE]
+> By default, `make install` deploys binaries to `$HOME/.local/bin` and HTML documentation to `$HOME/.local/share/doc/toolshed`. To install system-wide, provide `PREFIX=/usr/local` (e.g. `sudo make install PREFIX=/usr/local`).
+
+### Running Tests
+
+To compile and run the full test suite (unit tests and CLI integration tests) without installing:
+
+```bash
+$ make test
 ```
 
 ---

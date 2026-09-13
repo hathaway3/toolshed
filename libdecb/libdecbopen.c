@@ -263,6 +263,9 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
     ec = find_free_granule(*path, &new_granule, 34);
 
     if (ec != 0) {
+      fclose((*path)->fd);
+      term_pd(*path);
+      *path = NULL;
       return ec;
     }
 
@@ -409,9 +412,11 @@ error_code _decb_open(decb_path_id *path, char *pathlist, int mode) {
 error_code _decb_close(decb_path_id path) {
   error_code ec = 0;
 
-  /* 1. Write out FAT sector. */
+  /* 1. Write out FAT sector if opened for writing. */
 
-  _decb_ss_sector(path, 17, 2, (char *)path->FAT);
+  if (path->mode & FAM_WRITE) {
+    _decb_ss_sector(path, 17, 2, (char *)path->FAT);
+  }
 
   /* 2. Close path. */
 

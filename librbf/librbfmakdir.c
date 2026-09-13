@@ -23,72 +23,72 @@ error_code _os9_makdir(char *pathlist)
 	char *filename = NULL;
 	int parentLSN;
 	os9_dir_entry newEntry;
-	char t_path[256];
 
 
 	/* 1. Store LSN of parent. */
 
-	strcpy(t_path, pathlist);
-
-	ec = _os9_open_parent_directory(&parent_path, t_path,
+	ec = _os9_open_parent_directory(&parent_path, pathlist,
 					FAM_DIR | FAM_WRITE, &filename);
-	free(filename);
+	if (filename != NULL)
+	{
+		free(filename);
+		filename = NULL;
+	}
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	parentLSN = parent_path->pl_fd_lsn;
+
+	ec = _os9_close(parent_path);
+	parent_path = NULL;
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	/* Create new directory */
+
+	ec = _os9_create(&dir_path, pathlist,
+			 FAM_NOCREATE | FAM_DIR | FAM_WRITE,
+			 FAP_DIR | FAP_READ | FAP_WRITE |
+			 FAP_EXEC | FAP_PREAD | FAP_PWRITE |
+			 FAP_PEXEC);
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	/* Fill new directory with initial entries */
+	/* Create '..' directory */
+
+	memset(&newEntry, 0, sizeof(os9_dir_entry));
+
+	strcpy((char *) newEntry.name, "..");
+	CStringToOS9String(newEntry.name);
+	_int3(parentLSN, newEntry.lsn);
+
+	ec = _os9_writedir(dir_path, &newEntry);
 
 	if (ec == 0)
 	{
-		parentLSN = parent_path->pl_fd_lsn;
+		/* Create '.' directory */
 
-		ec = _os9_close(parent_path);
+		memset(&newEntry, 0, sizeof(os9_dir_entry));
 
-		if (ec == 0)
-		{
-			/* Create new directory */
+		strcpy((char *) newEntry.name, ".");
+		CStringToOS9String(newEntry.name);
+		_int3(dir_path->pl_fd_lsn, newEntry.lsn);
 
-			strcpy(t_path, pathlist);
-
-			ec = _os9_create(&dir_path, t_path,
-					 FAM_NOCREATE | FAM_DIR | FAM_WRITE,
-					 FAP_DIR | FAP_READ | FAP_WRITE |
-					 FAP_EXEC | FAP_PREAD | FAP_PWRITE |
-					 FAP_PEXEC);
-
-			if (ec == 0)
-			{
-				/* Fill new directory with initial entries */
-				/* Create '..' directory */
-
-				memset(&newEntry, 0, sizeof(os9_dir_entry));
-
-				strcpy((char *) newEntry.name, "..");
-				CStringToOS9String(newEntry.name);
-				_int3(parentLSN, newEntry.lsn);
-
-				ec = _os9_writedir(dir_path, &newEntry);
-
-				if (ec == 0)
-				{
-					/* Create '.' directory */
-
-					memset(&newEntry, 0,
-					       sizeof(os9_dir_entry));
-
-					strcpy((char *) newEntry.name, ".");
-					CStringToOS9String(newEntry.name);
-					_int3(dir_path->pl_fd_lsn,
-					      newEntry.lsn);
-
-					ec = _os9_writedir(dir_path,
-							   &newEntry);
-
-					if (ec == 0)
-					{
-						ec = _os9_close(dir_path);
-					}
-				}
-			}
-		}
+		ec = _os9_writedir(dir_path, &newEntry);
 	}
 
+	_os9_close(dir_path);
+	dir_path = NULL;
 
 	return ec;
 }

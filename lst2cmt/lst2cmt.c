@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 				switch (*p)
 				{
 				case 'o':
+					if (*(p + 1) == '=') p++;
 					offset = atoi(p + 1);
 					while (*(p + 1) != '\0') p++;
 					break;
@@ -85,12 +86,19 @@ int main(int argc, char *argv[])
                         nolinenumbers = 1;
                         while (*(p + 1) != '\0') p++;
                     }
+                    else
+                    {
+                        fprintf(stderr, "%s: unknown option '-%s'\n", argv[0], p);
+                        return (1);
+                    }
                     break;
                 case 'c':
+					if (*(p + 1) == '=') p++;
                     cpu_name = p+1;
 					while (*(p + 1) != '\0') p++;
                     break;
                 case 's':
+					if (*(p + 1) == '=') p++;
                     system_name = p+1;
 					while (*(p + 1) != '\0') p++;
                     break;
@@ -98,6 +106,11 @@ int main(int argc, char *argv[])
 				case '?':
 					show_lst2cmt_help(helpMessage);
 					return (0);
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (1);
 				}
 			}
 		}
@@ -110,9 +123,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (srcfilename == NULL )
+	if (srcfilename == NULL || destfilename == NULL)
 	{
 		show_lst2cmt_help(helpMessage);
+		return (1);
 	}
 	else
 	{
@@ -140,6 +154,7 @@ error_code do_command(int nocrc_flag, char *system_name, char *cpu_name, char *s
     if (output_file == NULL)
     {
         fprintf(stderr, "Can not open output file: %s\n", destfilename );
+        fclose(input_file);
         return -1;
     }
     

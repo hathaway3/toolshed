@@ -28,7 +28,7 @@ int decbdir(int argc, char *argv[]) {
   if (argv[1] == NULL) {
     show_help(helpMessage);
 
-    return 0;
+    return 1;
   }
 
   /* walk command line for options */
@@ -43,11 +43,13 @@ int decbdir(int argc, char *argv[]) {
 
         default:
           fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return 0;
+          return 1;
         }
       }
     }
   }
+
+  int path_count = 0;
 
   /* walk command line for pathnames */
   for (i = 1; i < argc; i++) {
@@ -57,6 +59,7 @@ int decbdir(int argc, char *argv[]) {
       p = argv[i];
     }
 
+    path_count++;
     ec = do_dir(argv, p);
 
     if (ec != 0) {
@@ -64,6 +67,11 @@ int decbdir(int argc, char *argv[]) {
 
       return ec;
     }
+  }
+
+  if (path_count == 0) {
+    show_help(helpMessage);
+    return 1;
   }
 
   return 0;

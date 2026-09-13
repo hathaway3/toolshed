@@ -69,32 +69,50 @@ int os9attr(int argc, char *argv[])
 						case 'e':
 							attrResetMask |=
 								FAP_PEXEC;
+							p += 2;
 							break;
 						case 'w':
 							attrResetMask |=
 								FAP_PWRITE;
+							p += 2;
 							break;
 						case 'r':
 							attrResetMask |=
 								FAP_PREAD;
+							p += 2;
 							break;
+						default:
+							fprintf(stderr,
+								"%s: unknown option 'np%c'\n",
+								argv[0], *(p + 2));
+							return (1);
 						}
 						break;
 					case 'e':
 						attrResetMask |= FAP_EXEC;
+						p++;
 						break;
 					case 'w':
 						attrResetMask |= FAP_WRITE;
+						p++;
 						break;
 					case 'r':
 						attrResetMask |= FAP_READ;
+						p++;
 						break;
 					case 's':
 						attrResetMask |= FAP_SINGLE;
+						p++;
 						break;
 					case 'd':
 						attrResetMask |= FAP_DIR;
+						p++;
 						break;
+					default:
+						fprintf(stderr,
+							"%s: unknown option 'n%c'\n",
+							argv[0], *(p + 1));
+						return (1);
 					}
 					break;
 				case 'p':
@@ -102,13 +120,21 @@ int os9attr(int argc, char *argv[])
 					{
 					case 'e':
 						attrSetMask |= FAP_PEXEC;
+						p++;
 						break;
 					case 'w':
 						attrSetMask |= FAP_PWRITE;
+						p++;
 						break;
 					case 'r':
 						attrSetMask |= FAP_PREAD;
+						p++;
 						break;
+					default:
+						fprintf(stderr,
+							"%s: unknown option 'p%c'\n",
+							argv[0], *(p + 1));
+						return (1);
 					}
 					break;
 				case 's':
@@ -122,11 +148,14 @@ int os9attr(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
+
+	error_code return_ec = 0;
+	p = NULL;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -147,6 +176,7 @@ int os9attr(int argc, char *argv[])
 				/* No attribute options were specified */
 				if ((ec = TSRBFAttrGet(p, &attr, attrs)) != 0)
 				{
+					return_ec = ec;
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
 						argv[0], ec, p, TSReportError(ec));
@@ -167,6 +197,7 @@ int os9attr(int argc, char *argv[])
 						  attrResetMask, &attr,
 						  attrs)) != 0)
 				{
+					return_ec = ec;
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
 						argv[0], ec, p, TSReportError(ec));
@@ -186,8 +217,8 @@ int os9attr(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
-	return (0);
+	return (return_ec);
 }

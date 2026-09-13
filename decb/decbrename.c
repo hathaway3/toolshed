@@ -48,11 +48,14 @@ int decbrename(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
+
+	p = NULL;
+	new_name = NULL;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -88,10 +91,10 @@ int decbrename(int argc, char *argv[])
 		}
 	}
 
-	if (p == NULL)
+	if (p == NULL || new_name == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	return (0);

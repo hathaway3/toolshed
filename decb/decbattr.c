@@ -79,11 +79,13 @@ int decbattr(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
+
+	p = NULL;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -119,7 +121,7 @@ int decbattr(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	return (0);

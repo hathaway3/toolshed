@@ -78,17 +78,17 @@ error_code _native_create(native_path_id * path, char *pathlist, int mode,
 
 	/* 2. Convert passed mode to native file mode. */
 
-	if (mode & (FAM_WRITE | FAM_READ))
+	if ((mode & (FAM_WRITE | FAM_READ)) == (FAM_WRITE | FAM_READ))
 	{
 		nativeMode = "wb+";
-	}
-	else if (mode & FAM_READ)
-	{
-		nativeMode = "rb";
 	}
 	else if (mode & FAM_WRITE)
 	{
 		nativeMode = "wb";
+	}
+	else if (mode & FAM_READ)
+	{
+		nativeMode = "rb";
 	}
 
 	(*path)->fd = fopen(pathlist, nativeMode);
@@ -169,13 +169,13 @@ error_code _native_open(native_path_id * path, char *pathlist, int mode)
 	{
 		nativeMode = "rb+";
 	}
+	else if (mode & FAM_WRITE)
+	{
+		nativeMode = "rb+";
+	}
 	else if (mode & FAM_READ)
 	{
 		nativeMode = "rb";
-	}
-	else if (mode & FAM_WRITE)
-	{
-		nativeMode = "b";
 	}
 
 	(*path)->fd = fopen(pathlist, nativeMode);
@@ -211,12 +211,18 @@ error_code _native_close(native_path_id path)
 #if defined(WIN32)
 			path->dirhandle = NULL;
 #else
-			closedir(path->dirhandle);
+			if (path->dirhandle != NULL)
+			{
+				closedir(path->dirhandle);
+			}
 #endif
 		}
 		else
 		{
-			fclose(path->fd);
+			if (path->fd != NULL)
+			{
+				fclose(path->fd);
+			}
 		}
 
 		term_pd(path);

@@ -15,6 +15,10 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 {
 	error_code ec = 0;
 
+	if (path == NULL)
+	{
+		return EOS_BMODE;
+	}
 
 	if (path->israw == 1)
 	{
@@ -22,8 +26,7 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 		{
 			if (path->t0s != path->spt)
 			{
-				fprintf(stderr, "Error: _os9_seek() SET_SEEK not implemented on raw paths with a short track zero.\n");
-				exit(-1);
+				return EOS_BMODE;
 			}
 		}
 
@@ -42,9 +45,18 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 			break;
 
 		case SEEK_END:
-			fprintf(stderr,
-				"_os9_seek(): SEEK_END not implemented.\n");
-			exit(0);
+		{
+			fd_stats fdbuf;
+			ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
+			if (ec == 0)
+			{
+				path->filepos = int4(fdbuf.fd_siz) + pos;
+			}
+			break;
+		}
+
+		default:
+			ec = EOS_BMODE;
 			break;
 		}
 	}

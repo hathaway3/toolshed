@@ -31,7 +31,7 @@ error_code _decb_rename_ex(char *pathlist, char *new_name,
 	error_code ec = 0;
 	char filename[8], extension[3];
 	char nfilename[8], nextension[3];
-	decb_path_id path;
+	decb_path_id path = NULL;
 	char *old_name;
 
 	/* 1. Test if path is native. */

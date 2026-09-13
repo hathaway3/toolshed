@@ -77,6 +77,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name,
 			break;
 		}
 
+		memset(fname, 0, sizeof(fname));
 		memcpy(fname, dentry->name, 29);
 
 		OS9StringToCString(fname);
@@ -115,6 +116,7 @@ error_code _os9_rename_ex(char *pathlist, char *new_name,
 			break;
 		}
 
+		memset(fname, 0, sizeof(fname));
 		memcpy(fname, dentry->name, sizeof(dentry->name));
 
 		OS9StringToCString(fname);

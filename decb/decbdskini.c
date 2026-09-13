@@ -41,7 +41,7 @@ int decbdskini(int argc, char **argv)
 	{
 		show_help(helpMessage);
 
-		return (0);
+		return (1);
 	}
 
 
@@ -68,6 +68,8 @@ int decbdskini(int argc, char **argv)
 					break;
 
 				case 'h':	/* HDB-DOS drives */
+					if (*(p + 1) == '=')
+						p++;
 					hdbdrives = atoi(p + 1);
 					tracks = 35;
 					while (*(p + 1) != '\0')
@@ -75,6 +77,8 @@ int decbdskini(int argc, char **argv)
 					break;
 
 				case 'n':	/* disk name */
+					if (*(p + 1) == '=')
+						p++;
 					diskName = p + 1;
 					while (*(p + 1) != '\0')
 						p++;
@@ -92,12 +96,14 @@ int decbdskini(int argc, char **argv)
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+
+	int path_count = 0;
 
 	/* 3. Walk command line for pathnames. */
 
@@ -109,9 +115,22 @@ int decbdskini(int argc, char **argv)
 		}
 		else
 		{
+			path_count++;
 			ec = _decb_dskini(argv[i], tracks, diskName,
 					  hdbdrives, 256, skitzo);
+			if (ec != 0)
+			{
+				fprintf(stderr, "%s: error %d formatting '%s'\n",
+					argv[0], ec, argv[i]);
+				return (ec);
+			}
 		}
+	}
+
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return (1);
 	}
 
 	return (ec);

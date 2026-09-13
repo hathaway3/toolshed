@@ -9,6 +9,7 @@ CFLAGS += -I../../../unittest
 # Object files needed by all tests
 TINYTEST_OBJ = tinytest.o
 TESTS = librbftest libdecbtest libcecbtest libtoolshedtest os9commandtest os9_tool_test
+CLEAN_FILES = $(TESTS)
 
 all: $(TINYTEST_OBJ) $(TESTS)
 
@@ -26,15 +27,17 @@ endif
 $(TESTS): %: %.o $(TINYTEST_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
+.PHONY: all testall test
+
 # Summarized test report
 test: testall
 	@echo "--------------------------------------------------"
 	@echo "Unit Test Summary"
 	@echo "--------------------------------------------------"
-	@for test in $(TESTS); do \
-		./$$test > /dev/null 2>&1 && echo "$$test: PASSED" || echo "$$test: FAILED"; \
-	done
+	@FAILED=0; for test in $(TESTS); do \
+		./$$test > /dev/null 2>&1 && echo "$$test: PASSED" || { echo "$$test: FAILED"; FAILED=1; }; \
+	done; [ $$FAILED -eq 0 ] || exit 1
 	@echo "--------------------------------------------------"
 	@echo "CLI Integration Test Summary"
 	@echo "--------------------------------------------------"
-	@bash ../../../tests/os9_test.sh && echo "os9_test.sh: PASSED" || echo "os9_test.sh: FAILED"
+	@bash ../../../tests/os9_test.sh && echo "os9_test.sh: PASSED" || { echo "os9_test.sh: FAILED"; exit 1; }

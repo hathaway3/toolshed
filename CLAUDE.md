@@ -19,10 +19,11 @@ Root `Makefile` delegates to `build/unix` (used even for Windows cross-builds vi
 
 ```bash
 make all              # build all host-side tools and libraries
-make install           # install to $HOME/.local by default (PREFIX=/usr/local for system install)
-make clean              # clean host tools + firmware dirs (dwdos, cocoroms, hdbdos, superdos)
-make package            # build a release tarball
-./install.sh            # detects OS, installs deps (FUSE on Linux, macfuse on Mac), builds+installs
+make test             # run full test suite (unit tests + CLI integration tests)
+make install          # compile, run test suite, and deploy to $HOME/.local (PREFIX=/usr/local for system install)
+make clean            # clean host tools + firmware dirs (dwdos, cocoroms, hdbdos, superdos)
+make package          # build a release tarball
+./install.sh          # detects OS, installs deps (FUSE on Linux, macfuse on Mac), builds+tests+installs
 ```
 
 Building a single tool/library directly (each has its own `Makefile` under `build/unix/<name>`, using `rules.mak` for shared `CC`/`AR`/`CFLAGS`):
@@ -55,8 +56,9 @@ make -C superdos
 ## Tests
 
 ```bash
-cd build/unix && make test              # builds everything, then runs unittest/Makefile's `test` target
-cd build/unix/unittest && make test     # unit tests
+make test                                # run from root: builds everything, runs all unit + CLI integration tests
+cd build/unix && make test              # same, from build/unix
+cd build/unix/unittest && make test     # unit tests + CLI integration tests
 ./librbftest                            # run a single suite directly (also libdecbtest, libcecbtest,
                                          #   libtoolshedtest, os9commandtest, os9_tool_test)
 ```

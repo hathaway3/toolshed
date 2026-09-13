@@ -48,7 +48,7 @@ int os9free(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -131,11 +131,11 @@ int os9free(int argc, char *argv[])
 		printf("\n");
 	}
 
-	if (argv[1] == NULL)
+	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
-	return (0);
+	return (ec);
 }

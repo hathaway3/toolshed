@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 			else
 			{
 				show_help(helpMessage);
-				return (0);
+				return (1);
 			}
 
 
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	if (infile == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	if (outfile == NULL)

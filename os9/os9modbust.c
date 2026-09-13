@@ -58,7 +58,7 @@ int os9modbust(int argc, char **argv)
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
 
-					return 0;
+					return 1;
 				}
 			}
 		}
@@ -89,6 +89,11 @@ int os9modbust(int argc, char **argv)
 		}
 	}
 
+	if (p == NULL)
+	{
+		show_help(helpMessage);
+		return 1;
+	}
 
 	return 0;
 }
@@ -99,18 +104,27 @@ int modbust_osk(coco_path_id path)
 {
 	error_code ec;
 	u_int size;
-	coco_path_id path2;
+	coco_path_id path2 = NULL;
 	char name[256];
 	int nameoffset;
 	char buffer[256];
-	u_char *module;
+	u_char *module = NULL;
 	coco_file_stat fstat;
+	int namelen = 0;
 
 	/* We have an OS-9 module - get 2 bytes then 4 byte size */
 	size = 6;
 
 	ec = _coco_read(path, buffer, &size);
+	if (ec != 0 || size < 6)
+	{
+		return 1;
+	}
 	size = int4((u_char *) buffer + 2);
+	if (size < 16)
+	{
+		return 1;
+	}
 	module = (u_char *) malloc(size);
 
 	if (module == NULL)
@@ -127,10 +141,33 @@ int modbust_osk(coco_path_id path)
 	module[5] = buffer[3];
 	module[6] = buffer[4];
 	module[7] = buffer[5];
-	size -= 8;
-	ec = _coco_read(path, &module[8], &size);
+	u_int read_size = size - 8;
+	ec = _coco_read(path, &module[8], &read_size);
+	if (ec != 0)
+	{
+		free(module);
+		return ec;
+	}
 	nameoffset = int4(&module[12]);
-	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
+	if (nameoffset < 16 || (u_int)nameoffset >= size)
+	{
+		free(module);
+		return 1;
+	}
+	namelen = 0;
+	while ((u_int)(nameoffset + namelen) < size && namelen < (int)sizeof(name) - 1)
+	{
+		namelen++;
+		if (module[nameoffset + namelen - 1] & 0x80)
+			break;
+	}
+	if (namelen == 0 || !(module[nameoffset + namelen - 1] & 0x80))
+	{
+		free(module);
+		return 1;
+	}
+	memcpy(name, &module[nameoffset], namelen);
+	name[namelen] = '\0';
 	OS9StringToCString((u_char *) name);
 	printf("Busting module %s...\n", name);
 
@@ -140,12 +177,14 @@ int modbust_osk(coco_path_id path)
 	if (ec != 0)
 	{
 		printf("Error creating file %s\n", name);
+		free(module);
 		return (1);
 	}
 
-	size += 8;
-	_coco_write(path2, module, &size);
+	u_int write_size = size;
+	_coco_write(path2, module, &write_size);
 	_coco_close(path2);
+	path2 = NULL;
 
 	free(module);
 
@@ -156,18 +195,27 @@ int modbust_os9(coco_path_id path)
 {
 	error_code ec;
 	u_int size;
-	coco_path_id path2;
+	coco_path_id path2 = NULL;
 	char name[256];
 	int nameoffset;
 	char buffer[256];
-	u_char *module;
+	u_char *module = NULL;
 	coco_file_stat fstat;
+	int namelen = 0;
 
 	/* We have an OS-9 module - get size */
 	size = 2;
 
 	ec = _coco_read(path, buffer, &size);
+	if (ec != 0 || size < 2)
+	{
+		return 1;
+	}
 	size = int2((u_char *) buffer);
+	if (size < 9)
+	{
+		return 1;
+	}
 	module = (u_char *) malloc(size);
 
 	if (module == NULL)
@@ -180,10 +228,33 @@ int modbust_os9(coco_path_id path)
 	module[1] = 0xCD;
 	module[2] = buffer[0];
 	module[3] = buffer[1];
-	size -= 4;
-	ec = _coco_read(path, &module[4], &size);
+	u_int read_size = size - 4;
+	ec = _coco_read(path, &module[4], &read_size);
+	if (ec != 0)
+	{
+		free(module);
+		return ec;
+	}
 	nameoffset = int2(&module[4]);
-	memcpy(name, &module[nameoffset], OS9Strlen(&module[nameoffset]));
+	if (nameoffset < 4 || (u_int)nameoffset >= size)
+	{
+		free(module);
+		return 1;
+	}
+	namelen = 0;
+	while ((u_int)(nameoffset + namelen) < size && namelen < (int)sizeof(name) - 1)
+	{
+		namelen++;
+		if (module[nameoffset + namelen - 1] & 0x80)
+			break;
+	}
+	if (namelen == 0 || !(module[nameoffset + namelen - 1] & 0x80))
+	{
+		free(module);
+		return 1;
+	}
+	memcpy(name, &module[nameoffset], namelen);
+	name[namelen] = '\0';
 	OS9StringToCString((u_char *) name);
 	printf("Busting module %s...\n", name);
 
@@ -193,12 +264,14 @@ int modbust_os9(coco_path_id path)
 	if (ec != 0)
 	{
 		printf("Error creating file %s\n", name);
+		free(module);
 		return (1);
 	}
 
-	size += 4;
-	_coco_write(path2, module, &size);
+	u_int write_size = size;
+	_coco_write(path2, module, &write_size);
 	_coco_close(path2);
+	path2 = NULL;
 
 	free(module);
 
@@ -209,7 +282,7 @@ static int do_modbust(char **argv, char *filename)
 {
 	error_code ec = 0;
 	char buffer[256];
-	coco_path_id path;
+	coco_path_id path = NULL;
 
 	ec = _coco_open(&path, filename, FAM_READ);
 
@@ -225,10 +298,18 @@ static int do_modbust(char **argv, char *filename)
 		ec = _coco_read(path, buffer, &size);
 		if (ec != 0)
 		{
-			fprintf(stderr, "%s: error reading file %s\n",
-				argv[0], filename);
-
-			return ec;
+			if (ec != EOS_EOF)
+			{
+				fprintf(stderr, "%s: error reading file %s\n",
+					argv[0], filename);
+			}
+			_coco_close(path);
+			path = NULL;
+			return (ec == EOS_EOF ? 0 : ec);
+		}
+		if (size < 2)
+		{
+			break;
 		}
 
 		if (buffer[0] == (char) OS9_ID0
@@ -244,7 +325,7 @@ static int do_modbust(char **argv, char *filename)
 	}
 
 	_coco_close(path);
-
+	path = NULL;
 
 	return 0;
 }

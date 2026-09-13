@@ -39,6 +39,11 @@ error_code _os9_ss_fd(os9_path_id path, int count, fd_stats * fdbuf)
 	error_code ec = 0;
 	int size;
 
+	if (!(path->mode & FAM_WRITE))
+	{
+		return EOS_BMODE;
+	}
+
 	{
 		/* seek to FD LSN of pathlist */
 		_os9_lsn_fseek(path, path->pl_fd_lsn);

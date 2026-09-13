@@ -28,6 +28,8 @@ Strictly follow the routing rules defined in `local-preference.md`:
     - **Single Exit Pattern**: Use `goto clean;` labels to funnel all return paths through one cleanup block. The cleanup block must check `if (ptr != NULL)` before freeing.
     - **Never `free()` at Multiple Return Points**: Consolidate all resource cleanup into the `clean:` label.
     - **Debug Instrumentation**: Use `DEBUG_PRINT()` from `include/debug.h` to trace allocations and frees. This macro compiles to a no-op unless `-DDEBUG` is passed. Always add `DEBUG_PRINT` around `init_pd`/`term_pd` when debugging memory issues.
+- **Input & Stream Bounds Checking**: Always bound loops reading bytes from files, disk images, or streams with buffer length limits and explicit `EOF` checks (`c != EOF`). Never assume files are well-formed or loop solely on `c != '\0'`.
+- **Defensive CLI Parsing**: Verify `argc` bounds before indexing `argv[i + 1]` or referencing option parameter substrings.
 - **Error Handling**: Use the `error_code` type consistently. Map system `errno` to CoCo errors using `UnixToCoCoError()`.
 - **Modularity**: Keep hardware-specific logic in `libcoco` or similar, and keep filesystem logic in `librbf`/`libdecb`.
 
@@ -87,11 +89,13 @@ Any change to pointer management in `librbf` or `libnative` MUST include:
 ### 4. Stress Testing
 For DriveWire or filesystem-related changes, always perform **stress tests** involving random sector read/writes to verify stability and cache integrity.
 
-### 5. Running Tests
+### 5. Running Tests & Deployment
 ```bash
-cd build/unix && make          # build everything
-cd unittest && make test       # run all unit + integration tests
-./librbftest                   # run a single test suite
+make test                            # run from root: builds everything, runs all unit + CLI tests
+make install                         # compiles, runs tests, and deploys (aborts on test failure)
+cd build/unix && make test           # same test execution, from build/unix
+cd build/unix/unittest && make test  # from unittest directory
+./librbftest                         # run a single test suite
 ```
 
 ---

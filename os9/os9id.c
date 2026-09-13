@@ -51,7 +51,7 @@ int os9id(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -92,10 +92,9 @@ int os9id(int argc, char *argv[])
 static int do_id(char **argv, char *p)
 {
 	error_code ec = 0;
-	os9_path_id path;
+	os9_path_id path = NULL;
 
-	strcpy(os9pathlist, p);
-	strcat(os9pathlist, ",@");
+	snprintf(os9pathlist, sizeof(os9pathlist), "%s,@", p);
 
 	/* open a path to the device */
 	ec = _os9_open(&path, os9pathlist, FAM_READ);
@@ -107,7 +106,7 @@ static int do_id(char **argv, char *p)
 	}
 
 	{
-		char *p;
+		char dname[33];
 		lsn0_sect buffer;
 		u_int size = sizeof(buffer);
 
@@ -175,9 +174,10 @@ static int do_id(char **argv, char *p)
 		       buffer.dd_dat[2],
 		       buffer.dd_dat[0] + 1900,
 		       buffer.dd_dat[3], buffer.dd_dat[4]);
-		p = strdup((char *) buffer.dd_nam);
+		memset(dname, 0, sizeof(dname));
+		memcpy(dname, buffer.dd_nam, sizeof(buffer.dd_nam));
 		printf("  Disk name       :   %s\n",
-		       OS9StringToCString((u_char *) p));
+		       OS9StringToCString((u_char *) dname));
 
 		/* Attempt to identify an OS-9/68K os9 formatted disk image */
 		if (int4(buffer.dd_sync) == 0x4372757A)

@@ -56,9 +56,24 @@ int decbdsave(int argc, char *argv[])
 				switch (*p)
 				{
 				case 'b':
-					if (*(++p) == '=')
+					p++;
+					if (*p == '=')
 					{
 						p++;
+					}
+					if (*p == '\0')
+					{
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							p = argv[++i];
+						}
+						else
+						{
+							fprintf(stderr,
+								"%s: option -b requires an argument\n",
+								argv[0]);
+							return (1);
+						}
 					}
 					q = p + strlen(p) - 1;
 					if (toupper((unsigned char)*q) == 'K')
@@ -69,6 +84,13 @@ int decbdsave(int argc, char *argv[])
 					else
 					{
 						buffer_size = atoi(p);
+					}
+					if (buffer_size <= 0)
+					{
+						fprintf(stderr,
+							"%s: invalid buffer size\n",
+							argv[0]);
+						return (1);
 					}
 					p = q;
 					break;

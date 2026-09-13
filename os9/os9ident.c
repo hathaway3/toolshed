@@ -385,7 +385,7 @@ int os9ident(int argc, char **argv)
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 
@@ -416,19 +416,23 @@ int os9ident(int argc, char **argv)
 
 				case '?':
 				case 'h':
+					free(buffer);
 					show_help(helpMessage);
 					return (0);
 
 				default:
+					free(buffer);
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+
+	int path_count = 0;
 
 	/* walk command line for pathnames */
 
@@ -443,6 +447,7 @@ int os9ident(int argc, char **argv)
 			p = argv[i];
 		}
 
+		path_count++;
 		ec = do_ident(argv, p);
 
 		if (ec != 0)
@@ -455,6 +460,11 @@ int os9ident(int argc, char **argv)
 
 	free(buffer);
 
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return (1);
+	}
 
 	return (ec);
 }

@@ -51,7 +51,7 @@ int os9rename(int argc, char *argv[])
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
 
-					return 0;
+					return 1;
 				}
 			}
 		}
@@ -84,7 +84,7 @@ int os9rename(int argc, char *argv[])
 
 			if (ec != 0)
 			{
-				fprintf(stderr, "%s: error %d opening '%s'\n",
+				fprintf(stderr, "%s: error %d renaming '%s'\n",
 					argv[0], ec, p);
 			}
 
@@ -92,11 +92,12 @@ int os9rename(int argc, char *argv[])
 		}
 	}
 
-	if (p == NULL)
+	if (p == NULL || new_name == NULL)
 	{
 		show_help(helpMessage);
+		return 1;
 	}
 
 
-	return 0;
+	return ec;
 }

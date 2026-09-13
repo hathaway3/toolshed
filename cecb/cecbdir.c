@@ -35,7 +35,7 @@ int cecbdir(int argc, char *argv[])
 	{
 		show_help(helpMessage);
 
-		return 0;
+		return 1;
 	}
 
 	/* walk command line for options */
@@ -56,11 +56,13 @@ int cecbdir(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return 0;
+					return 1;
 				}
 			}
 		}
 	}
+
+	int path_count = 0;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -74,6 +76,7 @@ int cecbdir(int argc, char *argv[])
 			p = argv[i];
 		}
 
+		path_count++;
 		ec = do_dir(argv, p);
 
 		if (ec != 0)
@@ -85,6 +88,11 @@ int cecbdir(int argc, char *argv[])
 		}
 	}
 
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return 1;
+	}
 
 	return 0;
 }

@@ -47,11 +47,13 @@ int decbfree(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
+
+	int path_count = 0;
 
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
@@ -65,6 +67,7 @@ int decbfree(int argc, char *argv[])
 			p = argv[i];
 		}
 
+		path_count++;
 
 		ec = TSDECBFree(p, &free_granules);
 
@@ -82,10 +85,10 @@ int decbfree(int argc, char *argv[])
 		}
 	}
 
-	if (argv[1] == NULL)
+	if (path_count == 0)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	return (0);

@@ -61,7 +61,7 @@ int os9cmp(int argc, char **argv)
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -83,10 +83,20 @@ int os9cmp(int argc, char **argv)
 			else
 			{
 				file2 = argv[i];
-				do_cmp(argv, file1, file2);
+				ec = do_cmp(argv, file1, file2);
+				if (ec != 0)
+				{
+					return ec;
+				}
 				file1 = NULL;
 			}
 		}
+	}
+
+	if (file1 != NULL)
+	{
+		show_help(helpMessage);
+		return (1);
 	}
 
 	return (ec);
@@ -98,7 +108,7 @@ static int do_cmp(char **argv, char *file1, char *file2)
 	error_code ec = 0;
 	u_char buffer1[BUFFSIZ];
 	u_char buffer2[BUFFSIZ];
-	coco_path_id path1, path2;
+	coco_path_id path1 = NULL, path2 = NULL;
 	u_int num_bytes1, num_bytes2;
 	error_code ec1, ec2;
 	int accum1 = 0, accum2 = 0;
@@ -109,7 +119,7 @@ static int do_cmp(char **argv, char *file1, char *file2)
 
 	if (ec != 0)
 	{
-		fprintf(stderr, "%s: cannot open file\n", argv[0]);
+		fprintf(stderr, "%s: cannot open file %s\n", argv[0], file1);
 		return (ec);
 	}
 
@@ -117,7 +127,9 @@ static int do_cmp(char **argv, char *file1, char *file2)
 	ec = _coco_open(&path2, file2, FAM_READ);
 	if (ec != 0)
 	{
-		fprintf(stderr, "%s: cannot open file\n", argv[0]);
+		fprintf(stderr, "%s: cannot open file %s\n", argv[0], file2);
+		_coco_close(path1);
+		path1 = NULL;
 		return (ec);
 	}
 
@@ -162,7 +174,9 @@ static int do_cmp(char **argv, char *file1, char *file2)
 	}
 
 	ec = _coco_close(path2);
-	ec = _coco_close(path1);
+	path2 = NULL;
+	_coco_close(path1);
+	path1 = NULL;
 
 	return (ec);
 }

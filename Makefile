@@ -2,8 +2,13 @@
 
 FIRMWARE_DIRS = dwdos cocoroms hdbdos superdos
 
+.PHONY: all test install clean package
+
 all:
 	$(MAKE) -C build/unix all
+
+test:
+	$(MAKE) -C build/unix test
 
 install:
 	$(MAKE) -C build/unix install

@@ -17,6 +17,11 @@ error_code _os9_prsnam(const char *filename)
 	const char *a = filename;
 	int length = 0;
 
+	if (filename == NULL || *filename == '\0')
+	{
+		return EOS_BPNAM;
+	}
+
 	while (*a != 0)
 	{
 		length++;
@@ -42,6 +47,11 @@ error_code _decb_prsnam(const char *filename)
 {
 	error_code ec = 0;
 	char *dot;
+
+	if (filename == NULL || *filename == '\0')
+	{
+		return EOS_BPNAM;
+	}
 
 	/* 1. Check if filename contains a dot */
 	dot = strchr(filename, '.');

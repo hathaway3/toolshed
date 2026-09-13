@@ -64,9 +64,24 @@ int os9gen(int argc, char *argv[])
 					show_help(helpMessage);
 					return (0);
 				case 'b':
-					if (*(++p) == '=')
+					p++;
+					if (*p == '=')
 					{
 						p++;
+					}
+					if (*p == '\0')
+					{
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							p = argv[++i];
+						}
+						else
+						{
+							fprintf(stderr,
+								"%s: option -b requires an argument\n",
+								argv[0]);
+							return (1);
+						}
 					}
 					bootfile = p;
 					p += strlen(p) - 1;
@@ -81,14 +96,31 @@ int os9gen(int argc, char *argv[])
 					extended = 1;
 					break;
 				case 't':
-					if (*(++p) == '=')
+					p++;
+					if (*p == '=')
 					{
 						p++;
+					}
+					if (*p == '\0')
+					{
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							p = argv[++i];
+						}
+						else
+						{
+							fprintf(stderr,
+								"%s: option -t requires an argument\n",
+								argv[0]);
+							return (1);
+						}
 					}
 					trackfile = p;
 					p += strlen(p) - 1;
 					break;
 				case 'l':	/* Special startLSN for boottrack/kerneltrack */
+					if (*(p + 1) == '=')
+						p++;
 					specialStartLSN = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
@@ -97,7 +129,7 @@ int os9gen(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -124,7 +156,7 @@ int os9gen(int argc, char *argv[])
 	if (device == NULL || (bootfile == NULL && trackfile == NULL))
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	ec = do_os9gen(argv, device, bootfile, trackfile, hwtype, extended);

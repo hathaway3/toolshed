@@ -50,8 +50,17 @@ int os9copy(int argc, char *argv[]) {
       for (p = &argv[i][1]; *p != '\0'; p++) {
         switch (*p) {
         case 'b':
-          if (*(++p) == '=') {
+          p++;
+          if (*p == '=') {
             p++;
+          }
+          if (*p == '\0') {
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+              p = argv[++i];
+            } else {
+              fprintf(stderr, "%s: option -b requires an argument\n", argv[0]);
+              return 1;
+            }
           }
           q = p + strlen(p) - 1;
           if (toupper((unsigned char)*q) == 'K') {
@@ -59,6 +68,10 @@ int os9copy(int argc, char *argv[]) {
             buffer_size = atoi(p) * 1024;
           } else {
             buffer_size = atoi(p);
+          }
+          if (buffer_size <= 0) {
+            fprintf(stderr, "%s: invalid buffer size\n", argv[0]);
+            return 1;
           }
           p = q;
           break;
@@ -72,15 +85,21 @@ int os9copy(int argc, char *argv[]) {
           break;
 
         case 'o':
-          if (*(++p) == '=') {
+          p++;
+          if (*p == '=') {
             p++;
           }
-
-          q = p + strlen(p) - 1;
-          {
-            owner = atoi(p);
-            owner_set = 1;
+          if (*p == '\0') {
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+              p = argv[++i];
+            } else {
+              fprintf(stderr, "%s: option -o requires an argument\n", argv[0]);
+              return 1;
+            }
           }
+          q = p + strlen(p) - 1;
+          owner = atoi(p);
+          owner_set = 1;
           p = q;
           break;
 
@@ -91,7 +110,7 @@ int os9copy(int argc, char *argv[]) {
 
         default:
           fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return (0);
+          return (1);
         }
       }
     }
@@ -122,15 +141,16 @@ int os9copy(int argc, char *argv[]) {
     count++;
   }
 
-  if (count == 0) {
+  if (count < 2) {
     show_help(helpMessage);
+    ec = 1;
     goto clean;
   }
 
   /* 4. Walk backwards and get the destination first. */
 
   for (i = argc - 1; i > 0; i--) {
-    coco_path_id tmp_path;
+    coco_path_id tmp_path = NULL;
 
     if (argv[i][0] != '-') {
       desttarget = argv[i];
@@ -143,6 +163,7 @@ int os9copy(int argc, char *argv[]) {
         targetDirectory = YES;
 
         _coco_close(tmp_path);
+        tmp_path = NULL;
       } else {
         targetDirectory = NO;
       }
@@ -217,15 +238,16 @@ int os9copy(int argc, char *argv[]) {
       /* OK, we need to add the filename to the end of the directory path */
       char *separator = "/";
 
+      size_t dtlen = strlen(desttarget);
       if (strchr(desttarget, ',') != NULL) {
         /* OS-9 directory */
-        if (desttarget[strlen(desttarget) - 1] == '/' ||
-            desttarget[strlen(desttarget) - 1] == ',') {
+        if (dtlen > 0 && (desttarget[dtlen - 1] == '/' ||
+            desttarget[dtlen - 1] == ',')) {
           separator = "";
         }
       } else {
         /* Native directory */
-        if (desttarget[strlen(desttarget) - 1] == '/') {
+        if (dtlen > 0 && desttarget[dtlen - 1] == '/') {
           separator = "";
         }
       }

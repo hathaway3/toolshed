@@ -121,12 +121,14 @@ int cecbcopy(int argc, char *argv[]) {
 
         case 'd':
           p = p + 1;
+          if (*p == '=') p++;
           ml_load_address = strtol(p, &p, 0);
           p = p - 1;
           break;
 
         case 'e':
           p = p + 1;
+          if (*p == '=') p++;
           ml_exec_address = strtol(p, &p, 0);
           p = p - 1;
           break;
@@ -138,7 +140,7 @@ int cecbcopy(int argc, char *argv[]) {
 
         default:
           fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return (0);
+          return (1);
         }
       }
     }
@@ -158,10 +160,10 @@ int cecbcopy(int argc, char *argv[]) {
     count++;
   }
 
-  if (count == 0) {
+  if (count < 2) {
     show_help(helpMessage);
 
-    return 0;
+    return 1;
   }
 
   /* 3. Walk backwards and get the destination first. */

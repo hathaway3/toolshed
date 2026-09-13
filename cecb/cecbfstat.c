@@ -49,12 +49,13 @@ int cecbfstat(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+	p = NULL;
 
 	/* 2. Walk command line for pathnames. */
 
@@ -82,7 +83,7 @@ int cecbfstat(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 
@@ -94,7 +95,7 @@ static int do_fstat(char **argv, char *p)
 {
 	error_code ec = 0;
 	_path_type path_type;
-	coco_path_id path;
+	coco_path_id path = NULL;
 	u_char *buffer = NULL;
 	u_int size;
 
@@ -108,7 +109,11 @@ static int do_fstat(char **argv, char *p)
 	ec = _coco_gs_pathtype(path, &path_type);
 
 	if (ec != 0)
+	{
+		free(buffer);
+		_coco_close(path);
 		return ec;
+	}
 
 	if (path_type == CECB)
 	{

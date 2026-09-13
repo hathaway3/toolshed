@@ -52,6 +52,9 @@ int main(int argc, char *argv[]) {
         case '?':
           show_os9_help(helpMessage);
           return (0);
+        default:
+          fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
+          return (1);
         }
       }
     } else {

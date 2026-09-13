@@ -6,8 +6,8 @@
 
 <!-- Check all that apply. -->
 
-- [ ] `make -C build/unix all` succeeds
-- [ ] `cd build/unix/unittest && make test` passes
+- [ ] `make all` succeeds
+- [ ] `make test` passes (unit tests + CLI integration tests)
 - [ ] Manually tested with a real disk image
 
 ## Notes

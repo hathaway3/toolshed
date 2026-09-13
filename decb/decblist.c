@@ -66,12 +66,13 @@ int decblist(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
 	}
 
+	p = NULL;
 
 	/* 2. Walk command line for pathnames. */
 
@@ -91,7 +92,7 @@ int decblist(int argc, char *argv[])
 	if (p == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	/* 3. Open a path to the file. */

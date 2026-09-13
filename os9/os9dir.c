@@ -80,7 +80,7 @@ int os9dir(int argc, char *argv[])
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -117,20 +117,23 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 	error_code ec = 0;
 	int col_count = 0;
 	char os9pathlist[256];
-	os9_path_id path;
+	os9_path_id path = NULL;
 	static int depth = 0;	/* recursion depth counter */
 	NodeType q_head = NULL;
 	char filepath[256];
+	size_t plen;
 
 
 	/* 1. Copy the passed pathlist into our own local buffer. */
 
-	strcpy(os9pathlist, p);
+	strncpy(os9pathlist, p, sizeof(os9pathlist) - 4);
+	os9pathlist[sizeof(os9pathlist) - 4] = '\0';
+	plen = strlen(os9pathlist);
 
 
 	/* 2. If last char is ',', then add '.' */
 
-	if (os9pathlist[strlen(os9pathlist) - 1] == ',')
+	if (plen > 0 && os9pathlist[plen - 1] == ',')
 	{
 		strcat(os9pathlist, ".");
 	}
@@ -195,8 +198,9 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 	while (_os9_gs_eof(path) == 0)
 	{
 		os9_dir_entry dentry;
-		os9_path_id path2;
+		os9_path_id path2 = NULL;
 		fd_stats fdbuf;
+		char fname[32];
 		char *filename;
 
 		ec = _os9_readdir(path, &dentry);
@@ -206,8 +210,14 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 			break;
 		}
 
-		filename = strdup((char *) dentry.name);
-		OS9StringToCString((u_char *) filename);
+		strncpy(fname, (char *) dentry.name, 29);
+		fname[29] = '\0';
+		OS9StringToCString((u_char *) fname);
+		filename = strdup(fname);
+		if (filename == NULL)
+		{
+			break;
+		}
 		if (filename[0] == '\0'
 		    || (filename[0] == '.' && dotfiles == 0))
 		{
@@ -232,12 +242,14 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 					       FAM_DIR | FAM_READ);
 				if (ec != 0)
 				{
-					break;
+					free(filename);
+					continue;
 				}
 			}
 
 			_os9_gs_fd(path2, sizeof(fd_stats), &fdbuf);
 			_os9_close(path2);
+			path2 = NULL;
 
 			if (extended == 1)
 			{
@@ -314,6 +326,8 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 			qAddNode(&q_head, filepath, strlen(filepath) + 1);
 
 		}
+
+		free(filename);
 	}
 
 	/* necessary to properly terminate a non-extended directory output listing */

@@ -11,6 +11,7 @@
 
 #include "os9path.h"
 #include "nativepath.h"
+#include "toolshed.h"
 
 
 /* Help message */
@@ -72,7 +73,7 @@ int os9format(int argc, char **argv)
 	if (argv[1] == NULL)
 	{
 		show_help(helpMessage);
-		return (0);
+		return (1);
 	}
 
 	/* walk command line for options */
@@ -93,6 +94,8 @@ int os9format(int argc, char **argv)
 					break;
 
 				case 'c':
+					if (*(p + 1) == '=')
+						p++;
 					clusterSize = atoi(p + 1);
 					if (clusterSize == 0
 					    || (clusterSize &
@@ -101,7 +104,7 @@ int os9format(int argc, char **argv)
 						fprintf(stderr,
 							"%s: cluster size must be a power of two\n",
 							argv[0]);
-						return 0;
+						return 1;
 					}
 					while (*(p + 1) != '\0')
 						p++;
@@ -123,13 +126,16 @@ int os9format(int argc, char **argv)
 					switch (*(p + 1))
 					{
 					case 's':
-						bytesPerSector = atoi(p + 2);
+						p++;
+						if (*(p + 1) == '=')
+							p++;
+						bytesPerSector = atoi(p + 1);
 						if (bytesPerSector % 256 != 0)
 						{
 							fprintf(stderr,
 								"%s: bytes per sector must be a multiple of 256\n",
 								argv[0]);
-							return (0);
+							return (1);
 						}
 						break;
 
@@ -137,7 +143,7 @@ int os9format(int argc, char **argv)
 						fprintf(stderr,
 							"%s: unknown option '%c'\n",
 							argv[0], *p);
-						return (0);
+						return (1);
 					}
 					while (*(p + 1) != '\0')
 						p++;
@@ -148,21 +154,24 @@ int os9format(int argc, char **argv)
 					{
 					case 'd':
 						density = 1;
+						p++;
 						break;
 
 					case 's':
 						heads = 2;
+						p++;
 						break;
 
 					case 'r':
 						isDragon = 1;
+						p++;
 						break;
 
 					default:
 						fprintf(stderr,
-							"%s: unknown option '%c'\n",
-							argv[0], *p);
-						return (0);
+							"%s: unknown option 'd%c'\n",
+							argv[0], *(p + 1));
+						return (1);
 					}
 					while (*(p + 1) != '\0')
 						p++;
@@ -172,51 +181,66 @@ int os9format(int argc, char **argv)
 					switch (*(p + 1))
 					{
 					case 'a':
-						sectorAllocationSize =
-							atoi(p + 2);
-						while (*(p + 1) != '\0')
+						p++;
+						if (*(p + 1) == '=')
 							p++;
+						sectorAllocationSize =
+							atoi(p + 1);
 						break;
 
 					case 'd':
 						density = 0;
+						p++;
 						break;
 
 					case 's':
 						heads = 1;
+						p++;
 						break;
 
 					case 't':
-						sectorsPerTrack = atoi(p + 2);
+						p++;
+						if (*(p + 1) == '=')
+							p++;
+						sectorsPerTrack = atoi(p + 1);
 						break;
 
 					case 'z':
-						sectorsTrack0 = atoi(p + 2);
+						p++;
+						if (*(p + 1) == '=')
+							p++;
+						sectorsTrack0 = atoi(p + 1);
 						break;
 
 					default:
 						fprintf(stderr,
-							"%s: unknown option '%c'\n",
-							argv[0], *p);
-						return (0);
+							"%s: unknown option 's%c'\n",
+							argv[0], *(p + 1));
+						return (1);
 					}
 					while (*(p + 1) != '\0')
 						p++;
 					break;
 
 				case 'i':	/* interleave */
+					if (*(p + 1) == '=')
+						p++;
 					interleave = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
 					break;
 
 				case 't':	/* tracks */
+					if (*(p + 1) == '=')
+						p++;
 					tracks = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
 					break;
 
 				case 'n':	/* disk name */
+					if (*(p + 1) == '=')
+						p++;
 					diskName = p + 1;
 					while (*(p + 1) != '\0')
 						p++;
@@ -228,6 +252,8 @@ int os9format(int argc, char **argv)
 					break;
 
 				case 'l':	/* logical sectors */
+					if (*(p + 1) == '=')
+						p++;
 					logicalSectors = atoi(p + 1);
 					while (*(p + 1) != '\0')
 						p++;
@@ -243,7 +269,7 @@ int os9format(int argc, char **argv)
 					fprintf(stderr,
 						"%s: unknown option '%c'\n",
 						argv[0], *p);
-					return (0);
+					return (1);
 				}
 			}
 		}
@@ -287,6 +313,8 @@ int os9format(int argc, char **argv)
 		}
 	}
 
+	int path_count = 0;
+
 	/* walk command line for pathnames */
 	for (i = 1; i < argc; i++)
 	{
@@ -298,7 +326,9 @@ int os9format(int argc, char **argv)
 		{
 			unsigned int totalSectors, totalBytes;
 
-			error_code ec =
+			path_count++;
+
+			ec =
 				_os9_format(argv[i], os968k, tracks,
 					    sectorsPerTrack, sectorsTrack0,
 					    heads, bytesPerSector, &clusterSize,
@@ -337,8 +367,20 @@ int os9format(int argc, char **argv)
 					       clusterSize);
 				}
 			}
+			else
+			{
+				fprintf(stderr, "%s: error %d formatting '%s': %s\n",
+					argv[0], ec, argv[i], TSReportError(ec));
+				return (ec);
+			}
 
 		}
+	}
+
+	if (path_count == 0)
+	{
+		show_help(helpMessage);
+		return (1);
 	}
 
 	return (ec);
