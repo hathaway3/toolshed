@@ -571,7 +571,7 @@ error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
  */
 error_code _os9_close(os9_path_id path)
 {
-	int pad_size, i;
+	int pad_size;
 	char pad = 0xff;
 
 	if (path == NULL)
@@ -601,9 +601,11 @@ error_code _os9_close(os9_path_id path)
 				pad_size = 0;
 			}
 
-			for (i = 0; i < pad_size; i++)
+			if (pad_size > 0)
 			{
-				fwrite(&pad, 1, 1, path->fd);
+				char pad_buf[256];
+				memset(pad_buf, (unsigned char)pad, pad_size);
+				fwrite(pad_buf, 1, pad_size, path->fd);
 			}
 		}
 

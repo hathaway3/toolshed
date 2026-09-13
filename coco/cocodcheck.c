@@ -297,11 +297,11 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 					      unsigned char *secondaryBitmap)
 {
 	error_code ec = 0;
-	fd_stats *dir_fd, *file_fd;
+	fd_stats *dir_fd = NULL, *file_fd = NULL;
 	int dd_tot, fd_siz, count, i, j, k;
-	fd_dentry *dEnt;	/* Each entry is 32 bytes long */
+	fd_dentry *dEnt = NULL;	/* Each entry is 32 bytes long */
 	Fd_seg theSeg;
-	char *newPath;
+	char *newPath = NULL;
 	int bps = rbf_path->bps;
 
 	/* Check if this directory has already been drilled into */
@@ -322,18 +322,36 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 
 	dd_tot = int3(rbf_path->lsn0->dd_tot);
 
+	/* Allocate reusable buffers once per recursive invocation instead
+	 * of malloc/free per directory sector and per file entry */
 	dir_fd = (fd_stats *) malloc(bps);
 	if (dir_fd == NULL)
 	{
 		printf("Out of memory, terminating (001).\n");
-		exit(-1);
+		ec = 1;
+		goto clean;
+	}
+	dEnt = (fd_dentry *) malloc(bps);
+	if (dEnt == NULL)
+	{
+		printf("Out of memory, terminating (002).\n");
+		ec = 1;
+		goto clean;
+	}
+	file_fd = (fd_stats *) malloc(bps);
+	if (file_fd == NULL)
+	{
+		printf("Out of memory, terminating (003).\n");
+		ec = 1;
+		goto clean;
 	}
 
 	if (read_lsn(rbf_path, dir_lsn, dir_fd) != bps)
 	{
 		printf("Sector wrong size, terminating (001).\n");
 		printf("LSN: %d\n", dir_lsn);
-		exit(-1);
+		ec = 1;
+		goto clean;
 	}
 
 	/* Parse segment list of directory, report any problems */
@@ -385,13 +403,6 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 					break;
 				}
 
-				dEnt = (fd_dentry *) malloc(bps);
-				if (dEnt == NULL)
-				{
-					printf("Out of memory, terminating (002).\n");
-					exit(-1);
-				}
-
 				if (read_lsn
 				    (rbf_path, int3(theSeg->lsn) + j,
 				     dEnt) != bps)
@@ -399,7 +410,8 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 					int temp = int3(theSeg->lsn) + j;
 
 					printf("Sector wrong size, terminating (002).\nLSN: %d\n", temp);
-					exit(-1);
+					ec = 1;
+					goto clean;
 				}
 
 				for (k = 0; k < (bps / sizeof(fd_dentry));
@@ -435,14 +447,8 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 					{
 						printf("File: %s, contains bad LSN\n", newPath);
 						free(newPath);
+						newPath = NULL;
 						continue;
-					}
-
-					file_fd = (fd_stats *) malloc(bps);
-					if (file_fd == NULL)
-					{
-						printf("Out of memory, terminating (003).\n");
-						exit(-1);
 					}
 
 					if (read_lsn
@@ -452,7 +458,10 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 						printf("Sector wrong size, terminating (003).\n");
 						printf("LSN: %d\n",
 						       int3(dEnt[k].lsn));
-						exit(-1);
+						free(newPath);
+						newPath = NULL;
+						ec = 1;
+						goto clean;
 					}
 
 					/* If actually a directory? */
@@ -475,22 +484,25 @@ static error_code BuildSecondaryAllocationMap(os9_path_id rbf_path,
 						ec = BuildSecondaryAllocationMap(rbf_path, int3(dEnt[k].lsn), newPath, secondaryBitmap);
 						if (ec != 0)
 						{
-							return (ec);
+							free(newPath);
+							newPath = NULL;
+							goto clean;
 						}
 					}
 
-					free(file_fd);
 					free(newPath);
+					newPath = NULL;
 				}
-
-				free(dEnt);
 			}
 
 			i++;
 		}
 	}
 
-	free(dir_fd);
+clean:
+	if (dir_fd != NULL) free(dir_fd);
+	if (dEnt != NULL) free(dEnt);
+	if (file_fd != NULL) free(file_fd);
 
 	return (ec);
 }

@@ -638,20 +638,45 @@ int _cecb_write_wav_audio_repeat_byte(cecb_path_id path, int length,
 
 int _cecb_write_wav_repeat_byte(cecb_path_id path, int length, char byte)
 {
-	int i;
+	char buf[4096];
+	int remaining = length;
 
-	for (i = 0; i < length; i++)
-		fwrite_le_char(byte, path->fd);
+	memset(buf, byte, sizeof(buf));
+	while (remaining > 0)
+	{
+		size_t chunk = remaining > (int)sizeof(buf) ? sizeof(buf) : (size_t)remaining;
+		if (fwrite(buf, 1, chunk, path->fd) != chunk)
+			break;
+		remaining -= chunk;
+	}
 
 	return length;
 }
 
 int _cecb_write_wav_repeat_short(cecb_path_id path, int length, short bytes)
 {
+	char buf[4096];
+	int remaining = length;
+	int max_shorts = sizeof(buf) / 2;
 	int i;
+	unsigned char le[2];
 
-	for (i = 0; i < length; i++)
-		fwrite_le_short(bytes, path->fd);
+	le[0] = bytes & 0xff;
+	le[1] = (bytes >> 8) & 0xff;
+
+	for (i = 0; i < max_shorts; i++)
+	{
+		buf[i * 2] = le[0];
+		buf[i * 2 + 1] = le[1];
+	}
+
+	while (remaining > 0)
+	{
+		size_t chunk = remaining > max_shorts ? max_shorts : (size_t)remaining;
+		if (fwrite(buf, 2, chunk, path->fd) != chunk)
+			break;
+		remaining -= chunk;
+	}
 
 	return length * 2;
 }

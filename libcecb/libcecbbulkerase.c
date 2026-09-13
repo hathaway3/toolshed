@@ -18,7 +18,7 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample,
 {
 	error_code ec = 0;
 	native_path_id nativepath;
-	int i, headers_size, bytes_per_sample, silent_samples_count,
+	int headers_size, bytes_per_sample, silent_samples_count,
 		silent_samples_bytes;
 
 	_native_truncate(path, 0);
@@ -83,13 +83,28 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample,
 
 	fwrite("data", 4, 1, nativepath->fd);
 	fwrite_le_int(silent_samples_bytes, nativepath->fd);	/* chunk size */
-
-	for (i = 0; i < silent_samples_count; i++)
 	{
+		char chunk[4096];
 		if (bits_per_sample == 8)
-			fwrite_le_char(127, nativepath->fd);
+		{
+			memset(chunk, 127, sizeof(chunk));
+			while (silent_samples_count > 0)
+			{
+				size_t to_write = silent_samples_count > (int)sizeof(chunk) ? sizeof(chunk) : (size_t)silent_samples_count;
+				fwrite(chunk, 1, to_write, nativepath->fd);
+				silent_samples_count -= to_write;
+			}
+		}
 		else
-			fwrite_le_short(0, nativepath->fd);
+		{
+			memset(chunk, 0, sizeof(chunk));
+			while (silent_samples_count > 0)
+			{
+				size_t samples = silent_samples_count > (int)(sizeof(chunk) / 2) ? (sizeof(chunk) / 2) : (size_t)silent_samples_count;
+				fwrite(chunk, 2, samples, nativepath->fd);
+				silent_samples_count -= samples;
+			}
+		}
 	}
 
 	_native_close(nativepath);

@@ -341,7 +341,7 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 				      u_int * size)
 {
 	error_code ec = 0;
-	u_int size2, size3;
+	u_int size2, size3, filesize = 0;
 	u_char *buffer2;
 
 	ec = _coco_open(path, pathlist, mode);
@@ -349,7 +349,14 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 		return ec;
 
 	*size = 0;
-	size3 = BLOCKSIZE;
+	if (_coco_gs_size(*path, &filesize) == 0 && filesize > 0)
+	{
+		size3 = filesize;
+	}
+	else
+	{
+		size3 = 4096;
+	}
 	*buffer = malloc(size3);
 
 	if (*buffer == NULL)
@@ -361,9 +368,9 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 
 	while (_coco_gs_eof(*path) == 0)
 	{
-		while ((*size + BLOCKSIZE) > size3)
+		if (*size >= size3)
 		{
-			size3 += BLOCKSIZE;
+			size3 = size3 < 65536 ? size3 * 2 : size3 + 65536;
 			buffer2 = realloc(*buffer, size3);
 
 			if (buffer2 == NULL)
@@ -378,7 +385,12 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 			*buffer = buffer2;
 		}
 
-		size2 = BLOCKSIZE;
+		size2 = size3 - *size;
+		if (size2 > 32768)
+		{
+			size2 = 32768;
+		}
+
 		ec = _coco_read(*path, &((*buffer)[*size]), &size2);
 		*size += size2;
 		if (ec != 0)
@@ -393,6 +405,10 @@ error_code _coco_open_read_whole_file(coco_path_id * path, char *pathlist,
 			_coco_close(*path);
 			*path = NULL;
 			return ec;
+		}
+		if (size2 == 0)
+		{
+			break;
 		}
 	}
 

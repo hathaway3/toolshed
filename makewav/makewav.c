@@ -159,10 +159,16 @@ int fwrite_audio(char *buffer, int length, FILE *output) {
 }
 
 int fwrite_repeat_byte(int length, unsigned char byte, FILE *output) {
-  int i;
+  char buf[4096];
+  int remaining = length;
 
-  for (i = 0; i < length; i++) {
-    fputc(byte, output);
+  memset(buf, byte, sizeof(buf));
+  while (remaining > 0) {
+    size_t chunk = remaining > (int)sizeof(buf) ? sizeof(buf) : (size_t)remaining;
+    if (fwrite(buf, 1, chunk, output) != chunk) {
+      break;
+    }
+    remaining -= chunk;
   }
 
   return length;

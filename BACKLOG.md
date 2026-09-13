@@ -24,14 +24,34 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 - [x] **`librbf/librbfdelete.c:286` — cluster allocation leak on multi-sector clusters** — sector bitmap deallocation in `_os9_delete` calculated cluster offset improperly when `sectors_per_cluster > 1`, causing leaked clusters. Fixed to convert cluster number to physical LSN properly before calling `_os9_delbit()`.
 - [x] **`librbf/librbfopen.c:1162` — `_os9_truncate_seg_list` 16-bit underflow** — underflow occurred during segment truncation when `sectors_per_cluster > 1`.
 - [x] **`os9/os9attr.c` — multi-character permission reset parsing** — fixed parsing logic for `-npe` / `-npw` flags so public permission unsetting behaves correctly.
-- [x] **CLI argument bounds & validation audit** — audited all subcommands across `os9`, `decb`, `cecb`, `makewav`, `tocgen`, `lst2cmt`, and `ar2` for missing argument counts, invalid option handling, and buffer overflows. Added regression coverage in `test_os9_command_line_parameters`.
+- [x] **`libcecb/libcecbread.c:104` — `_cecb_readln` uninitialized memory check & delimiter detection** — incremented `current` pointer before checking `*current == 0x0d`, evaluating uninitialized stack memory instead of the byte just read from disk/tape and failing to terminate lines on CR. Fixed to evaluate the read character before incrementing pointer. Covered by `test_cecb_readln`.
+- [x] **`libnative/libnativereadln.c:46` — `_native_readln` newline size reporting & empty line truncation** — set `*size = i` instead of `*size = i + 1` upon encountering LF (`0x0A`), omitting the delimiter byte and returning size 0 on empty lines (`\n`). Fixed to return `i + 1`. Covered by `test_native_readln`.
+- [x] **`libdecb/libdecbbinconcat.c:75,118` — `_decb_binconcat` 64K boundary truncation** — loop conditions `i < 65535` stopped before processing address 0xFFFF, truncating the last byte of memory in binaries spanning the top of address space. Fixed to `i < 65536`. Covered by `test_decb_binconcat`.
+- [x] **`libdecb/libdecbbinconcat.c:192` — `_decb_count_segements` double-increment & buffer overrun** — `else if (buffer[buffer_position++] == POSTAMBLE)` incremented `buffer_position` twice on non-preamble bytes, corrupting postamble detection and segment counts. Fixed to inspect `int amble = buffer[buffer_position++]` with bounds checking. Covered by `test_decb_count_segments`.
 - [x] **Build & deployment pipeline (`make install` runs tests)** — Root `Makefile` now exposes `make test` and `.PHONY` targets. `build/unix/Makefile` wires `install: test`, ensuring compilation and 100% test pass rate before deploying binaries. `build/unix/unittest/Makefile` properly propagates non-zero exit codes on failure.
 
 ## Performance improvements
 
 - [x] **`ar2/lz1.c:90` — per-byte getc() hot path** — `LZ_1()` now reads the entire input into a buffer with a single `fread()` call and iterates in memory, matching the OSK path and the 6809-side optimization from `4e40152`.
 - [x] **`os9/os9rdump.c` per-byte getc()** — not a hot path. Retained per-byte I/O for small ROF module headers, but fully bounded all loops with buffer limits and explicit EOF/error checks.
+- [x] **`libtoolshed/toolshed.c` & `coco/cocopadrom.c` — `TSPadROM` chunked writes** — replaced 1-byte write loops with 4096-byte chunked buffer bulk writes, reducing filesystem/disk call overhead by orders of magnitude on large ROMs.
+- [x] **`libcoco/libcocoopen.c` — `_coco_open_read_whole_file` pre-allocation & chunking** — queries file size via `_coco_gs_size` to pre-allocate exact buffer upfront, switches resizing from linear +256 byte increments to geometric doubling, and reads in 32KB chunks instead of 256 bytes.
+- [x] **`makewav/makewav.c` — `fwrite_repeat_byte` chunked bulk write** — replaced 1-byte `fputc()` loop with a 4096-byte chunked buffer and bulk `fwrite()`.
+- [x] **`libcecb/libcecbwav.c` — repeat byte/short bulk writes** — replaced sample-by-sample writes in `_cecb_write_wav_repeat_byte()` and `_cecb_write_wav_repeat_short()` with 4KB chunked bulk `fwrite()`.
+- [x] **`libcecb/libcecbbulkerase.c` — `_cecb_bulkerase` bulk writes** — replaced sample-by-sample `fwrite_le_char`/`fwrite_le_short` loop with 4KB bulk `fwrite()`.
+- [x] **`librbf/librbfopen.c` — `_os9_close` bulk padding** — replaced 1-byte padding loop with a single bulk `fwrite()`.
+- [x] **`tocgen/tocgen_main.c` — `createToc` batched write** — accumulated header and TOC entries into an in-memory buffer, writing it in a single `_coco_write()` call instead of individual byte writes.
+- [x] **`libdecb/libdecbbinconcat.c` — `memset` buffer initialization** — replaced 65,535-iteration loop with a single vectorized `memset()`.
+- [x] **`os9/os9dump.c` — metadata file size lookup** — queries file size via `_coco_gs_size` and pre-allocates memory directly, avoiding a complete duplicate read pass over the entire file.
 
-## Reducing memory churn
+## Reducing memory churn & pre-allocating buffers
 
 - [x] **`os9/os9dcheck.c` — malloc churn in `BuildSecondaryAllocationMap()`** — three reusable buffers (`dir_fd`, `dEnt`, `file_fd`) are now allocated once per invocation instead of malloc/free per directory sector and per file entry.
+- [x] **`coco/cocodcheck.c` — malloc churn in `BuildSecondaryAllocationMap()`** — ported the reusable buffer pattern (`dir_fd`, `dEnt`, `file_fd`) to eliminate `malloc`/`free` churn inside the inner sector and file entry traversal loops.
+- [x] **`libtoolshed/toolshed.c` — `TSCopyFile` translation buffer reuse** — pre-allocates a reusable translation buffer outside the read loop when `eolTranslate == 1`, eliminating per-chunk `malloc`/`free` calls.
+- [x] **`libtoolshed/toolshed.c` & `libmisc/libmisccococonv.c` — single-pass EOL translation** — `NativeToCoCo`, `CoCoToNative`, `NativeToDECB`, and `DECBToNative` now translate directly in a single pass without mutating input buffers or performing redundant `memcpy` calls.
+- [x] **`libdecb/libdecbtokenize.c` — detokenization pre-allocation & geometric growth** — `_decb_detoken` pre-allocates output buffer to `in_size * 2 + 256` instead of 256 bytes; `_decb_buffer_sprintf` uses geometric doubling instead of linear +256 byte growth.
+- [x] **`libcecb/libcecbtokenize.c` — `_cecb_detoken` pre-allocation** — pre-allocates output buffer to `in_size * 2 + 256`.
+- [x] **`libdecb/libdecbsrec.c` — `_decb_srec_encode` pre-allocation** — pre-allocates output buffer to `in_size * 3 + 256` to eliminate reallocations during machine-language S-record encoding.
+- [x] **`libcecb/libcecbwrite.c` — `_cecb_write_silence` stack buffer** — uses stack buffer for standard CAS/C10 silence lengths (<= 256 bytes) to eliminate heap `calloc`/`free` churn.
+- [x] **`libnative/libnativerename.c` — stack buffer & bounds check** — uses stack buffer for normal path lengths to eliminate heap allocations, fixes buffer length calculation, and validates `rename()` return status.

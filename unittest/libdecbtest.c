@@ -336,6 +336,89 @@ void test_decb_interleave() {
   remove("test_ilv1.dsk");
 }
 
+void test_decb_count_segments() {
+  /* Test 1: Single segment followed by postamble */
+  unsigned char single_seg[] = {
+    0x00,             /* PREAMBLE */
+    0x00, 0x02,       /* length = 2 */
+    0x10, 0x00,       /* address = 0x1000 */
+    0x12, 0x34,       /* data */
+    0xFF,             /* POSTAMBLE */
+    0x00, 0x00,       /* postamble zeros */
+    0x10, 0x00        /* exec address */
+  };
+  ASSERT_EQUALS(1, _decb_count_segements(single_seg, sizeof(single_seg)));
+
+  /* Test 2: Multiple segments followed by postamble */
+  unsigned char multi_seg[] = {
+    0x00,             /* PREAMBLE */
+    0x00, 0x02,       /* length = 2 */
+    0x10, 0x00,       /* address = 0x1000 */
+    0x12, 0x34,       /* data */
+    0x00,             /* PREAMBLE */
+    0x00, 0x03,       /* length = 3 */
+    0x20, 0x00,       /* address = 0x2000 */
+    0xAA, 0xBB, 0xCC, /* data */
+    0xFF,             /* POSTAMBLE */
+    0x00, 0x00,       /* postamble zeros */
+    0x10, 0x00        /* exec address */
+  };
+  ASSERT_EQUALS(2, _decb_count_segements(multi_seg, sizeof(multi_seg)));
+
+  /* Test 3: Multiple segments with trailing junk after postamble */
+  unsigned char junk_trailing[] = {
+    0x00,
+    0x00, 0x01,
+    0x30, 0x00,
+    0x42,
+    0xFF,
+    0x00, 0x00,
+    0x30, 0x00,
+    0x00, 0x01, 0x02  /* junk after postamble should not be parsed as extra segment */
+  };
+  ASSERT_EQUALS(1, _decb_count_segements(junk_trailing, sizeof(junk_trailing)));
+}
+
+void test_decb_binconcat() {
+  error_code ec;
+  unsigned char *out_buf = NULL;
+  u_int out_size = 0;
+
+  /* Input segment ending at address 0xFFFF (length 2 at 0xFFFE) */
+  unsigned char in_buf[] = {
+    0x00,             /* PREAMBLE */
+    0x00, 0x02,       /* length = 2 */
+    0xFF, 0xFE,       /* address = 0xFFFE */
+    0xAA, 0xBB,       /* 0xAA at 0xFFFE, 0xBB at 0xFFFF */
+    0xFF,             /* POSTAMBLE */
+    0x00, 0x00,       /* zeros */
+    0xFF, 0xFE        /* exec address */
+  };
+
+  ec = _decb_binconcat(in_buf, sizeof(in_buf), &out_buf, &out_size);
+  ASSERT_EQUALS(0, ec);
+  ASSERT("out_buf != NULL", out_buf != NULL);
+  /* Output should be:
+   * 0x00 (preamble), 0x00, 0x02 (length=2), 0xFF, 0xFE (address), 0xAA, 0xBB (data),
+   * 0xFF (postamble), 0x00, 0x00, 0xFF, 0xFE (exec) -> total 12 bytes
+   */
+  ASSERT_EQUALS(12, out_size);
+  ASSERT_EQUALS(0x00, out_buf[0]);
+  ASSERT_EQUALS(0x00, out_buf[1]);
+  ASSERT_EQUALS(0x02, out_buf[2]);
+  ASSERT_EQUALS(0xFF, out_buf[3]);
+  ASSERT_EQUALS(0xFE, out_buf[4]);
+  ASSERT_EQUALS(0xAA, out_buf[5]);
+  ASSERT_EQUALS(0xBB, out_buf[6]);
+  ASSERT_EQUALS(0xFF, out_buf[7]);
+  ASSERT_EQUALS(0x00, out_buf[8]);
+  ASSERT_EQUALS(0x00, out_buf[9]);
+  ASSERT_EQUALS(0xFF, out_buf[10]);
+  ASSERT_EQUALS(0xFE, out_buf[11]);
+
+  free(out_buf);
+}
+
 int main() {
   remove("test.dsk");
   remove("filldisk.dsk");
@@ -351,6 +434,8 @@ int main() {
   RUN(test_decb_rename);
   RUN(test_decb_token);
   RUN(test_decb_interleave);
+  RUN(test_decb_count_segments);
+  RUN(test_decb_binconcat);
 
   remove("test.dsk");
   remove("filldisk.dsk");

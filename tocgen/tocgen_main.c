@@ -184,9 +184,9 @@ static int createToc(char *outfile, struct volLine *volArray, int volCount,
 	coco_path_id fp;
 	struct volLine *v = &volArray[0];
 	int size = 0, ec;
-	unsigned int writesize = 1;
-	char c;
 	coco_file_stat fstat;
+	unsigned char toc_buf[65536];
+	u_int pos = 0;
 
 	fstat.perms = FAP_PREAD | FAP_READ | FAP_WRITE;
 	ec = _coco_create(&fp, outfile, FAM_WRITE, &fstat);
@@ -196,17 +196,14 @@ static int createToc(char *outfile, struct volLine *volArray, int volCount,
 	}
 
 	// Write out header
-	c = volCount;
-	_coco_write(fp, &c, &writesize);
+	toc_buf[pos++] = (unsigned char)volCount;
 
 	size = (volCount * 2);
 
 	for (i = 0; i < volCount; i++)
 	{
-		c = '\0';
-		_coco_write(fp, &c, &writesize);
-		c = size;
-		_coco_write(fp, &c, &writesize);
+		toc_buf[pos++] = '\0';
+		toc_buf[pos++] = (unsigned char)size;
 		size += v->vcount + 2;
 		v++;
 	}
@@ -219,10 +216,8 @@ static int createToc(char *outfile, struct volLine *volArray, int volCount,
 			       volArray->side);
 		}
 
-		c = volArray->disk;
-		_coco_write(fp, &c, &writesize);
-		c = volArray->side;
-		_coco_write(fp, &c, &writesize);
+		toc_buf[pos++] = (unsigned char)volArray->disk;
+		toc_buf[pos++] = (unsigned char)volArray->side;
 
 		for (j = 0; j < volArray->vcount; j++)
 		{
@@ -235,8 +230,7 @@ static int createToc(char *outfile, struct volLine *volArray, int volCount,
 			{
 				volArray->vols[j] += 128;
 			}
-			c = volArray->vols[j];
-			_coco_write(fp, &c, &writesize);
+			toc_buf[pos++] = (unsigned char)volArray->vols[j];
 		}
 		if (quiet == 0)
 		{
@@ -244,6 +238,11 @@ static int createToc(char *outfile, struct volLine *volArray, int volCount,
 		}
 
 		volArray++;
+	}
+
+	{
+		u_int total_write = pos;
+		_coco_write(fp, (char *)toc_buf, &total_write);
 	}
 
 	_coco_close(fp);

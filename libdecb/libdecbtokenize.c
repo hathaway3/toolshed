@@ -120,8 +120,8 @@ error_code _decb_detoken(unsigned char *in_buffer, int in_size,
     file_size = (in_size - 3);
   }
 
-  *out_buffer = malloc(BLOCK_QUANTUM);
-  buffer_size = BLOCK_QUANTUM;
+  buffer_size = (in_size > 0) ? ((size_t)in_size * 2 + BLOCK_QUANTUM) : BLOCK_QUANTUM;
+  *out_buffer = malloc(buffer_size);
 
   if (*out_buffer == NULL) {
     /* Memory Error */
@@ -436,10 +436,10 @@ error_code _decb_buffer_sprintf(u_int *position, char **str,
    * content plus the null terminator */
   if ((*position + formatted_size + 1) > *buffer_size) {
     char *buffer;
-    size_t new_size = *buffer_size + BLOCK_QUANTUM;
+    size_t new_size = *buffer_size ? (*buffer_size * 2) : BLOCK_QUANTUM;
 
     while (new_size < (*position + formatted_size + 1)) {
-      new_size += BLOCK_QUANTUM;
+      new_size *= 2;
     }
 
     buffer = realloc(*str, new_size);

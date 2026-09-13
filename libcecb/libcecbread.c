@@ -101,11 +101,12 @@ error_code _cecb_readln(cecb_path_id path, void *buffer, u_int * size)
 		if (read_size != 1)
 			break;
 
+		char c = *current;
 		current++;
 		*size += 1;
 		requested_bytes -= 1;
 
-		if (*current == 0x0d)
+		if (c == 0x0d)
 			break;
 	}
 

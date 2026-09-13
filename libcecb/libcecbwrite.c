@@ -95,17 +95,26 @@ error_code _cecb_write_silence(cecb_path_id path, double length)
 {
 	if ((path->tape_type == CAS) || (path->tape_type == C10))
 	{
-		char *buffer;
-		int size;
+		char stack_buffer[256];
+		char *buffer = stack_buffer;
+		int size = length * 20;
 
-		size = length * 20;
-
-		buffer = calloc(size, 1);
+		if (size > (int)sizeof(stack_buffer))
+		{
+			buffer = calloc(size, 1);
+		}
+		else
+		{
+			memset(stack_buffer, 0, size);
+		}
 
 		if (buffer != NULL)
 		{
 			_cecb_write_cas_data(path, buffer, size);
-			free(buffer);
+			if (buffer != stack_buffer)
+			{
+				free(buffer);
+			}
 		}
 	}
 	else if (path->tape_type == WAV)

@@ -43,8 +43,8 @@ error_code _decb_srec_encode(unsigned char *in_buffer, int in_size,
   int length, address, count;
   u_char checksum, type;
   in_buffer_position = 0;
-  *out_buffer = malloc(BLOCK_QUANTUM);
-  buffer_size = BLOCK_QUANTUM;
+  buffer_size = (in_size > 0) ? ((size_t)in_size * 3 + BLOCK_QUANTUM) : BLOCK_QUANTUM;
+  *out_buffer = malloc(buffer_size);
   *out_size = 0;
 
   if (*out_buffer == NULL) {

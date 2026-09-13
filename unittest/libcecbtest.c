@@ -175,20 +175,75 @@ void test_cecb_token()
 	free(det_outbuf);
 }
 
+void test_cecb_readln()
+{
+	cecb_path_id p_cas;
+	error_code ec;
+	char buffer[64];
+	unsigned int size;
+	char *test_lines = "First Line\rSecond Line\r";
+	unsigned int test_lines_size = strlen(test_lines);
+
+	ec = _cecb_bulkerase("test_readln.cas", 0, 0, 0);
+	ASSERT_EQUALS(0, ec);
+
+	ec = _cecb_create(&p_cas, "test_readln.cas,LINES", FAM_READ | FAM_WRITE, 1,
+			  255, 0, 0x55, 0x65);
+	ASSERT_EQUALS(0, ec);
+
+	size = test_lines_size;
+	ec = _cecb_write(p_cas, test_lines, &size);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(test_lines_size, size);
+
+	ec = _cecb_close(p_cas);
+	ASSERT_EQUALS(0, ec);
+
+	// Open file for reading
+	ec = _cecb_open(&p_cas, "test_readln.cas,LINES", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+
+	// Read line 1
+	memset(buffer, 0, sizeof(buffer));
+	size = sizeof(buffer);
+	ec = _cecb_readln(p_cas, buffer, &size);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(11, size);
+	ASSERT_EQUALS(0x0d, (unsigned char)buffer[10]);
+	ASSERT_EQUALS(0, memcmp(buffer, "First Line\r", 11));
+
+	// Read line 2
+	memset(buffer, 0, sizeof(buffer));
+	size = sizeof(buffer);
+	ec = _cecb_readln(p_cas, buffer, &size);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(12, size);
+	ASSERT_EQUALS(0x0d, (unsigned char)buffer[11]);
+	ASSERT_EQUALS(0, memcmp(buffer, "Second Line\r", 12));
+
+	ec = _cecb_close(p_cas);
+	ASSERT_EQUALS(0, ec);
+
+	remove("test_readln.cas");
+}
+
 int main()
 {
 	remove("test.c10");
 	remove("test.cas");
 	remove("test.wav");
+	remove("test_readln.cas");
 
 	RUN(test_cecb_bulkerase);
 	RUN(test_cecb_create);
 	RUN(test_cecb_read);
+	RUN(test_cecb_readln);
 	RUN(test_cecb_token);
 
 	remove("test.c10");
 	remove("test.cas");
 	remove("test.wav");
+	remove("test_readln.cas");
 
 	return TEST_REPORT();
 }

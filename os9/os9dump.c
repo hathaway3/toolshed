@@ -188,24 +188,24 @@ static int do_dump(char **argv, char *file, enum dumpformat format)
 		printf("{");
 	}
 
-	/* 2. Determine file size by reading until error */
+	/* 2. Determine file size: use _coco_gs_size if available, fallback to reading */
 
-	while (1)
+	if (_coco_gs_size(path, &tot_bytes) != 0 || tot_bytes == 0)
 	{
-		u_int num_bytes;
-
-		num_bytes = BUFFSIZ;
-		ec = _coco_read(path, buffer, &num_bytes);
-		tot_bytes += num_bytes;
-		if (ec != 0)
+		tot_bytes = 0;
+		while (1)
 		{
-			break;
+			u_int num_bytes = BUFFSIZ;
+
+			ec = _coco_read(path, buffer, &num_bytes);
+			tot_bytes += num_bytes;
+			if (ec != 0)
+			{
+				break;
+			}
 		}
+		_coco_seek(path, 0, SEEK_SET);
 	}
-
-	/* 2. Rewind and dump the file */
-
-	_coco_seek(path, 0, SEEK_SET);
 
 	tot_buffer = malloc(tot_bytes);
 

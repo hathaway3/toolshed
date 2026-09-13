@@ -48,8 +48,8 @@ error_code _cecb_detoken(unsigned char *in_buffer, int in_size,
   mode_character_string = 0;
   mode_data_statement = 0;
 
-  *out_buffer = malloc(BLOCK_QUANTUM);
-  buffer_size = BLOCK_QUANTUM;
+  buffer_size = (in_size > 0) ? ((size_t)in_size * 2 + BLOCK_QUANTUM) : BLOCK_QUANTUM;
+  *out_buffer = malloc(buffer_size);
 
   if (*out_buffer == NULL) {
     return EOS_OM;

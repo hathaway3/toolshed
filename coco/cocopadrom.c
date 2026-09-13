@@ -138,11 +138,23 @@ static int do_padrom(char **argv, char *file, int padSize, char padChar)
 		return (1);
 	}
 	_os9_seek(path, fileSize, SEEK_SET);
-	for (j = 0; j < padSize - fileSize; j++)
 	{
-		int size = 1;
+		char pad_buf[4096];
+		u_int bytes_to_pad = padSize - fileSize;
+		memset(pad_buf, padChar, sizeof(pad_buf));
 
-		_os9_write(path, &padChar, &size);
+		while (bytes_to_pad > 0)
+		{
+			u_int chunk = bytes_to_pad > sizeof(pad_buf) ? (u_int)sizeof(pad_buf) : bytes_to_pad;
+			u_int size = chunk;
+
+			ec = _os9_write(path, pad_buf, &size);
+			if (ec != 0 || size == 0)
+			{
+				break;
+			}
+			bytes_to_pad -= size;
+		}
 	}
 
 	_os9_close(path);

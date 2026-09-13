@@ -146,7 +146,6 @@ error_code TSDelete(char *pathlist) {
 error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
   error_code ec = 0;
   coco_path_id path = NULL;
-  int j;
   u_int fileSize;
 
   ec = _coco_open(&path, pathlist, FAM_READ | FAM_WRITE);
@@ -176,15 +175,21 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
   }
 
   if (padAtStart == 0) {
+    char pad_buf[4096];
+    u_int bytes_to_pad = padSize - fileSize;
+
+    memset(pad_buf, padChar, sizeof(pad_buf));
     _coco_seek(path, fileSize, SEEK_SET);
 
-    for (j = 0; j < padSize - fileSize; j++) {
-      u_int size = 1;
+    while (bytes_to_pad > 0) {
+      u_int chunk = bytes_to_pad > sizeof(pad_buf) ? (u_int)sizeof(pad_buf) : bytes_to_pad;
+      u_int size = chunk;
 
-      ec = _coco_write(path, &padChar, &size);
-      if (ec != 0) {
+      ec = _coco_write(path, pad_buf, &size);
+      if (ec != 0 || size == 0) {
         break;
       }
+      bytes_to_pad -= size;
     }
   } else {
     // read contents
@@ -201,15 +206,21 @@ error_code TSPadROM(char *pathlist, int padSize, char padChar, int padAtStart) {
       ec = _coco_read(path, contents, &size);
 
       if (ec == 0) {
+        char pad_buf[4096];
+        u_int bytes_to_pad = padSize - fileSize;
+
+        memset(pad_buf, padChar, sizeof(pad_buf));
         _coco_seek(path, 0, SEEK_SET);
 
-        for (j = 0; j < padSize - fileSize; j++) {
-          u_int psize = 1;
+        while (bytes_to_pad > 0) {
+          u_int chunk = bytes_to_pad > sizeof(pad_buf) ? (u_int)sizeof(pad_buf) : bytes_to_pad;
+          u_int psize = chunk;
 
-          ec = _coco_write(path, &padChar, &psize);
-          if (ec != 0) {
+          ec = _coco_write(path, pad_buf, &psize);
+          if (ec != 0 || psize == 0) {
             break;
           }
+          bytes_to_pad -= psize;
         }
 
         if (ec == 0) {
@@ -332,6 +343,11 @@ error_code TSMoveFile(char *srcfile, char *dstfile) {
   return ec;
 }
 
+static void TranslateNativeToCoCo(const char *buffer, u_int size, char *outBuffer,
+                                  u_int *newSize);
+static void TranslateCoCoToNative(const char *buffer, u_int size, char *outBuffer,
+                                  u_int *newSize);
+
 error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
                       int rewrite, int owner, int owner_set, char *buffer,
                       u_int buffer_size) {
@@ -367,8 +383,22 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
     return ec;
   }
 
+  char *transBuffer = NULL;
+
+  if (eolTranslate == 1) {
+    /* Allocate reusable translation buffer once to eliminate per-chunk malloc churn */
+    transBuffer = (char *)malloc(buffer_size * 2);
+    if (transBuffer == NULL) {
+      _coco_close(path);
+      path = NULL;
+      _coco_close(destpath);
+      destpath = NULL;
+      _coco_delete(dstfile);
+      return EOS_MF;
+    }
+  }
+
   while (_coco_gs_eof(path) == 0) {
-    char *newBuffer = NULL;
     u_int newSize;
     u_int size = buffer_size;
 
@@ -390,22 +420,12 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
     if (eolTranslate == 1) {
       if (path->type == NATIVE && destpath->type != NATIVE) {
         /* source is native, destination is OS-9 or DECB */
-
-        NativeToCoCo(buffer, size, &newBuffer, &newSize);
-
-        ec = _coco_write(destpath, newBuffer, &newSize);
-
-        free(newBuffer);
-        newBuffer = NULL;
+        TranslateNativeToCoCo(buffer, size, transBuffer, &newSize);
+        ec = _coco_write(destpath, transBuffer, &newSize);
       } else if (path->type != NATIVE && destpath->type == NATIVE) {
         /* source is OS-9 or DECB, destination is native */
-
-        CoCoToNative(buffer, size, &newBuffer, &newSize);
-
-        ec = _coco_write(destpath, newBuffer, &newSize);
-
-        free(newBuffer);
-        newBuffer = NULL;
+        TranslateCoCoToNative(buffer, size, transBuffer, &newSize);
+        ec = _coco_write(destpath, transBuffer, &newSize);
       }
     } else {
       /* One-to-one writing of the data -- no translation needed. */
@@ -416,6 +436,11 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
     if (ec != 0) {
       break;
     }
+  }
+
+  if (transBuffer != NULL) {
+    free(transBuffer);
+    transBuffer = NULL;
   }
 
   if (ec != 0) {
@@ -447,6 +472,59 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
   return ec;
 }
 
+static void TranslateNativeToCoCo(const char *buffer, u_int size, char *outBuffer,
+                                  u_int *newSize) {
+  EOL_Type eolMethod;
+  u_int i;
+
+  eolMethod = DetermineEOLType((char *)buffer, size);
+
+  switch (eolMethod) {
+  case EOL_UNIX:
+    for (i = 0; i < size; i++) {
+      outBuffer[i] = (buffer[i] == 0x0A) ? 0x0D : buffer[i];
+    }
+    *newSize = size;
+    break;
+
+  case EOL_DOS: {
+    u_int outPos = 0;
+    for (i = 0; i < size; i++) {
+      if (buffer[i] != 0x0A) {
+        outBuffer[outPos++] = buffer[i];
+      }
+    }
+    *newSize = outPos;
+    break;
+  }
+
+  default:
+    memcpy(outBuffer, buffer, size);
+    *newSize = size;
+    break;
+  }
+}
+
+static void TranslateCoCoToNative(const char *buffer, u_int size, char *outBuffer,
+                                  u_int *newSize) {
+#ifdef WIN32
+  u_int i, outPos = 0;
+  for (i = 0; i < size; i++) {
+    outBuffer[outPos++] = buffer[i];
+    if (buffer[i] == 0x0D) {
+      outBuffer[outPos++] = 0x0A;
+    }
+  }
+  *newSize = outPos;
+#else
+  u_int i;
+  for (i = 0; i < size; i++) {
+    outBuffer[i] = (buffer[i] == 0x0D) ? 0x0A : buffer[i];
+  }
+  *newSize = size;
+#endif
+}
+
 /*
  * Converts a buffer containing native EOLs to one with OS-9 EOLs.
  *
@@ -454,151 +532,53 @@ error_code TSCopyFile(char *srcfile, char *dstfile, int eolTranslate,
  * finished with the buffer.
  */
 void NativeToCoCo(char *buffer, u_int size, char **newBuffer, u_int *newSize) {
-  EOL_Type eolMethod;
-  int i;
+  EOL_Type eolMethod = DetermineEOLType(buffer, size);
 
-  eolMethod = DetermineEOLType(buffer, size);
-
-  switch (eolMethod) {
-  case EOL_UNIX:
-    /* Change all occurences of 0x0A to 0x0D */
-
-    *newBuffer = (char *)malloc(size);
-    if (*newBuffer == NULL) {
-      return;
-    }
-
-    memcpy(*newBuffer, buffer, size);
-
-    *newSize = size;
-
+  if (eolMethod == EOL_DOS) {
+    u_int dosEOLCount = 0, i;
     for (i = 0; i < size; i++) {
-      if ((*newBuffer)[i] == 0x0A) {
-        (*newBuffer)[i] = 0x0D;
+      if (buffer[i] == 0x0A) {
+        dosEOLCount++;
       }
     }
-
-    break;
-
-  case EOL_DOS:
-    /* Things are a bit more involved here. */
-
-    /* We will strip all 0x0As out of the buffer, leaving the 0x0Ds. */
-
-    {
-      u_int dosEOLCount = 0;
-      char *newP;
-      int i;
-
-      /* 1. First we count up the number of 0x0A line endings. */
-
-      for (i = 0; i < size; i++) {
-        if (buffer[i] == 0x0A) {
-          dosEOLCount++;
-        }
-      }
-
-      /* 2. Now we allocate a buffer to hold the current size -
-         'dosEOLCount' bytes.
-       */
-
-      *newSize = size - dosEOLCount;
-
-      *newBuffer = (char *)malloc(*newSize);
-
-      if (*newBuffer == NULL) {
-        return;
-      }
-
-      newP = *newBuffer;
-
-      for (i = 0; i < size; i++) {
-        if (buffer[i] != 0x0A) {
-          *newP = buffer[i];
-          newP++;
-        }
-      }
+    *newSize = size - dosEOLCount;
+    *newBuffer = (char *)malloc(*newSize);
+    if (*newBuffer == NULL) {
+      return;
     }
-    break;
-
-  default:
-    /* No eols, binary copy */
-
+  } else {
+    *newSize = size;
     *newBuffer = (char *)malloc(size);
     if (*newBuffer == NULL) {
       return;
     }
-
-    memcpy(*newBuffer, buffer, size);
-
-    *newSize = size;
   }
 
-  return;
+  TranslateNativeToCoCo(buffer, size, *newBuffer, newSize);
 }
 
 void CoCoToNative(char *buffer, u_int size, char **newBuffer, u_int *newSize) {
 #ifdef WIN32
-  u_int dosEOLCount = 0;
-  char *newP;
-  int i;
-
-  /* Things are a bit more involved here. */
-
-  /* We will add 0x0As after all 0x0Ds. */
-
-  /* 1. First we count up the number of 0x0D OS-9 line endings. */
-
+  u_int dosEOLCount = 0, i;
   for (i = 0; i < size; i++) {
     if (buffer[i] == 0x0D) {
       dosEOLCount++;
     }
   }
-
-  /* 2. Now we allocate a buffer to hold the current size +
-     'dosEOLCount' bytes.
-   */
-
   *newSize = size + dosEOLCount;
   *newBuffer = (char *)malloc(*newSize);
-
   if (*newBuffer == NULL) {
     return;
   }
-
-  newP = *newBuffer;
-
-  for (i = 0; i < size; i++) {
-    *newP = buffer[i];
-    newP++;
-
-    if (buffer[i] == 0x0D) {
-      *newP = 0x0A;
-      newP++;
-    }
-  }
 #else
-  int i;
-
-  /* Change all occurences of 0x0D to 0x0A */
-
+  *newSize = size;
   *newBuffer = (char *)malloc(size);
   if (*newBuffer == NULL) {
     return;
   }
-
-  memcpy(*newBuffer, buffer, size);
-
-  *newSize = size;
-
-  for (i = 0; i < size; i++) {
-    if ((*newBuffer)[i] == 0x0D) {
-      (*newBuffer)[i] = 0x0A;
-    }
-  }
 #endif
 
-  return;
+  TranslateCoCoToNative(buffer, size, *newBuffer, newSize);
 }
 
 /*

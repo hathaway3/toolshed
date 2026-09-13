@@ -218,8 +218,92 @@ void test_padrom() {
   fclose(f);
   buffer[8] = '\0';
   ASSERT_STRING_EQUALS("YYYY1234", buffer);
-
   remove("test-pad.dat");
+
+  /* Test large padding across 4096-byte chunk boundary (e.g. 10000 bytes) */
+  f = fopen("test-pad.dat", "wb");
+  fwrite("1234", 1, 4, f);
+  fclose(f);
+
+  ec = TSPadROM("test-pad.dat", 10000, 'Z', 0);
+  ASSERT_EQUALS(0, ec);
+
+  f = fopen("test-pad.dat", "rb");
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  fclose(f);
+  ASSERT_EQUALS(10000, size);
+  remove("test-pad.dat");
+
+  /* Large padding at start */
+  f = fopen("test-pad.dat", "wb");
+  fwrite("1234", 1, 4, f);
+  fclose(f);
+
+  ec = TSPadROM("test-pad.dat", 10000, 'W', 1);
+  ASSERT_EQUALS(0, ec);
+
+  f = fopen("test-pad.dat", "rb");
+  fseek(f, 0, SEEK_END);
+  size = ftell(f);
+  fclose(f);
+  ASSERT_EQUALS(10000, size);
+  remove("test-pad.dat");
+}
+
+void test_native_readln() {
+  FILE *f = fopen("test_readln.txt", "wb");
+  ASSERT("fopen", f != NULL);
+  /* Write:
+   * Line 1: "Hello\n" (6 bytes)
+   * Line 2: "\n" (1 byte empty line)
+   * Line 3: "World" (5 bytes, no trailing newline)
+   */
+  const char *content = "Hello\n\nWorld";
+  fwrite(content, 1, strlen(content), f);
+  fclose(f);
+
+  native_path_id path;
+  error_code ec = _native_open(&path, "test_readln.txt", FAM_READ);
+  ASSERT_EQUALS(0, ec);
+
+  char buf[64];
+  u_int size;
+
+  /* Line 1: "Hello\n" -> translated to "Hello\r", size 6 */
+  memset(buf, 0, sizeof(buf));
+  size = sizeof(buf);
+  ec = _native_readln(path, buf, &size);
+  ASSERT_EQUALS(0, ec);
+  ASSERT_EQUALS(6, size);
+  ASSERT_EQUALS(0x0D, (unsigned char)buf[5]);
+  ASSERT_EQUALS(0, memcmp(buf, "Hello\r", 6));
+
+  /* Line 2: "\n" (empty line) -> translated to "\r", size 1 */
+  memset(buf, 0, sizeof(buf));
+  size = sizeof(buf);
+  ec = _native_readln(path, buf, &size);
+  ASSERT_EQUALS(0, ec);
+  ASSERT_EQUALS(1, size);
+  ASSERT_EQUALS(0x0D, (unsigned char)buf[0]);
+
+  /* Line 3: "World" -> at EOF without newline, size 5 */
+  memset(buf, 0, sizeof(buf));
+  size = sizeof(buf);
+  ec = _native_readln(path, buf, &size);
+  ASSERT_EQUALS(0, ec);
+  ASSERT_EQUALS(5, size);
+  ASSERT_EQUALS(0, memcmp(buf, "World", 5));
+
+  /* Line 4: at EOF -> EOS_EOF */
+  size = sizeof(buf);
+  ec = _native_readln(path, buf, &size);
+  ASSERT_EQUALS(EOS_EOF, ec);
+
+  ec = _native_close(path);
+  ASSERT_EQUALS(0, ec);
+
+  remove("test_readln.txt");
 }
 
 int main() {
@@ -227,17 +311,20 @@ int main() {
   remove("test-1.dat");
   remove("test-2.dat");
   remove("test-out.dat");
+  remove("test_readln.txt");
 
   RUN(test_native2coco);
   RUN(test_coco2native);
   RUN(test_via_disk_image);
   RUN(test_copy_edge_cases);
   RUN(test_padrom);
+  RUN(test_native_readln);
 
   remove("test.dsk");
   remove("test-1.dat");
   remove("test-2.dat");
   remove("test-out.dat");
+  remove("test_readln.txt");
 
   return TEST_REPORT();
 }

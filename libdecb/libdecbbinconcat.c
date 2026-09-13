@@ -5,6 +5,7 @@
  ********************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "decbpath.h"
 
 #define PREAMBLE 0x00
@@ -37,8 +38,7 @@ error_code _decb_binconcat(unsigned char *in_buffer, int in_size,
 
 	/* Mark all addresses as unused */
 
-	for (i = 0; i < 65535; i++)
-		buffer[i] = -1;
+	memset(buffer, 0xff, sizeof(int) * 65536);
 
 	/* Unpack BIN file into pseudo RAM space */
 	in_pos = 0;
@@ -72,7 +72,7 @@ error_code _decb_binconcat(unsigned char *in_buffer, int in_size,
 	*out_size = 0;
 	mode = FREESPACE;
 
-	for (i = 0; i < 65535; i++)
+	for (i = 0; i < 65536; i++)
 	{
 		switch (mode)
 		{
@@ -115,7 +115,7 @@ error_code _decb_binconcat(unsigned char *in_buffer, int in_size,
 	out_pos = 0;
 	mode = FREESPACE;
 
-	for (i = 0; i < 65535; i++)
+	for (i = 0; i < 65536; i++)
 	{
 		switch (mode)
 		{
@@ -189,9 +189,13 @@ int _decb_count_segements(u_char * buffer, u_int buffer_size)
 
 	while (buffer_position < buffer_size)
 	{
-		if (buffer[buffer_position++] == PREAMBLE)
+		int amble = buffer[buffer_position++];
+		if (amble == PREAMBLE)
 			result++;
-		else if (buffer[buffer_position++] == POSTAMBLE)
+		else if (amble == POSTAMBLE)
+			break;
+
+		if (buffer_position + 4 > buffer_size)
 			break;
 
 		length = buffer[buffer_position++] << 8;
