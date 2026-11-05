@@ -114,5 +114,6 @@ build/unix/unittest/libcecbtest
 build/unix/unittest/libtoolshedtest
 build/unix/unittest/os9commandtest
 build/unix/doc/ToolShed.html
+build/unix/.version
 build/unix/toolshed-*.tgz
 build/unix/toolshed-*.zip

@@ -226,6 +226,7 @@ int main(int argc, char **argv) {
 }
 
 static int help() {
+  fprintf(stderr, "dis68 from Toolshed " TOOLSHED_VERSION "\n");
   fprintf(stderr, "Usage: dis68 [options] infile [outfile]\n");
   fprintf(stderr, "  -m         file not module format\n");
   fprintf(stderr, "  -o[=]nnnn  use logical offset of nnnn (hex)\n");

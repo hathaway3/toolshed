@@ -142,7 +142,10 @@ case "$OSTYPE" in
             install_mac_deps
         fi
 
-        echo "Building and installing to $PREFIX..."
+        echo "Building and testing..."
+        make -C build/unix test $EXTRA_MAKE_FLAGS
+
+        echo "Installing to $PREFIX..."
         if can_write_to_dir "$INSTALLDIR" && can_write_to_dir "$DOCDIR"; then
             make -C build/unix install PREFIX="$PREFIX" $EXTRA_MAKE_FLAGS
         elif [ -n "$SUDO" ]; then

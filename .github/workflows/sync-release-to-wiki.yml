@@ -23,7 +23,11 @@ jobs:
 
       - name: Copy ToolShed.md to Wiki Home and Push
         run: |
-          cp doc/ToolShed.md wiki-repo/Home.md
+          if [ -f doc/ToolShed.md ]; then
+            cp doc/ToolShed.md wiki-repo/Home.md
+          elif [ -f doc/archive/ToolShed.md ]; then
+            cp doc/archive/ToolShed.md wiki-repo/Home.md
+          fi
 
           cd wiki-repo
           git config user.name "github-actions[bot]"

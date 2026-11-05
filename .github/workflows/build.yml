@@ -28,22 +28,21 @@ jobs:
     steps:
     - name: Setup Requirements
       run: |
-        sudo apt-get install mingw-w64 markdown libfuse-dev
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 markdown libfuse-dev
 
     - name: Checkout
       uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
 
-    - name: Build Linux
+    - name: Build Linux & Run Tests
       run: |
-        sudo make -C build/unix unixpackage
+        make -C build/unix unixpackage
       
     - name: Build Windows
       run: |
-        sudo make -C build/unix winpackage
-
-    - name: Run tests
-      run: |
-        make -C build/unix test
+        make -C build/unix winpackage
 
     - name: Results
       run: |
@@ -83,16 +82,14 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
 
-    - name: Build macOS
+    - name: Build macOS & Run Tests
       run: |
         set -e
         make -C build/unix NO_COCOFUSE=1 MAKEPACKAGE="zip -9" \
           'PACKAGENAME=toolshed-macos-${{ matrix.arch }}-$(VERSION).zip' unixpackage
-
-    - name: Run tests
-      run: |
-        make -C build/unix NO_COCOFUSE=1 test
 
     - name: Results
       run: |

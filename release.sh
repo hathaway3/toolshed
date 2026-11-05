@@ -2,16 +2,20 @@
 
 # ToolShed Release Helper Script
 
-# Get the current version from build/unix/rules.mak
-VERSION=$(grep "^VERSION =" build/unix/rules.mak | cut -d' ' -f3)
+# Get the current version from build/unix/Makefile (derived from git tag or fallback)
+VERSION=$(make -s -C build/unix print-version)
 
-echo "Current version in rules.mak: $VERSION"
+echo "Current detected version: $VERSION"
 read -p "Enter version tag to release (e.g., v$VERSION): " TAG
 
 if [ -z "$TAG" ]; then
     echo "Tag cannot be empty. Aborting."
     exit 1
 fi
+
+# Strip leading v/V to update FALLBACK_VERSION in build/unix/rules.mak if needed
+CLEAN_VER="${TAG#[vV]}"
+sed -i.bak "s/^FALLBACK_VERSION = .*/FALLBACK_VERSION = $CLEAN_VER/" build/unix/rules.mak && rm -f build/unix/rules.mak.bak
 
 echo "Creating tag $TAG..."
 git tag -a "$TAG" -m "Release $TAG"

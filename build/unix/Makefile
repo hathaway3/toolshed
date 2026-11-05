@@ -46,10 +46,13 @@ endif
 
 APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
 
-.PHONY: all test install package cleandirs clean unixpackage winpackage allpackages
+.PHONY: all test install package cleandirs clean unixpackage winpackage allpackages print-version
 
 all:
 	@set -e; for dir in $(DIRS); do $(MAKE) -C $$dir; done
+
+print-version:
+	@echo "$(VERSION)"
 
 test: all
 ifneq ($(WIN),)
@@ -73,7 +76,7 @@ cleandirs:
 	$(foreach dir, $(DIRS) cocofuse unittest, [ ! -d $(dir) ] || $(MAKE) -C $(dir) clean;)
 
 clean:: cleandirs
-	$(RM) $(PACKAGENAME_WIN) $(PACKAGENAME_UNIX)
+	$(RM) $(PACKAGENAME_WIN) $(PACKAGENAME_UNIX) .version
 
 unixpackage:
 	$(MAKE) -f ./Makefile package

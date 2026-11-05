@@ -3,12 +3,10 @@ name: Make Release
 on:
   push:
     tags:
-      - 'v*'            # Trigger on standard tags like v1.0.0
+      - 'v*'            # Trigger on standard tags like v2.6.1
+      - 'V*'            # Trigger on uppercase V tags like V2.6.1
       - '!DiskShed*'    # Explicitly ignore DiskShed tags
   workflow_dispatch:
-  push:
-    tags:
-      - '*'
 
 env:
   # Path to the solution file relative to the root of the project.
@@ -18,71 +16,93 @@ permissions:
   contents: write
 
 defaults:
-    run:
-        shell: bash {0}
+  run:
+    shell: bash {0}
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup Requirements
-      run: |
-        sudo apt-get install mingw-w64 markdown libfuse-dev
+      - name: Setup Requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 markdown libfuse-dev
 
-    - name: Checkout
+      - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-    - name: Build Linux
-      run: |
-        sudo make -C build/unix unixpackage
-      
-    - name: Build Windows
-      run: |
-        sudo make -C build/unix winpackage
+      - name: Build Linux & Run Tests
+        run: |
+          make -C build/unix unixpackage
 
-    - name: Run tests
-      run: |
-        make -C build/unix test
+      - name: Build Windows
+        run: |
+          make -C build/unix winpackage
 
-    - name: Results
-      run: |
-        [ -f build/unix/toolshed-*.tgz ] && ls build/unix/toolshed-*.tgz | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; tar tzvf {}'
-        [ -f build/unix/toolshed-*.zip ] && ls build/unix/toolshed-*.zip | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; unzip -l -v {}'
+      - name: Results
+        run: |
+          [ -f build/unix/toolshed-*.tgz ] && ls build/unix/toolshed-*.tgz | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; tar tzvf {}'
+          [ -f build/unix/toolshed-*.zip ] && ls build/unix/toolshed-*.zip | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; unzip -l -v {}'
 
-    - name: Release
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
           generate_release_notes: true
-        files: |
+          files: |
             doc/changelog.md
-          build/unix/toolshed-*.tgz
-          build/unix/toolshed-*.zip
+            build/unix/toolshed-*.tgz
+            build/unix/toolshed-*.zip
 
-  build-macos:
-    runs-on: macos-latest
+  macos:
+    name: macOS (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
 
     permissions:
       contents: write
 
-    defaults:
-        run:
-            shell: bash {0}
-
     steps:
-    - name: Install dependencies
-      run: |
-        brew install lwtools
+      - name: Setup Requirements
+        run: |
+          brew install markdown
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-    - name: Build
-      run: |
-        make -C build/unix all
+      - name: Build macOS & Run Tests
+        run: |
+          set -e
+          make -C build/unix NO_COCOFUSE=1 MAKEPACKAGE="zip -9" \
+            'PACKAGENAME=toolshed-macos-${{ matrix.arch }}-$(VERSION).zip' unixpackage
 
-    - name: Run tests
-      run: |
-        make -C build/unix test
+      - name: Results
+        run: |
+          set -e
+          for f in build/unix/toolshed-macos-*.zip; do
+            echo; shasum -a 256 "$f"; ls -al "$f"; unzip -l -v "$f"
+            unzip -p "$f" 'toolshed-*/os9' > os9-check
+            test "$(lipo -archs os9-check)" = "${{ matrix.arch }}"
+          done
+
+      - name: Attach macOS Package to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: build/unix/toolshed-macos-*.zip
