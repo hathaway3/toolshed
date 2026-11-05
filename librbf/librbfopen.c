@@ -16,6 +16,7 @@
 
 #include "cocotypes.h"
 #include "os9path.h"
+#include "cocopath.h"
 #include "cococonv.h"
 #include "cocosys.h"
 #include "debug.h"
@@ -25,10 +26,12 @@
 static int init_pd(os9_path_id * path, int mode);
 static int term_pd(os9_path_id path);
 static int init_bitmap(os9_path_id path);
-static int term_bitmap(os9_path_id path);
+static error_code term_bitmap(os9_path_id path);
+static error_code open_image(os9_path_id path);
+static error_code load_lsn0(os9_path_id path);
 static int init_lsn0(os9_path_id path);
 static int term_lsn0(os9_path_id path);
-static void _os9_truncate_seg_list(os9_path_id path);
+static error_code _os9_truncate_seg_list(os9_path_id path);
 error_code _os9_file_exists(os9_path_id folder_path, char *filename);
 int validate_pathlist(os9_path_id * path, char *pathlist);
 
@@ -144,7 +147,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 			goto clean;
 		}
 
-		now = time(NULL);
+		now = GetSafeTimestamp();
 
 		/* 3. Populate file descriptor. */
 
@@ -161,6 +164,15 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 
 		/* 4. Allocate new cluster on 'sectors per cluster' boundary. */
+
+		if (parent_path->bitmap_ec != 0)
+		{
+			ec = parent_path->bitmap_ec;
+			free(filename);
+			_os9_close(parent_path);
+
+			return ec;
+		}
 
 		newLSN = _os9_getfreebit(parent_path->bitmap,
 					 int3(parent_path->lsn0->dd_tot) /
@@ -186,8 +198,16 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		/* 6. Write file descriptor to image file. */
 
-		_os9_lsn_fseek(parent_path, newLSN);
-		fwrite(&newFD, 1, sizeof(fd_stats), parent_path->fd);
+		ec = _os9_lsn_put(parent_path, newLSN, 0, &newFD, sizeof(fd_stats));
+
+		if (ec != 0)
+		{
+			free(filename);
+			_os9_delbit(parent_path->bitmap, newLSN / parent_path->spc, 1);
+			_os9_close(parent_path);
+
+			return ec;
+		}
 
 		memset(&newDEntry, 0, sizeof(os9_dir_entry));
 		strcpy((char *) &(newDEntry.name), filename);
@@ -216,7 +236,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 			parent_path->mode = mode;
 
 			if (ec != 0)
-			{	/* Error */
+			{
 				break;
 			}
 
@@ -230,8 +250,10 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		if (ec != 0 && ec != EOS_EOF)
 		{
+			_os9_delbit(parent_path->bitmap, newLSN / parent_path->spc, 1);
 			goto clean;
 		}
+
 
 		/* 8. Write the directory entry back to the image. */
 
@@ -239,7 +261,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 
 		if (ec != 0)
 		{
-			_os9_delbit(parent_path->bitmap, newLSN, 1);
+			_os9_delbit(parent_path->bitmap, newLSN / parent_path->spc, 1);
 			goto clean;
 		}
 
@@ -247,7 +269,7 @@ error_code _os9_create(os9_path_id * path, char *pathlist, int mode,
 		parent_path = NULL;
 
 		if (ec != 0)
-		{		/* Error */
+		{
 			goto clean;
 		}
 
@@ -343,23 +365,15 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	{
 		/* 1. Open a path to the image file. */
-		char *open_mode;
 
-		if (mode & FAM_WRITE)
-		{
-			open_mode = "rb+";
-		}
-		else
-		{
-			open_mode = "rb";
-		}
+		ec = open_image(*path);
 
-		(*path)->fd = fopen((*path)->imgfile, open_mode);
-
-		if ((*path)->fd == NULL)
+		if (ec != 0)
 		{
-			ec = UnixToCoCoError(errno);
-			goto clean;
+			term_pd(*path);
+			*path = NULL;
+
+			return ec;
 		}
 	}
 
@@ -370,7 +384,11 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		goto clean;
+		_diskimage_close((*path)->disk);
+		term_pd(*path);
+		*path = NULL;
+
+		return ec;
 	}
 
 
@@ -380,7 +398,14 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
-		goto clean;
+		free((*path)->bitmap);
+		free((*path)->saved_bitmap);
+		term_lsn0(*path);
+		_diskimage_close((*path)->disk);
+		term_pd(*path);
+		*path = NULL;
+
+		return ec;
 	}
 
 
@@ -453,11 +478,22 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 
 	if (ec != 0)
 	{
+		free(tmppathlist);
+
+		free((*path)->bitmap);
+		free((*path)->saved_bitmap);
+		term_lsn0(*path);
+
+		_diskimage_close((*path)->disk);
+
+		term_pd(*path);
+		*path = NULL;
+
 		if (ec == EOS_EOF)
 		{
 			ec = EOS_PNNF;
 		}
-		goto clean;
+		return ec;
 	}
 
 
@@ -474,8 +510,23 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		int andresult;
 
 
-		_os9_lsn_fseek((*path), (*path)->pl_fd_lsn);
-		fread(&fd_sector, 1, sizeof(fd_stats), (*path)->fd);
+		ec = _os9_lsn_get(*path, (*path)->pl_fd_lsn, 0, &fd_sector, sizeof(fd_stats));
+
+		if (ec != 0)
+		{
+			free(tmppathlist);
+
+			free((*path)->bitmap);
+			free((*path)->saved_bitmap);
+			term_lsn0(*path);
+
+			_diskimage_close((*path)->disk);
+
+			term_pd(*path);
+			*path = NULL;
+
+			return ec;
+		}
 
 		/* 1. Check permissions to determine if we can access the file. */
 
@@ -486,28 +537,24 @@ error_code _os9_open(os9_path_id * path, char *pathlist, int mode)
 		if (andresult != mode
 		    || ((fd_sector.fd_att & FAM_DIR) != (mode & FAM_DIR)))
 		{
-			ec = EOS_FNA;
-			goto clean;
+			free(tmppathlist);
+
+			free((*path)->bitmap);
+			free((*path)->saved_bitmap);
+			term_lsn0(*path);
+
+			_diskimage_close((*path)->disk);
+
+			term_pd(*path);
+			*path = NULL;
+
+			return EOS_FNA;
 		}
 	}
 
 	free(tmppathlist);
 
 	return 0;
-
-clean:
-	if (tmppathlist != NULL)
-	{
-		free(tmppathlist);
-	}
-
-	if (*path != NULL)
-	{
-		_os9_close(*path);
-		*path = NULL;
-	}
-
-	return ec;
 }
 
 error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
@@ -516,14 +563,17 @@ error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
 	char *pathcopy, *lastPathComponent, *lastPathSeperator;
 	char *comma;
 
-	/* 1. Generate path to parent. */
-	DEBUG_PRINT("Initializing *path to NULL");
 	*path = NULL;
+	*filename = NULL;
 
-	if (pathlist == NULL)
+	/* 1. A pathlist with no comma does not name anything in an image. */
+
+	if (pathlist == NULL || strchr(pathlist, ',') == NULL)
 	{
 		return EOS_BPNAM;
 	}
+
+	/* 2. Generate path to parent. */
 
 	pathcopy = strdup(pathlist);
 	if (pathcopy == NULL)
@@ -571,73 +621,74 @@ error_code _os9_open_parent_directory(os9_path_id * path, char *pathlist,
  */
 error_code _os9_close(os9_path_id path)
 {
-	int pad_size;
-	char pad = 0xff;
+	error_code ec = 0;
+	error_code step_ec;
 
 	if (path == NULL)
 		return 0;
 
-	if (path->fd != NULL)
+	if (path->disk != NULL)
 	{
 		/* 1. This is a valid path. */
 
 		if ((path->mode & FAM_WRITE) && path->israw == 0)
 		{
-			_os9_truncate_seg_list(path);
+			ec = _os9_truncate_seg_list(path);
 		}
 
-		term_bitmap(path);
+		step_ec = term_bitmap(path);
+		if (ec == 0)
+		{
+			ec = step_ec;
+		}
 		term_lsn0(path);
 
-		/* 1. Make sure file length is an exact multiple of 256. */
-		/* Extend file length if not, but only if open for write */
-
-		if (path->mode & FAM_WRITE)
+		step_ec = _diskimage_close(path->disk);
+		path->disk = NULL;
+		if (ec == 0)
 		{
-			fseek(path->fd, 0, SEEK_END);
-			pad_size = 256 - (ftell(path->fd) % 256);
-			if (pad_size == 256)
-			{
-				pad_size = 0;
-			}
-
-			if (pad_size > 0)
-			{
-				char pad_buf[256];
-				memset(pad_buf, (unsigned char)pad, pad_size);
-				fwrite(pad_buf, 1, pad_size, path->fd);
-			}
+			ec = step_ec;
 		}
-
-		fclose(path->fd);
-		path->fd = NULL;
 	}
 
 	term_pd(path);
 
-	return 0;
+	return ec;
 }
 
 
 
-static void _os9_truncate_seg_list(os9_path_id path)
+static error_code _os9_truncate_seg_list(os9_path_id path)
 {
 	fd_stats fd_sector;
 	int i;
 	unsigned int file_size, sectors_needed, total_sectors;
+	unsigned int rounded_size, max_size, truncation, clusters_to_truncate = 0;
 
 
-	/* 1. Seek to file descriptor sector for this file and get it in memory. */
+	/* 1. Only a path that can write can truncate anything. */
 
-	_os9_lsn_fseek(path, path->pl_fd_lsn);
-	fread(&fd_sector, 1, sizeof(fd_stats), path->fd);
+	if ((path->mode & FAM_WRITE) == 0)
+	{
+		return 0;
+	}
 
 
-	/* 2. If this file is a directory, then abort. */
+	/* 2. Get the file descriptor sector for this file in memory. If it is
+	 * missing, nothing done with the path could have changed the file.
+	 */
+
+	if (_os9_lsn_get(path, path->pl_fd_lsn, 0, &fd_sector, sizeof(fd_stats)) != 0)
+	{
+		return 0;
+	}
+
+
+	/* 2a. If this file is a directory, then abort. */
 
 	if ((fd_sector.fd_att & FAP_DIR) == FAP_DIR)
 	{
-		return;
+		return 0;
 	}
 
 
@@ -645,16 +696,26 @@ static void _os9_truncate_seg_list(os9_path_id path)
 
 	file_size = int4(fd_sector.fd_siz);
 	sectors_needed = (file_size + path->bps - 1) / path->bps;
+	rounded_size = NextHighestMultiple(file_size, path->bps);
+	max_size = _os9_maximum_file_size(fd_sector, path->bps);
+	total_sectors = max_size / path->bps;
 
+	if (max_size > rounded_size)
+	{
+		truncation = max_size - rounded_size;
+		clusters_to_truncate = truncation / path->cs;
+	}
 
-	/* 4. Get total sectors currently represented by segment list. */
+	/* Leave the disk alone if there is nothing to cut, or no bitmap to free it in. */
 
-	total_sectors = _os9_maximum_file_size(fd_sector, path->bps) / path->bps;
+	if (clusters_to_truncate == 0 || path->bitmap_ec != 0)
+	{
+		return 0;
+	}
 
+	/* Truncate trailing clusters while the remaining sectors suffice. */
 
-	/* 5. Truncate trailing clusters while the remaining sectors suffice. */
-
-	while (total_sectors >= path->spc && (total_sectors - path->spc) >= sectors_needed)
+	while (clusters_to_truncate-- && total_sectors >= path->spc && (total_sectors - path->spc) >= sectors_needed)
 	{
 		int truncated = 0;
 
@@ -690,11 +751,7 @@ static void _os9_truncate_seg_list(os9_path_id path)
 	}
 
 
-	_os9_lsn_fseek(path, path->pl_fd_lsn);
-	fwrite(&fd_sector, 1, sizeof(fd_stats), path->fd);
-
-
-	return;
+	return _os9_lsn_put(path, path->pl_fd_lsn, 0, &fd_sector, sizeof(fd_stats));
 }
 
 
@@ -784,7 +841,7 @@ error_code _os9_file_exists(os9_path_id folder_path, char *filename)
 
 	_os9_seek(folder_path, 0, SEEK_SET);
 
-	while (_os9_gs_eof(folder_path) == 0)
+	while ((ec = _os9_gs_eof(folder_path)) == 0)
 	{
 		int mode = folder_path->mode;
 		char dname[32];
@@ -809,7 +866,7 @@ error_code _os9_file_exists(os9_path_id folder_path, char *filename)
 	}
 
 
-	return ec;
+	return ec == EOS_EOF ? 0 : ec;
 }
 
 
@@ -879,18 +936,20 @@ static int init_bitmap(os9_path_id path)
 	path->cs = path->spc * path->bps;	/* compute cluster size */
 
 	path->bitmap = (u_char *) malloc(bitmap_sectors * path->bps);
+	path->saved_bitmap = (u_char *) malloc(bitmap_sectors * path->bps);
 
-	if (path->bitmap == NULL)
+	if (path->bitmap == NULL || path->saved_bitmap == NULL)
 	{
 		return 1;
 	}
 
-	_os9_lsn_fseek(path, 1);
+	/* Only what needs the bitmap fails if it is missing. What could not be
+	 * read counts as allocated.
+	 */
 
-	if (fread(path->bitmap, 1, bitmap_sectors * path->bps, path->fd) == 0)
-	{
-		return EOS_EOF;
-	}
+	memset(path->bitmap, 0xFF, bitmap_sectors * path->bps);
+	path->bitmap_ec = _os9_lsn_get(path, 1, 0, path->bitmap, bitmap_sectors * path->bps);
+	memcpy(path->saved_bitmap, path->bitmap, bitmap_sectors * path->bps);
 
 
 	return 0;
@@ -902,21 +961,25 @@ static int init_bitmap(os9_path_id path)
  *
  * free the bitmap sectors
  */
-static int term_bitmap(os9_path_id path)
+static error_code term_bitmap(os9_path_id path)
 {
-	/* 1. Write back out bitmap if open for write. */
+	error_code ec = 0;
 
-	if (path->mode & FAM_WRITE)
+	/* 1. Write back out bitmap if it changed. */
+
+	if ((path->mode & FAM_WRITE) && path->bitmap_ec == 0 &&
+	    memcmp(path->bitmap, path->saved_bitmap, path->bitmap_bytes) != 0)
 	{
-		_os9_lsn_fseek(path, 1);
-		fwrite(path->bitmap, 1, path->bitmap_bytes, path->fd);
+		ec = _os9_lsn_put(path, 1, 0, path->bitmap, path->bitmap_bytes);
 	}
 
 	free(path->bitmap);
 	path->bitmap = NULL;
+	free(path->saved_bitmap);
+	path->saved_bitmap = NULL;
 
 
-	return 0;
+	return ec;
 }
 
 
@@ -927,6 +990,64 @@ static int term_bitmap(os9_path_id path)
  */
 static int init_lsn0(os9_path_id path)
 {
+	error_code ec = load_lsn0(path);
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	if (int2(memcmp(path->lsn0->dd_sync, "Cruz", 4) == 0 ? path->lsn0->dd_opt.m68k.pd_t0s
+							     : path->lsn0->dd_opt.m6809.pd_t0s) == 0)
+	{
+		fprintf(stderr, "Warning: T0S is zero. Assuming SPT: %d\n", path->spt);
+	}
+
+	return 0;
+}
+
+
+/* Open a path's image file and find how its sectors are addressed. */
+static error_code open_image(os9_path_id path)
+{
+	diskimage_geometry geometry;
+	error_code ec = _diskimage_open(&path->disk, path->imgfile, FAM_READ | (path->mode & FAM_WRITE));
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	ec = _diskimage_query_geometry(path->disk, &geometry);
+
+	if (ec != 0)
+	{
+		_diskimage_close(path->disk);
+		path->disk = NULL;
+
+		return ec;
+	}
+
+	path->raw_image = geometry.format == DISKIMAGE_RAW;
+	path->sides = geometry.sides > 1 ? geometry.sides : 1;
+	path->first_sector = geometry.first_sector == 0 && !path->raw_image ? 0 : 1;
+
+	return 0;
+}
+
+
+/*
+ * load_lsn0()
+ *
+ * Read LSN0 and the layout of the disk from it.
+ */
+static error_code load_lsn0(os9_path_id path)
+{
+	int is_osk;
+	u_char sector[1024];
+	u_int size = sizeof(sector);
+	error_code ec;
+
 	/* 1. Allocate 256 bytes for LSN0. */
 
 	path->lsn0 = (lsn0_sect *) malloc(1 * 256);
@@ -937,14 +1058,33 @@ static int init_lsn0(os9_path_id path)
 	}
 
 
-	/* 2. Compute bytes per sector from value at LSN0. */
+	/* 2. LSN0 is the first sector of the disk, whatever its layout. */
 
-	_os9_lsn_fseek(path, 0);
+	ec = _diskimage_read_sector(path->disk, 0, 0, path->first_sector, sector, &size);
+
+	if (ec == EOS_CRC)
+	{
+		if (!path->quiet)
+		{
+			fprintf(stderr, "Warning: bad CRC in LSN0 of %s\n", path->imgfile);
+		}
+		ec = 0;
+	}
+
+	if (ec != 0 || size < 256)
+	{
+		free(path->lsn0);
+		path->lsn0 = NULL;
+
+		return ec != 0 ? (ec == EOS_IA ? EOS_SECT : ec) : EOS_SECT;
+	}
 
 
-	/* 3. Read 256 byte LSN0. */
+	/* 3. Keep 256 byte LSN0. */
 
-	fread(path->lsn0, 1, 256, path->fd);
+	memcpy(path->lsn0, sector, 256);
+
+	is_osk = (memcmp(path->lsn0->dd_sync, "Cruz", 4) == 0);
 
 
 	/* 4. Compute bytes per sector from LSN0's lsnsize field. */
@@ -969,13 +1109,67 @@ static int init_lsn0(os9_path_id path)
 	/* 5. Determine proper sectors per track */
 
 	path->spt = int2(path->lsn0->dd_spt);
-	path->t0s = int2(path->lsn0->pd_t0s);
+	path->t0s = int2(is_osk ? path->lsn0->dd_opt.m68k.pd_t0s
+				: path->lsn0->dd_opt.m6809.pd_t0s);
 
 	if (path->t0s == 0)
 	{
-		fprintf( stderr, "Warning: T0S is zero. Assuming SPT: %d\n", path->spt);
 		path->t0s = path->spt;
 	}
+
+	/* 6. A disk's tracks use its other side only if it says it has one. */
+
+	if ((int1(path->lsn0->dd_fmt) & 1) == 0)
+	{
+		path->sides = 1;
+	}
+
+	return 0;
+}
+
+
+/*
+ * _os9_identify()
+ *
+ * Determine if an image is an OS-9 disk, by looking for the . and .. entries
+ * of its root directory. A sector it cannot read means that it is not.
+ */
+error_code _os9_identify(const char *pathname, int *found)
+{
+	u_char sector[256];
+	os9_path_id path;
+	error_code ec = init_pd(&path, FAM_READ);
+
+	*found = 0;
+
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	path->imgfile = strdup(pathname);
+	path->quiet = 1;
+	ec = open_image(path);
+
+	if (ec != 0)
+	{
+		term_pd(path);
+
+		return ec;
+	}
+
+	if (load_lsn0(path) == 0)
+	{
+		if (_os9_lsn_get(path, int3(path->lsn0->dd_dir) + 1, 0, sector, sizeof(sector)) == 0)
+		{
+			*found = sector[0] == 0x2E && sector[1] == 0xAE && sector[32] == 0xAE;
+		}
+
+		term_lsn0(path);
+	}
+
+	_diskimage_close(path->disk);
+	term_pd(path);
 
 	return 0;
 }

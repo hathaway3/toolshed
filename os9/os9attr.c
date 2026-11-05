@@ -38,6 +38,7 @@ int os9attr(int argc, char *argv[])
 	int attrSetMask = 0;
 	int attrResetMask = 0;
 	int quiet = 0;
+	error_code first_error = 0;
 
 	/* walk command line for options */
 	for (i = 1; i < argc; i++)
@@ -154,7 +155,6 @@ int os9attr(int argc, char *argv[])
 		}
 	}
 
-	error_code return_ec = 0;
 	p = NULL;
 
 	/* walk command line for pathnames */
@@ -176,10 +176,12 @@ int os9attr(int argc, char *argv[])
 				/* No attribute options were specified */
 				if ((ec = TSRBFAttrGet(p, &attr, attrs)) != 0)
 				{
-					return_ec = ec;
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
 						argv[0], ec, p, TSReportError(ec));
+					/* Keep failures visible even if a later file succeeds. */
+					if (first_error == 0)
+						first_error = ec;
 				}
 				else
 				{
@@ -197,10 +199,11 @@ int os9attr(int argc, char *argv[])
 						  attrResetMask, &attr,
 						  attrs)) != 0)
 				{
-					return_ec = ec;
 					fprintf(stderr,
 						"%s: error %d opening '%s': %s\n",
 						argv[0], ec, p, TSReportError(ec));
+					if (first_error == 0)
+						first_error = ec;
 				}
 				else if (quiet == 0)
 				{
@@ -220,5 +223,5 @@ int os9attr(int argc, char *argv[])
 		return (1);
 	}
 
-	return (return_ec);
+	return (first_error);
 }

@@ -98,11 +98,12 @@ error_code _cecb_bulkerase(char *path, int sample_rate, int bits_per_sample,
 		else
 		{
 			memset(chunk, 0, sizeof(chunk));
-			while (silent_samples_count > 0)
+			int remaining_bytes = silent_samples_bytes;
+			while (remaining_bytes > 0)
 			{
-				size_t samples = silent_samples_count > (int)(sizeof(chunk) / 2) ? (sizeof(chunk) / 2) : (size_t)silent_samples_count;
-				fwrite(chunk, 2, samples, nativepath->fd);
-				silent_samples_count -= samples;
+				size_t to_write = remaining_bytes > (int)sizeof(chunk) ? sizeof(chunk) : (size_t)remaining_bytes;
+				fwrite(chunk, 1, to_write, nativepath->fd);
+				remaining_bytes -= to_write;
 			}
 		}
 	}

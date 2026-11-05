@@ -16,9 +16,7 @@
  */
 int read_lsn(os9_path_id path, int lsn, void *buffer)
 {
-	_os9_lsn_fseek(path, lsn);
-
-	return fread(buffer, 1, path->bps, path->fd);
+	return _os9_lsn_read(path, lsn, 0, buffer, path->bps);
 }
 
 
@@ -54,26 +52,45 @@ error_code _os9_read(os9_path_id path, void *buffer, u_int * size)
 
 		if (path->filepos >= disksize)
 		{
+			*size = 0;
+
 			return EOS_EOF;
 		}
 
-		fseek(path->fd, path->filepos, SEEK_SET);
-		fread(buffer, 1, *size, path->fd);
-		path->filepos += *size;
+		if (*size > disksize - path->filepos)
+		{
+			*size = disksize - path->filepos;
+		}
 
+		{
+			/* Stop before a missing sector; only fail if nothing could be read. */
 
-		return 0;
+			u_int count = _os9_lsn_read(path, 0, path->filepos, buffer, *size);
+
+			if (count == 0)
+			{
+				ec = _os9_lsn_get(path, 0, path->filepos, buffer, *size);
+			}
+
+			*size = count;
+			path->filepos += count;
 	}
 
 
-	/* 2. Seek to FD LSN of pathlist */
+		return ec;
+	}
 
-	_os9_lsn_fseek(path, path->pl_fd_lsn);
 
+	/* 2. Read the file descriptor sector */
 
-	/* 3. Read the file descriptor sector */
+	ec = _os9_lsn_get(path, path->pl_fd_lsn, 0, &fd_sector, sizeof(fd_stats));
 
-	fread(&fd_sector, 1, sizeof(fd_stats), path->fd);
+	if (ec != 0)
+	{
+		*size = 0;
+
+		return ec;
+	}
 
 
 	/* 4. Point to segment list */
@@ -155,19 +172,12 @@ error_code _os9_read(os9_path_id path, void *buffer, u_int * size)
 		accum_size += int2(segptr[i].num) * path->bps;
 
 
-		/* 1. Seek to sector where segment starts and compute the segment size. */
+		/* 1. Compute the segment size. */
 
-		_os9_lsn_fseek(path, int3(segptr[i].lsn));
 		seg_size_bytes = int2(segptr[i].num) * path->bps;
 
 
-		/* 2. Seek within segment to offset. */
-
-		fseek(path->fd, path->filepos - (accum_size - seg_size_bytes),
-		      SEEK_CUR);
-
-
-		/* 3. Compute read size for this segment. */
+		/* 2. Compute read size for this segment. */
 
 		read_size = accum_size - path->filepos;
 
@@ -176,7 +186,20 @@ error_code _os9_read(os9_path_id path, void *buffer, u_int * size)
 			read_size = bytes_left;
 		}
 
-		fread(buf_ptr, 1, read_size, path->fd);
+
+		/* 3. Read from the offset within the segment. */
+
+		ec = _os9_lsn_get(path, int3(segptr[i].lsn),
+				  path->filepos - (accum_size - seg_size_bytes),
+				  buf_ptr, read_size);
+
+		if (ec != 0)
+		{
+			*size -= bytes_left;
+
+			return ec;
+		}
+
 		buf_ptr += read_size;
 		path->filepos += read_size;
 		bytes_left -= read_size;

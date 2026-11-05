@@ -42,27 +42,26 @@ error_code _native_ss_attr(native_path_id path, int perms)
 error_code _native_ss_fd(native_path_id path, struct stat *statbuf)
 {
 	error_code ec = 0;
-/* Removed a conditional; RG*/
 	struct utimbuf tbuff;
 
 
-/* Removed a conditional; RG*/
-	tbuff.actime = statbuf->st_ctime;
+	/* Use mtime for both access-time and modification-time.
+	 * POSIX does not allow applications to set st_ctime directly (it is
+	 * managed by the kernel), so we cannot meaningfully restore a "creation
+	 * time" here.  Setting actime to st_mtime keeps access-time in sync with
+	 * the modification-time that was read from the source file descriptor. */
+	tbuff.actime  = statbuf->st_mtime;
 	tbuff.modtime = statbuf->st_mtime;
 
 
 	/* 1. Update times. */
 
-/* Removed a conditional; RG*/
 	utime(path->pathlist, &tbuff);
-/* #endif */
 
 
 	/* 2. Update permissions. */
 
-/* Removed a conditional; RG */
 	chmod(path->pathlist, statbuf->st_mode);
-
 
 
 	return ec;

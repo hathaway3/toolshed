@@ -15,6 +15,116 @@
 
 #define DragonBootSize	16	/* Size of Dragon boot area in sectors */
 
+
+/* Where the sectors of a new disk go: a native file in LSN order, or a disk
+   image's own sectors. */
+typedef struct
+{
+	native_path_id native;
+	os9_path_id image;
+	long long written;
+	long long t0sBytes;
+	u_int gapBytes;
+	error_code ec;
+} format_output;
+
+
+/*
+ * write_lsns()
+ *
+ * Write the next bytes of the disk in LSN order. Track 0 keeps all of its file
+ * slots on a short track 0 disk, so fill the unused ones on reaching T0S.
+ */
+
+static void write_lsns(format_output *out, void *buffer, u_int size)
+{
+	char *buf_ptr = buffer;
+
+	if (out->image != NULL)
+	{
+		if (out->ec == 0)
+		{
+			out->ec = _os9_lsn_put(out->image, 0, (u_int) out->written, buffer, size);
+		}
+		out->written += size;
+		return;
+	}
+
+	while (size > 0)
+	{
+		u_int run = size;
+
+		if (out->written < out->t0sBytes && run > out->t0sBytes - out->written)
+		{
+			run = out->t0sBytes - out->written;
+		}
+
+		if (out->written == out->t0sBytes && out->gapBytes > 0)
+		{
+			char *gap = (char *) malloc(out->gapBytes);
+
+			if (gap != NULL)
+			{
+				u_int gapSize = out->gapBytes;
+
+				memset(gap, 0xE5, out->gapBytes);
+				_native_write(out->native, gap, &gapSize);
+				free(gap);
+			}
+		}
+
+		_native_write(out->native, buf_ptr, &run);
+		buf_ptr += run;
+		out->written += run;
+		size -= run;
+	}
+}
+
+
+/* Make a new image of the whole disk, and a path to reach its LSNs. */
+static error_code open_new_image(struct _os9_path_id *image, char *pathname, diskimage_format format,
+				 int tracks, int sectorsPerTrack, int sectorsTrack0, int heads,
+				 int sectorSize, int density, int interleave)
+{
+	diskimage_geometry geometry;
+	error_code ec;
+
+	/* These formats only record double density here. */
+	if (density == 0 && (format == DISKIMAGE_DMK || format == DISKIMAGE_SDF))
+	{
+		return EOS_IA;
+	}
+
+	ec = _diskimage_create(pathname, format, heads, tracks, sectorSize, sectorsPerTrack,
+			       sectorsTrack0 == sectorsPerTrack ? 0 : sectorsTrack0, interleave, 0xE5);
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	memset(image, 0, sizeof(*image));
+	image->imgfile = pathname;
+	image->mode = FAM_READ | FAM_WRITE;
+	image->bps = sectorSize;
+	image->spt = sectorsPerTrack;
+	image->t0s = sectorsTrack0;
+	image->sides = heads;
+	image->first_sector = 1;
+
+	ec = _diskimage_open(&image->disk, pathname, FAM_READ | FAM_WRITE);
+	if (ec != 0)
+	{
+		return ec;
+	}
+
+	/* A JVC image with nothing to record needs no header, and opens as raw. */
+	ec = _diskimage_query_geometry(image->disk, &geometry);
+	image->raw_image = ec == 0 && geometry.format == DISKIMAGE_RAW;
+
+	return ec;
+}
+
+
 error_code _os9_format(char *pathname, int os968k, int tracks,
 		       int sectorsPerTrack, int sectorsTrack0,
 			   int heads, int sectorSize,
@@ -23,8 +133,23 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 		       int formatEntire, int isDragon, int isHDD, int interleave,
 		       unsigned int *totalSectors, unsigned int *totalBytes)
 {
+	return _os9_format_image(pathname, DISKIMAGE_RAW, os968k, tracks, sectorsPerTrack, sectorsTrack0,
+				 heads, sectorSize, clusterSize, diskName, sectorAllocationSize, tpi,
+				 density, formatEntire, isDragon, isHDD, interleave, totalSectors, totalBytes);
+}
+
+
+error_code _os9_format_image(char *pathname, diskimage_format format, int os968k, int tracks,
+			     int sectorsPerTrack, int sectorsTrack0,
+			     int heads, int sectorSize,
+			     int *clusterSize, char *diskName,
+			     int sectorAllocationSize, int tpi, int density,
+			     int formatEntire, int isDragon, int isHDD, int interleave,
+			     unsigned int *totalSectors, unsigned int *totalBytes)
+{
 	error_code ec = 0;
-	native_path_id path = NULL;
+	format_output out;
+	struct _os9_path_id image;
 	lsn0_sect s0;
 	unsigned int sectorsLeft;
 	int b;
@@ -32,16 +157,47 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 	unsigned int bitmapSectors, bitmapBytes;
 	unsigned int rootSects;
 
+	/* An LSN at or past T0S is offset by the sectors track 0 is missing, which
+	 * needs at least LSN0 on track 0 and no more sectors than a full track.
+	 * Check before the create below truncates any existing image.
+	 */
+	if (sectorsTrack0 < 1 || sectorsTrack0 > sectorsPerTrack)
+	{
+		fprintf(stderr, "Sectors on track 0 (%d) must be from 1 to sectors per track (%d)\n",
+			sectorsTrack0, sectorsPerTrack);
+
+		return (1);
+	}
+
 	/* 1. Open a path to the virtual disk. */
 
-	ec = _native_create(&path, pathname, FAM_WRITE, FAP_READ | FAP_WRITE);
+	memset(&out, 0, sizeof(out));
+	out.t0sBytes = (long long) sectorsTrack0 * sectorSize;
+	out.gapBytes = (sectorsPerTrack - sectorsTrack0) * sectorSize;
+
+	if (format == DISKIMAGE_RAW)
+	{
+		ec = _native_create(&out.native, pathname, FAM_WRITE, FAP_READ | FAP_WRITE);
 
 	if (ec != 0)
 	{
 		return (ec);
 	}
 
-	_native_seek(path, 0, SEEK_SET);
+		_native_seek(out.native, 0, SEEK_SET);
+	}
+	else
+	{
+		ec = open_new_image(&image, pathname, format, tracks, sectorsPerTrack, sectorsTrack0, heads,
+				    sectorSize, density, interleave);
+
+		if (ec != 0)
+		{
+			return (ec);
+		}
+
+		out.image = &image;
+	}
 
 	/**** Build LSN0 *****/
 	memset(&s0, 0, sizeof(s0));
@@ -67,13 +223,19 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 	if (int3(s0.dd_tot) > MAX_SECTORS)
 	{
 		fprintf(stderr, "Disk too large\n");
-		_native_close(path);
+		if (out.image != NULL)
+			_diskimage_close(image.disk);
+		else
+			_native_close(out.native);
 		return (1);
 	}
 	else if (int3(s0.dd_tot) < 4)
 	{
 		fprintf(stderr, "Too few sectors\n");
-		_native_close(path);
+		if (out.image != NULL)
+			_diskimage_close(image.disk);
+		else
+			_native_close(out.native);
 		return (1);
 	}
 
@@ -177,40 +339,59 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 		}
 	}
 
-	_int1(DT_os9, s0.pd_dtp);
-	_int1(1, s0.pd_drv);
-	_int1(0, s0.pd_stp);
-	if (isHDD)
-		_int1(0x80, s0.pd_typ);
-	else
-		_int1(0x20, s0.pd_typ);
-	_int1(1, s0.pd_dns);
-
-	_int2(tracks, s0.pd_cyl);
-
-	_int1(heads, s0.pd_sid);
-	_int1(0, s0.pd_vfy);
-
-	_int2(sectorsPerTrack, s0.pd_sct);
-	_int2(sectorsTrack0, s0.pd_t0s);
-
-	_int1(interleave, s0.pd_ilv);
-	_int1(sectorAllocationSize, s0.pd_sas);
-
 	if (os968k == 1)
 	{
-		/* Build LSN0 for OS-9/68K */
+		/*
+		 * OS-9/68K (OSK) uses a different DD.OPT layout (rbf_opt prefix).
+		 * In particular, there is a pad byte (pd_res1) after pd_dns, and
+		 * some fields are 16-bit (e.g. pd_sas, pd_ssize).
+		 */
 
-		/* put sync bytes */
-		_int4(0x4372757A, s0.dd_sync);
-		/* put bitmap starting sector number */
+		_int1(DT_os9, s0.dd_opt.m68k.pd_dtp);
+		_int1(0, s0.dd_opt.m68k.pd_drv);
+		_int1(3, s0.dd_opt.m68k.pd_stp);
+		_int1(isHDD ? 0x80 : 0x21, s0.dd_opt.m68k.pd_typ);
+		_int1(3, s0.dd_opt.m68k.pd_dns);
+		_int1(0, s0.dd_opt.m68k.pd_res1);
+		_int2(tracks, s0.dd_opt.m68k.pd_cyl);
+		_int1(heads, s0.dd_opt.m68k.pd_sid);
+		_int1(0, s0.dd_opt.m68k.pd_vfy);
+		_int2(sectorsPerTrack, s0.dd_opt.m68k.pd_sct);
+		_int2(sectorsTrack0, s0.dd_opt.m68k.pd_t0s);
+		_int2(sectorAllocationSize, s0.dd_opt.m68k.pd_sas);
+		_int1(interleave, s0.dd_opt.m68k.pd_ilv);
+
+		_int2(sectorSize, s0.dd_opt.m68k.pd_ssize);
+		_int1(7, s0.dd_opt.m68k.pd_trys);
+		_int4(0x4372757A, s0.dd_sync); 	/* "Cruz" to mark as OSK) */
 		_int4(1, s0.dd_maplsn);
-		/* put sector 0 version ID */
 		_int2(1, s0.dd_versid);
+		_int2(sectorSize, s0.dd_lsnsize);
 	}
+	else
+	{
+		/* OS-9/6809-style packed DD.OPT layout (existing behavior) */
+		_int1(DT_os9, s0.dd_opt.m6809.pd_dtp);
+		_int1(1, s0.dd_opt.m6809.pd_drv);
+		_int1(0, s0.dd_opt.m6809.pd_stp);
+		_int1(isHDD ? 0x80 : 0x20, s0.dd_opt.m6809.pd_typ);
+		_int1(1, s0.dd_opt.m6809.pd_dns);
 
+		_int2(tracks, s0.dd_opt.m6809.pd_cyl);
+
+		_int1(heads, s0.dd_opt.m6809.pd_sid);
+		_int1(0, s0.dd_opt.m6809.pd_vfy);
+
+		_int2(sectorsPerTrack, s0.dd_opt.m6809.pd_sct);
+		_int2(sectorsTrack0, s0.dd_opt.m6809.pd_t0s);
+
+		_int1(interleave, s0.dd_opt.m6809.pd_ilv);
+		_int1(sectorAllocationSize, s0.dd_opt.m6809.pd_sas);
 	/* put bytes per sector */
 	_int1(sectorSize / 256, s0.dd_lsnsize);
+	}
+
+
 
 	/***** Write LSN0 *****/
 	{
@@ -218,15 +399,14 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 		u_int padding = sectorSize - s0size;
 
 		/* write LSN0 structure */
-		_native_write(path, &s0, &s0size);
+		write_lsns(&out, &s0, s0size);
 
 		/* fill in rest of sector with zeros */
 		while (padding--)
 		{
-			u_int size = 1;
 			char nil = '\0';
 
-			_native_write(path, &nil, &size);
+			write_lsns(&out, &nil, 1);
 		}
 	}
 
@@ -292,7 +472,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 			sectorsLeft -= sectorsToAlloc;
 		}
 
-		_native_write(path, bitmap, &bitmapSize);
+		write_lsns(&out, bitmap, bitmapSize);
 
 		free(bitmap);
 	}
@@ -307,7 +487,7 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 		DragonBoot = (char *) calloc(BootSize, 1);
 		memset(DragonBoot, 0x55, BootSize);
-		_native_write(path, DragonBoot, &BootSize);
+		write_lsns(&out, DragonBoot, BootSize);
 
 		free(DragonBoot);
 	}
@@ -333,7 +513,10 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 		if (allocedSectors == NULL)
 		{
-			_native_close(path);
+			if (out.image != NULL)
+				_diskimage_close(image.disk);
+			else
+				_native_close(out.native);
 			return (1);
 		}
 
@@ -381,13 +564,14 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 		}
 
 
-		_native_write(path, allocedSectors, &totalBytes);
+		write_lsns(&out, allocedSectors, totalBytes);
 
 		free(allocedSectors);
 	}
 
 	/* Write Rest of disk as empty sectors */
-	if (formatEntire == 1)
+	/* An image of tracks already has them all. */
+	if (formatEntire == 1 && out.image == NULL)
 	{
 		char *oneEmptySector;
 
@@ -399,16 +583,21 @@ error_code _os9_format(char *pathname, int os968k, int tracks,
 
 			while (sectorsLeft--)
 			{
-				u_int size = sectorSize;
-
-				_native_write(path, oneEmptySector, &size);
+				write_lsns(&out, oneEmptySector, sectorSize);
 			}
 
 			free(oneEmptySector);
 		}
 	}
 
-	_native_close(path);
+	if (out.image != NULL)
+	{
+		ec = _diskimage_close(image.disk);
+
+		return out.ec != 0 ? out.ec : ec;
+	}
+
+	_native_close(out.native);
 
 	return (ec);
 }

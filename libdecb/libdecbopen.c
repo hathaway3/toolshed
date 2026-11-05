@@ -10,72 +10,71 @@ From http://www.cs.unc.edu/~yakowenk/coco/text/diskformat.html
 CoCo Disk BASIC disks are formatted to contain 35 tracks, numbered 0 through 34.
 Each track has 18 sectors, numbered 1 through 18. A sector contains 256 bytes.
 
-Track number 17 is special; it contains the directory and File Allocation Table
-(or FAT). Every other track is divided into two granules; in those tracks,
-sectors 1 through 9 form one granule, and sectors 10 through 18 form the other.
-So there are 68 granules on a disk, numbered 0 through 67, each containing 2304
-bytes. Disk space for files is allocated by the granule, so even if you create a
-file that contains only one byte, a whole granule of 2304 bytes is reserved for
-it. While it may seem wasteful at first, this reduces the amount of work in
-allocating space for the file as you add to it. The computer only has to do that
-allocation work once for every 2304 bytes that you add. It also reduces
-fragmentation - by reserving space in such big chunks, your file can't possibly
-end up scattered all over the disk in little tiny pieces.
+Track number 17 is special; it contains the directory and File Allocation Table (or FAT).
+Every other track is divided into two granules; in those tracks, sectors 1 through 9 form
+one granule, and sectors 10 through 18 form the other. So there are 68 granules on a disk,
+numbered 0 through 67, each containing 2304 bytes. Disk space for files is allocated by
+the granule, so even if you create a file that contains only one byte, a whole granule of
+2304 bytes is reserved for it. While it may seem wasteful at first, this reduces the
+amount of work in allocating space for the file as you add to it. The computer only has
+to do that allocation work once for every 2304 bytes that you add. It also reduces
+fragmentation - by reserving space in such big chunks, your file can't possibly end up
+scattered all over the disk in little tiny pieces.
 
-The directory track (17) contains the file allocation table in sector 2, and the
-directory of files in sectors 3 through 11. The remaining sectors on the
-directory track are unused
+The directory track (17) contains the file allocation table in sector 2, and the directory
+of files in sectors 3 through 11. The remaining sectors on the directory track are unused
 ("reserved for future use").
 
-The file allocation table is 68 bytes long; one byte for each granule on the
-disk. If one of these bytes is between 0 and 67, it tells the number of the next
-granule used by the same file. If it is between 192 and 201 (hex C0 and C9),
-then this is the last granule allocated for its file, and the least significant
-four bits tell how many sectors of the granule are used. If it is FF then it is
-unused, and may be allocated as needed. So the bytes in the FAT form a linked
-list for each file, telling which granules the file consists of.
+The file allocation table is 68 bytes long; one byte for each granule on the disk. If one
+of these bytes is between 0 and 67, it tells the number of the next granule used by the
+same file. If it is between 192 and 201 (hex C0 and C9), then this is the last granule
+allocated for its file, and the least significant four bits tell how many sectors of the
+granule are used. If it is FF then it is unused, and may be allocated as needed. So the
+bytes in the FAT form a linked list for each file, telling which granules the file
+consists of.
 
-Each directory sector contains eight entries of 32 bytes each. So the entire
-directory has room for 72 files. (There is room in the directory for more files
-than there are granules on the disk!) Each entry contains:
+Each directory sector contains eight entries of 32 bytes each. So the entire directory
+has room for 72 files. (There is room in the directory for more files than there are
+granules on the disk!) Each entry contains:
 
-        eight bytes for the filename (padded with spaces)
-        three bytes for the filename extension (padded with spaces)
-        one file-type byte
-        (0=BASIC program, 1=BASIC data, 2=machine code, or 3=ASCII text)
-        one format byte (0=binary or FF=ASCII)
-        one byte telling the number of the file's first granule
-        two bytes telling the number of bytes used in the last sector in the
-last granule, sixteen unused bytes ("reserved for future use" again).
-
-Color Disk BASIC reserves track 17 for the directory because that is the middle
-position for the read/write head of the disk drive, so it should be efficient
-for frequent access. When allocating granules to be used in files, it chooses
-granules that are close to the directory first, so in a half-full disk you would
-expect the outermost and innermost tracks to be empty, and the tracks near the
-directory to be full.
+	eight bytes for the filename (padded with spaces)
+	three bytes for the filename extension (padded with spaces)
+	one file-type byte
+	(0=BASIC program, 1=BASIC data, 2=machine code, or 3=ASCII text)
+	one format byte (0=binary or FF=ASCII)
+	one byte telling the number of the file's first granule
+	two bytes telling the number of bytes used in the last sector in the last granule,
+	sixteen unused bytes ("reserved for future use" again).
+	
+Color Disk BASIC reserves track 17 for the directory because that is the middle position
+for the read/write head of the disk drive, so it should be efficient for frequent access.
+When allocating granules to be used in files, it chooses granules that are close to the
+directory first, so in a half-full disk you would expect the outermost and innermost
+tracks to be empty, and the tracks near the directory to be full.
 */
 
-#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
+#include <ctype.h>
+#include <sys/stat.h>
 
 #include "decbpath.h"
-#include "dirent.h"
 #include "errno.h"
+#include "dirent.h"
 #include "util.h"
 
-static int init_pd(decb_path_id *path, int mode);
+
+static int init_pd(decb_path_id * path, int mode);
 static int term_pd(decb_path_id path);
-static int validate_pathlist(decb_path_id *path, char *pathlist);
-static int _decb_cmp(decb_dir_entry *entry, char *name);
+static int validate_pathlist(decb_path_id * path, char *pathlist);
+static int _decb_cmp(decb_dir_entry * entry, char *name);
 
 int decb_granule_count;
 
 extern error_code find_free_granule(decb_path_id path, int *granule,
-                                    int next_to);
+				    int next_to);
+
 
 /*
  * _decb_create()
@@ -83,208 +82,272 @@ extern error_code find_free_granule(decb_path_id path, int *granule,
  * Create a file
  */
 
-error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
-                        int file_type, int data_type) {
-  error_code ec = EOS_BPNAM;
-  int empty_entry = -1;
-  char *open_mode;
+error_code _decb_create(decb_path_id * path, char *pathlist, int mode,
+			int file_type, int data_type)
+{
+	error_code ec = EOS_BPNAM;
+	int empty_entry = -1;
 
-  /* 1. Allocate & initialize path descriptor. */
 
-  ec = init_pd(path, mode);
+	/* 1. Allocate & initialize path descriptor. */
 
-  if (ec != 0) {
-    return ec;
-  }
+	ec = init_pd(path, mode);
 
-  /* 2. Attempt to validate the pathlist. */
+	if (ec != 0)
+	{
+		return ec;
+	}
 
-  ec = validate_pathlist(path, pathlist);
 
-  if (ec != 0) {
-    term_pd(*path);
-    *path = NULL;
+	/* 2. Attempt to validate the pathlist. */
 
-    return ec;
-  }
+	ec = validate_pathlist(path, pathlist);
 
-  /* 3. Open a path to the image file. */
+	if (ec != 0)
+	{
+		term_pd(*path);
+		*path = NULL;
 
-  if (mode & FAM_WRITE) {
-    open_mode = "rb+";
-  } else {
-    open_mode = "rb";
-  }
+		return ec;
+	}
 
-  (*path)->fd = fopen((*path)->imgfile, open_mode);
 
-  if ((*path)->fd == NULL) {
-    term_pd(*path);
-    *path = NULL;
+	/* 3. Open a path to the image file. */
 
-    return (EOS_BPNAM);
-  }
+	ec = _decb_open_image(*path);
 
-  (*path)->disk_offset = 161280 * (*path)->drive;
-  (*path)->disk_offset += (*path)->hdbdos_offset;
+	if (ec != 0)
+	{
+		term_pd(*path);
+		*path = NULL;
 
-  /* 4. At this point, sector and granule function will work - Load FAT */
+		return ec;
+	}
 
-  _decb_gs_sector(*path, 17, 2, (char *)(*path)->FAT);
 
-  /* 5. Determine if there is enough space. */
+	/* 4. At this point, sector and granule function will work - Load FAT */
 
-  {
-    int i, free_granules = 0;
+	_decb_load_fat(*path);
 
-    for (i = 0; i < 256; i++) {
-      if (i >= (*path)->granule_count)
-        break;
+	if ((*path)->fat_ec != 0)
+	{
+		ec = (*path)->fat_ec;
 
-      if ((*path)->FAT[i] == 0xFF) {
-        free_granules++;
+		_diskimage_close((*path)->disk);
 
-        break;
-      }
-    }
+		term_pd(*path);
+		*path = NULL;
 
-    if (free_granules == 0) {
-      fclose((*path)->fd);
+		return ec;
+	}
 
-      term_pd(*path);
-      *path = NULL;
 
-      return EOS_DF;
-    }
-  }
+	/* 5. Determine if there is enough space. */
 
-  /* 6. Construct a directory entry. */
+	{
+		int i, free_granules = 0;
 
-  {
-    char *p = strchr((*path)->filename, '.');
 
-    /* 1. Clear memory. */
+		for (i = 0; i < 256; i++)
+		{
+			if (i >= (*path)->granule_count)
+				break;
 
-    memset(&((*path)->dir_entry), 0, sizeof(decb_dir_entry));
-    memset(&((*path)->dir_entry), 0x20, 11);
+			if ((*path)->FAT[i] == 0xFF)
+			{
+				free_granules++;
 
-    if (p == NULL) {
-      int length = strlen((*path)->filename);
+				break;
+			}
+		}
 
-      if (length > 8)
-        length = 8;
+		if (free_granules == 0)
+		{
+			_diskimage_close((*path)->disk);
 
-      memcpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
-    } else {
-      int length = p - (*path)->filename;
+			term_pd(*path);
+			*path = NULL;
 
-      if (length > 8) {
-        length = 8;
-      }
+			return EOS_DF;
+		}
+	}
 
-      memcpy((char *)(*path)->dir_entry.filename, (*path)->filename, length);
 
-      p++; /* skip over '.' */
+	/* 6. Construct a directory entry. */
 
-      length = strlen(p);
+	{
+		char *p = strchr((*path)->filename, '.');
 
-      if (length > 3) {
-        length = 3;
-      }
 
-      memcpy((char *)(*path)->dir_entry.file_extension, p, length);
-    }
+		/* 1. Clear memory. */
 
-    (*path)->dir_entry.file_type = file_type;
+		memset(&((*path)->dir_entry), 0, sizeof(decb_dir_entry));
+		memset(&((*path)->dir_entry), 0x20, 11);
 
-    (*path)->dir_entry.ascii_flag = data_type;
-  }
 
-  /* 7. Determine if file already exists. */
+		if (p == NULL)
+		{
+			int length = strlen((*path)->filename);
 
-  {
-    decb_dir_entry de;
+			if (length > 8)
+				length = 8;
 
-    /* 1. Find an empty dir (and check for duplicate entry too) */
+			memcpy((char *) (*path)->dir_entry.filename,
+			       (*path)->filename, length);
+		}
+		else
+		{
+			int length = p - (*path)->filename;
 
-    _decb_seekdir(*path, 0, SEEK_SET);
 
-    while (_decb_readdir(*path, &de) == 0) {
-      /* 1. If we run across an empty directory entry, make a note of it. */
+			if (length > 8)
+			{
+				length = 8;
+			}
 
-      if ((de.filename[0] == 255 || de.filename[0] == '\0') &&
-          empty_entry == -1) {
-        empty_entry = (*path)->directory_entry_index - 1;
+			memcpy((char *) (*path)->dir_entry.filename,
+			       (*path)->filename, length);
 
-        (*path)->this_directory_entry_index = (*path)->directory_entry_index;
-      }
 
-      if (strncmp((char *)de.filename, (char *)(*path)->dir_entry.filename,
-                  8) == 0) {
-        if (strncmp((char *)de.file_extension,
-                    (char *)(*path)->dir_entry.file_extension, 3) == 0) {
-          /* 1. A file of this type already exists. */
+			p++;	/* skip over '.' */
 
-          /* Error if we are not to create it */
-          if (mode & FAM_NOCREATE) {
-            fclose((*path)->fd);
-            term_pd(*path);
-            *path = NULL;
-            return EOS_FAE;
-          } else {
-            fclose((*path)->fd);
-            term_pd(*path);
-            *path = NULL;
-            _decb_kill(pathlist);
-            return _decb_create(path, pathlist, mode, file_type, data_type);
-          }
-        }
-      }
-    }
+			length = strlen(p);
 
-    if (empty_entry == -1) {
-      /* 1. There are no more directory entries left. */
+			if (length > 3)
+			{
+				length = 3;
+			}
 
-      fclose((*path)->fd);
+			memcpy((char *) (*path)->dir_entry.file_extension, p,
+			       length);
+		}
 
-      term_pd(*path);
-      *path = NULL;
+		(*path)->dir_entry.file_type = file_type;
 
-      return EOS_DF;
-    }
-  }
+		(*path)->dir_entry.ascii_flag = data_type;
+	}
 
-  /* 8. Allocate a granule for this file. */
 
-  {
-    error_code ec;
-    int new_granule;
+	/* 7. Determine if file already exists. */
 
-    ec = find_free_granule(*path, &new_granule, 34);
+	{
+		decb_dir_entry de;
 
-    if (ec != 0) {
-      fclose((*path)->fd);
-      term_pd(*path);
-      *path = NULL;
-      return ec;
-    }
 
-    (*path)->FAT[new_granule] = 0xC1;
-    (*path)->dir_entry.first_granule = new_granule;
+		/* 1. Find an empty dir (and check for duplicate entry too) */
 
-    _int2(0, (*path)->dir_entry.last_sector_size);
-  }
+		_decb_seekdir(*path, 0, SEEK_SET);
 
-  /* 9. Write the new directory entry. */
+		while ((ec = _decb_readdir(*path, &de)) == 0)
+		{
+			/* 1. If we run across an empty directory entry, make a note of it. */
 
-  _decb_seekdir(*path, empty_entry, SEEK_SET);
+			if ((de.filename[0] == 255 || de.filename[0] == '\0')
+			    && empty_entry == -1)
+			{
+				empty_entry =
+					(*path)->directory_entry_index - 1;
 
-  (*path)->this_directory_entry_index = empty_entry;
+				(*path)->this_directory_entry_index =
+					(*path)->directory_entry_index;
+			}
 
-  ec = _decb_writedir(*path, &(*path)->dir_entry);
+			if (strncmp
+			    ((char *) de.filename,
+			     (char *) (*path)->dir_entry.filename, 8) == 0)
+			{
+				if (strncmp
+				    ((char *) de.file_extension,
+				     (char *) (*path)->dir_entry.
+				     file_extension, 3) == 0)
+				{
+					/* 1. A file of this type already exists. */
 
-  return ec;
+					/* Error if we are not to create it */
+					if (mode & FAM_NOCREATE)
+					{
+						_diskimage_close((*path)->disk);
+						term_pd(*path);
+						*path = NULL;
+						return EOS_FAE;
+					}
+					else
+					{
+						_diskimage_close((*path)->disk);
+						term_pd(*path);
+						*path = NULL;
+						_decb_kill(pathlist);
+						return _decb_create(path,
+								    pathlist,
+								    mode,
+								    file_type,
+								    data_type);
+					}
+				}
+			}
+		}
+
+
+		if (ec != EOS_PNNF)
+		{
+			/* 1. A directory sector this needs is missing. */
+
+			_diskimage_close((*path)->disk);
+
+			term_pd(*path);
+			*path = NULL;
+
+			return ec;
+		}
+
+		if (empty_entry == -1)
+		{
+			/* 1. There are no more directory entries left. */
+
+			_diskimage_close((*path)->disk);
+
+			term_pd(*path);
+			*path = NULL;
+
+			return EOS_DF;
+		}
+	}
+
+
+	/* 8. Allocate a granule for this file. */
+
+	{
+		error_code ec;
+		int new_granule;
+
+
+		ec = find_free_granule(*path, &new_granule, 34);
+
+		if (ec != 0)
+		{
+			return ec;
+		}
+
+		(*path)->FAT[new_granule] = 0xC1;
+		(*path)->dir_entry.first_granule = new_granule;
+
+		_int2(0, (*path)->dir_entry.last_sector_size);
+	}
+
+
+	/* 9. Write the new directory entry. */
+
+	_decb_seekdir(*path, empty_entry, SEEK_SET);
+
+	(*path)->this_directory_entry_index = empty_entry;
+
+	ec = _decb_writedir(*path, &(*path)->dir_entry);
+
+
+	return ec;
 }
+
+
 
 /*
  * _decb_open()
@@ -295,149 +358,162 @@ error_code _decb_create(decb_path_id *path, char *pathlist, int mode,
  *
  * 1. imagename,      (considered to be a 'raw' open of the image)
  * 2. imagename,file  (considered to be a file open within the image)
- * 3. imagename       (considered to be an error)
- */
+ * 3. imagename       (considered to be an error) 
+*/
 
-error_code _decb_open(decb_path_id *path, char *pathlist, int mode) {
-  error_code ec = 0;
-  char *open_mode;
+error_code _decb_open(decb_path_id * path, char *pathlist, int mode)
+{
+	error_code ec = 0;
 
-  /* 1. Strip off FAM_NOCREATE if passed -- irrelavent to _decb_open */
 
-  mode = mode & ~FAM_NOCREATE;
+	/* 1. Strip off FAM_NOCREATE if passed -- irrelavent to _decb_open */
 
-  /* 2. Allocate & initialize path descriptor */
+	mode = mode & ~FAM_NOCREATE;
 
-  ec = init_pd(path, mode);
+	/* 2. Allocate & initialize path descriptor */
 
-  if (ec != 0) {
-    return ec;
-  }
+	ec = init_pd(path, mode);
 
-  /* 3. Attempt to validate the pathlist */
+	if (ec != 0)
+	{
+		return ec;
+	}
 
-  ec = validate_pathlist(path, pathlist);
 
-  if (ec != 0) {
-    term_pd(*path);
-    *path = NULL;
+	/* 3. Attempt to validate the pathlist */
 
-    return ec;
-  }
+	ec = validate_pathlist(path, pathlist);
 
-  /* 4. Determine if disk is being open in raw mode. (We know it is raw mode if
-   * there is no filename). */
+	if (ec != 0)
+	{
+		term_pd(*path);
+		*path = NULL;
 
-  if (*(*path)->filename == '\0') {
-    /* 1. Yes, raw mode */
+		return ec;
+	}
 
-    (*path)->israw = 1;
-  } else {
-    (*path)->israw = 0;
 
-    /* If mode is FAM_DIR, then we need to error */
-    if (mode & FAM_DIR) {
-      term_pd(*path);
-      *path = NULL;
-      return EOS_SN;
-    }
-  }
+	/* 4. Determine if disk is being open in raw mode. (We know it is raw mode if there is no filename). */
 
-  /* 5. Open a path to the image file. */
+	if (*(*path)->filename == '\0')
+	{
+		/* 1. Yes, raw mode */
 
-  if (mode & FAM_WRITE) {
-    open_mode = "rb+";
-  } else {
-    open_mode = "rb";
-  }
+		(*path)->israw = 1;
+	}
+	else
+	{
+		(*path)->israw = 0;
 
-  (*path)->fd = fopen((*path)->imgfile, open_mode);
+		/* If mode is FAM_DIR, then we need to error */
+		if (mode & FAM_DIR)
+		{
+			term_pd(*path);
+			*path = NULL;
+			return EOS_SN;
+		}
+	}
 
-  if ((*path)->fd == NULL) {
-    term_pd(*path);
-    *path = NULL;
 
-    return (EOS_BPNAM);
-  }
+	/* 5. Open a path to the image file. */
 
-  (*path)->disk_offset = 161280 * (*path)->drive;
-  (*path)->disk_offset += (*path)->hdbdos_offset;
+	ec = _decb_open_image(*path);
 
-  /* 6. At this point, sector and granule function will work - Load FAT */
+	if (ec != 0)
+	{
+		term_pd(*path);
+		*path = NULL;
 
-  _decb_gs_sector(*path, 17, 2, (char *)(*path)->FAT);
+		return ec;
+	}
 
-  /* 7. If path is raw, just return now. */
 
-  if ((*path)->israw == 1) {
-    return 0;
-  }
+	/* 6. At this point, sector and granule function will work - Load FAT */
 
-  /* 8. Find directory entry matching filename. */
+	_decb_load_fat(*path);
 
-  {
-    /* 1. Seek to the first directory entry. */
 
-    _decb_seekdir(*path, 0, SEEK_SET);
+	/* 7. If path is raw, just return now. */
 
-    /* 2. Check each entry until we find a match. */
+	if ((*path)->israw == 1)
+	{
+		return 0;
+	}
 
-    while ((ec = _decb_readdir(*path, &(*path)->dir_entry)) == 0) {
-      if (_decb_cmp(&(*path)->dir_entry, (*path)->filename) == 0) {
-        /* 1. We have a match! */
 
-        (*path)->directory_entry_index--;
+	/* 8. Find directory entry matching filename. */
 
-        (*path)->this_directory_entry_index = (*path)->directory_entry_index;
+	{
+		/* 1. Seek to the first directory entry. */
 
-        break;
-      }
-    }
+		_decb_seekdir(*path, 0, SEEK_SET);
 
-    if (ec != 0) {
-      ec = EOS_PNNF;
-    }
-  }
 
-  /* 9. Return status. */
+		/* 2. Check each entry until we find a match. */
 
-  return (ec);
+		while ((ec = _decb_readdir(*path, &(*path)->dir_entry)) == 0)
+		{
+			if (_decb_cmp(&(*path)->dir_entry, (*path)->filename)
+			    == 0)
+			{
+				/* 1. We have a match! */
+
+				(*path)->directory_entry_index--;
+
+				(*path)->this_directory_entry_index =
+					(*path)->directory_entry_index;
+
+				break;
+			}
+		}
+
+	}
+
+
+	/* 9. Return status. */
+
+	return (ec);
 }
+
+
 
 /*
  * _decb_close()
  *
  * Close a path to a file
  */
-error_code _decb_close(decb_path_id path) {
-  error_code ec = 0;
+error_code _decb_close(decb_path_id path)
+{
+	error_code ec = 0;
 
-  /* 1. Write out FAT sector if opened for writing. */
 
-  if (path->mode & FAM_WRITE) {
-    _decb_ss_sector(path, 17, 2, (char *)path->FAT);
-  }
+	/* 1. Write out FAT sector if it changed, and close path. */
 
-  /* 2. Close path. */
+	ec = _decb_close_image(path);
 
-  fclose(path->fd);
 
-  /* 3. Terminate path descriptor */
+	/* 2. Terminate path descriptor */
 
-  ec = term_pd(path);
+	term_pd(path);
 
-  /* 4. Return status. */
 
-  return (ec);
+	/* 4. Return status. */
+
+	return (ec);
 }
 
-static int _decb_cmp(decb_dir_entry *entry, char *name) {
-  unsigned char modified_name[13];
 
-  DECBStringToCString(entry->filename, entry->file_extension, modified_name);
 
-  return (strcasecmp((const char *)modified_name, name));
+static int _decb_cmp(decb_dir_entry * entry, char *name)
+{
+	unsigned char modified_name[13];
+
+	DECBStringToCString(entry->filename, entry->file_extension,
+			    modified_name);
+
+	return (strcasecmp((const char *) modified_name, name));
 }
+
 
 /*
  * validate_pathlist()
@@ -451,76 +527,87 @@ static int _decb_cmp(decb_dir_entry *entry, char *name) {
  * foo,				 	Opens foo for raw access
  * foo,:2				Opens third disk in foo for raw access
  * foo,bar.bas			Opens file bar.bas in disk image foo
- * foo,bar.bin:1		Opens file bar.bin in second disk image in file
- * foo foo,bar.bin:0+12345  Opens file bar.bin in first disk at OS9 offset 12345
+ * foo,bar.bin:1		Opens file bar.bin in second disk image in file foo
+ * foo,bar.bin:0+12345  Opens file bar.bin in first disk at OS9 offset 12345
  */
 
-static int validate_pathlist(decb_path_id *path, char *pathlist) {
-  error_code ec = 0;
-  char *p;
+static int validate_pathlist(decb_path_id * path, char *pathlist)
+{
+	error_code ec = 0;
+	char *p;
 
-  /* 1. Validate the pathlist. */
 
-  if ((p = strchr(pathlist, ',')) == NULL) {
-    /* 1. No native/RS-DOS delimiter in pathlist, return error. */
+	/* 1. Validate the pathlist. */
 
-    ec = EOS_BPNAM;
-  } else {
-    char *q;
+	if ((p = strchr(pathlist, ',')) == NULL)
+	{
+		/* 1. No native/RS-DOS delimiter in pathlist, return error. */
 
-    /* 1. Extract information out of pathlist. */
+		ec = EOS_BPNAM;
+	}
+	else
+	{
+		char *q;
 
-    /* (*path)->imgfile = strndup(pathlist, p - pathlist); */
-    (*path)->imgfile = malloc(p - pathlist + 1);
-    if ((*path)->imgfile == NULL) {
-      return EOS_OM;
-    }
-    memcpy((*path)->imgfile, pathlist, p - pathlist);
-    (*path)->imgfile[p - pathlist] = '\0';
 
-    p++;
-    if (*p == '/')
-      p++;
-    q = strchr(p, ':');
-    if (q != NULL) {
-      /* Parse HDB-DOS 'colon' parameters */
-      /* (*path)->filename = strndup(p, q - p); */
-      (*path)->filename = malloc(q - p + 1);
-      if ((*path)->filename == NULL) {
-        return EOS_OM;
-      }
-      memcpy((*path)->filename, p, q - p);
-      (*path)->filename[q - p] = '\0';
+		/* 1. Extract information out of pathlist. */
 
-      (*path)->drive = atoi(q + 1);
+		/* (*path)->imgfile = strndup(pathlist, p - pathlist); */
+		(*path)->imgfile = malloc(p - pathlist + 1);
+		memcpy((*path)->imgfile, pathlist, p - pathlist);
+		(*path)->imgfile[p - pathlist] = '\0';
 
-      q = strchr(p, '+');
-      if (q != NULL) {
-        if (strncmp(q + 1, "0x", 2) == 0 || strncmp(q + 1, "0X", 2) == 0)
-          (*path)->hdbdos_offset = strtol(q + 3, (char **)NULL, 16) * 256;
-        else
-          (*path)->hdbdos_offset = atoi(q + 1) * 256;
-      } else {
-        (*path)->hdbdos_offset = 0;
-      }
+		p++;
+		if (*p == '/')
+			p++;
+		q = strchr(p, ':');
+		if (q != NULL)
+		{
+			/* Parse HDB-DOS 'colon' parameters */
+			/* (*path)->filename = strndup(p, q - p); */
+			(*path)->filename = malloc(q - p + 1);
+			memcpy((*path)->filename, p, q - p);
+			(*path)->filename[q - p] = '\0';
 
-      if ((*path)->granule_count != 68) {
-        fprintf(stderr, "HDB-DOS enabled. Forcing 68 granules per disk. (%d)\n",
-                (*path)->granule_count);
-        (*path)->granule_count = 68;
-      }
-    } else /* no HDB-DOS 'colon' found in path name */
-    {
-      int len = strlen(p);
-      if (len <= 12) {
-        (*path)->filename = strdup(p);
-        if ((*path)->filename == NULL) {
-          return EOS_OM;
-        }
-      } else {
-        ec = EOS_BPNAM;
-      }
-    }
+			(*path)->drive = atoi(q + 1);
+			(*path)->has_drive = 1;
+
+			q = strchr(p, '+');
+			if (q != NULL)
+			{
+				if (strncmp(q + 1, "0x", 2) == 0
+				    || strncmp(q + 1, "0X", 2) == 0)
+					(*path)->hdbdos_offset =
+						strtol(q + 3, (char **) NULL,
+						       16) * 256;
+				else
+					(*path)->hdbdos_offset =
+						atoi(q + 1) * 256;
+			}
+			else
+			{
+				(*path)->hdbdos_offset = 0;
+			}
+			
+			if ((*path)->granule_count != 68)
+			{
+				fprintf(stderr, "HDB-DOS enabled. Forcing 68 granules per disk. (%d)\n",
+					(*path)->granule_count);
+				(*path)->granule_count = 68;
+			}	
+		}
+		else /* no HDB-DOS 'colon' found in path name */
+		{
+			int len = strlen(p);
+			if (len <= 12)
+			{
+				(*path)->filename = strdup(p);
+			}
+			else
+			{
+				ec = EOS_BPNAM;
+			}
+		}
 
 #if 0
 		count = sscanf(pathlist, "%512[^,]%*c%64[^:]%*c%d",
@@ -533,53 +620,67 @@ static int validate_pathlist(decb_path_id *path, char *pathlist) {
 				       (*path)->imgfile, &((*path)->drive));
 		}
 #endif
-  }
+	}
 
-  /* 2. Return. */
 
-  return ec;
+	/* 2. Return. */
+
+	return ec;
 }
 
-static int init_pd(decb_path_id *path, int mode) {
-  /* 1. Allocate path structure and initialize it. */
 
-  *path = malloc(sizeof(struct _decb_path_id));
 
-  if (*path == NULL) {
-    return EOS_OM;
-  }
+static int init_pd(decb_path_id * path, int mode)
+{
+	/* 1. Allocate path structure and initialize it. */
 
-  /* 2. Clear out newly allocated path structure. */
+	*path = malloc(sizeof(struct _decb_path_id));
 
-  memset(*path, 0, sizeof(struct _decb_path_id));
+	if (*path == NULL)
+	{
+		return 1;
+	}
 
-  (*path)->mode = mode;
 
-  /* 3. set up defaults */
+	/* 2. Clear out newly allocated path structure. */
 
-  if (decb_granule_count == 0) {
-    (*path)->granule_count = 68;
-  } else {
-    (*path)->granule_count = decb_granule_count;
-  }
+	memset(*path, 0, sizeof(struct _decb_path_id));
 
-  /* 4. Return. */
+	(*path)->mode = mode;
 
-  return 0;
+
+	/* 3. set up defaults */
+	
+	if (decb_granule_count == 0)
+	{
+		(*path)->granule_count = 68;
+	}
+	else
+	{
+		(*path)->granule_count = decb_granule_count;
+	}
+	
+	/* 4. Return. */
+
+	return 0;
 }
 
-static int term_pd(decb_path_id path) {
-  /* 1. Deallocate path structure. */
 
-  if (path->imgfile)
-    free(path->imgfile);
 
-  if (path->filename)
-    free(path->filename);
+static int term_pd(decb_path_id path)
+{
+	/* 1. Deallocate path structure. */
 
-  free(path);
+	if (path->imgfile)
+		free(path->imgfile);
 
-  /* 2. Return. */
+	if (path->filename)
+		free(path->filename);
 
-  return 0;
+	free(path);
+
+
+	/* 2. Return. */
+
+	return 0;
 }

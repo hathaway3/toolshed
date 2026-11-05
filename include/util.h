@@ -30,7 +30,8 @@ int os9del(int, char **);
 int os9deldir(int, char **);
 int os9dir(int, char **);
 int os9dsave(int, char **);
-int os9dump(int, char **);
+int cocodump(int, char **);
+int cocoinfo(int, char **);
 int os9format(int, char **);
 int os9free(int, char **);
 int os9fstat(int, char **);
@@ -42,6 +43,7 @@ int os9makdir(int, char **);
 int os9modbust(int, char **);
 int os9padrom(int, char **);
 int os9rename(int, char **);
+int os9reveal(int, char **);
 int os9rdump(int, char **);
 
 int StrToInt(char *s);
@@ -49,7 +51,7 @@ int StrToInt(char *s);
 int strcasecmp(char *s1, char *s2);
 int strncasecmp(char *s1, char *s2, int len);
 #endif
-int strendcasecmp( char *s1, char *s2 );
+int strendcasecmp(const char *s1, const char *s2);
 void show_help(char const * const *helpMessage);
 
 /* Function prototypes for supported Disk BASIC commands are here */
@@ -62,15 +64,19 @@ int decbfstat(int, char **);
 int decbkill(int, char **);
 int decblist(int, char **);
 int decbrename(int, char **);
+int decbreveal(int, char **);
 int decbdump(int, char **);
 int decbhdbconv(int, char **);
 int decbdsave(int, char**);
+int decbbinbust(int, char**);
 
 /* Function prototypes for supported Disk BASIC commands are here */
 int cecbdir(int, char **);
+int cecbdumpblock(int, char **);
 int cecbfstat(int, char **);
 int cecbbulkerase(int, char **);
 int cecbcopy(int, char **);
+int cecbleader(int, char **);
 
 #ifdef __cplusplus
 }

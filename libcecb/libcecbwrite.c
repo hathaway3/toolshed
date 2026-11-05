@@ -20,6 +20,11 @@ error_code _cecb_write(cecb_path_id path, void *buffer, unsigned int *size)
 	int fill_bytes, buffer_pointer = 0;
 	char *b = (char *) buffer;
 
+	if ((path->mode & FAM_WRITE) == 0)
+	{
+		return EOS_BMODE;
+	}
+
 	while (*size > 0)
 	{
 		if (path->length == 0xff)
@@ -55,7 +60,10 @@ error_code _cecb_write_block(cecb_path_id path, unsigned char block_type,
 	unsigned char checksum;
 
 	if (length > 0xff)
+	{
+		fprintf(stderr,"Can not write block longer than 255 bytes in length\n");
 		return -1;
+	}
 
 	/* Add gap, if requested */
 	if ((path->dir_entry.gap_flag == 0xff) && (path->block_type != 0x00))
@@ -124,22 +132,18 @@ error_code _cecb_write_silence(cecb_path_id path, double length)
 		sample_count = path->wav_sample_rate * length;
 
 		if (path->wav_bits_per_sample == 8)
-			bytes_written =
-				_cecb_write_wav_repeat_byte(path,
-							    sample_count,
-							    127);
-		else if (path->wav_bits_per_sample == 16)
-			bytes_written =
-				_cecb_write_wav_repeat_short(path,
-							     sample_count, 0);
+			bytes_written = _cecb_write_wav_repeat_byte(path, sample_count, 127);
 		else
-			return -1;
+			bytes_written = _cecb_write_wav_repeat_byte(path, sample_count * (path->wav_bits_per_sample/8), 0);
 
 		path->wav_data_length += bytes_written;
 		path->wav_riff_size += bytes_written;
 	}
 	else
+	{
+		fprintf(stderr,"Unknown tape type\n");
 		return -1;
+	}
 
 	return 0;
 }
@@ -160,7 +164,10 @@ static error_code write_byte(cecb_path_id path, unsigned char byte)
 		path->wav_riff_size += bytes_written;
 	}
 	else
+	{
+		fprintf(stderr, "Unknown tape type\n");
 		return -1;
+	}
 
 	return 0;
 }
@@ -182,7 +189,10 @@ static error_code write_buffer(cecb_path_id path, unsigned char *buffer,
 		path->wav_riff_size += bytes_written;
 	}
 	else
+	{
+		fprintf(stderr, "Unknown tape type\n");
 		return -1;
+	}
 
 	return 0;
 }

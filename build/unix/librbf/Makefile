@@ -1,6 +1,23 @@
-LIBRARY = librbf.a
-OBJS = librbfbitmap.o librbfmakdir.o librbfread.o librbfrename.o librbfss.o librbfdelete.o \
-       librbfgs.o librbfopen.o librbfreadln.o librbfseek.o librbfwrite.o librbfformat.o
-
+# Makefile for librbf.a
 include ../rules.mak
+
+CFLAGS += -I../../../include -Wall -MMD -MP
+
+SRCS = librbfbitmap.c librbfmakdir.c librbfread.c librbfrename.c librbfss.c \
+	librbfdelete.c librbfgs.c librbfopen.c librbfreadln.c librbfseek.c librbfwrite.c \
+	librbfformat.c librbfdisk.c
+OBJS = $(SRCS:.c=.o)
+DEPS = $(OBJS:.o=.d)
+
 vpath %.c ../../../librbf
+
+librbf.a: $(OBJS)
+	$(AR) rcs $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	$(RM) -f *.o *.a *.d
+
+-include $(DEPS)

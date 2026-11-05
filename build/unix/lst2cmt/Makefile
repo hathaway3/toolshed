@@ -1,7 +1,13 @@
-BINARY = lst2cmt
-OBJS = lst2cmt.o
-
+# Makefile for lst2cmt
 include ../rules.mak
+
 vpath %.c ../../../lst2cmt
 
-all: $(BINARY)$(SUFEXE)
+CFLAGS	+= -I../../../include -Wall
+#LDFLAGS	+=
+
+lst2cmt$(SUFEXE):	lst2cmt.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+clean:
+	$(RM) *.o lst2cmt lst2cmt.exe

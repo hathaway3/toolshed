@@ -34,14 +34,16 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 	}
 
 
-	/* 2. Seek to FD LSN of pathlist */
+	/* 2. Read the file descriptor sector */
 
-	_os9_lsn_fseek(path, path->pl_fd_lsn);
+	ec = _os9_lsn_get(path, path->pl_fd_lsn, 0, &fd_sector, sizeof(fd_stats));
 
+	if (ec != 0)
+	{
+		*size = 0;
 
-	/* 3. Read the file descriptor sector */
-
-	fread(&fd_sector, 1, sizeof(fd_stats), path->fd);
+		return ec;
+	}
 
 
 	/* 4. Point to segment list */
@@ -121,19 +123,12 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 		accum_size += int2(segptr[i].num) * path->bps;
 
 
-		/* 1. Seek to sector where segment starts and compute the segment size. */
+		/* 1. Compute the segment size. */
 
-		_os9_lsn_fseek(path, int3(segptr[i].lsn));
 		seg_size_bytes = int2(segptr[i].num) * path->bps;
 
 
-		/* 2. Seek within segment to offset. */
-
-		fseek(path->fd, path->filepos - (accum_size - seg_size_bytes),
-		      SEEK_CUR);
-
-
-		/* 3. Compute read size for this segment. */
+		/* 2. Compute read size for this segment. */
 
 		read_size = accum_size - path->filepos;
 
@@ -142,7 +137,20 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 			read_size = bytes_left;
 		}
 
-		fread(buf_ptr, 1, read_size, path->fd);
+
+		/* 3. Read from the offset within the segment. */
+
+		ec = _os9_lsn_get(path, int3(segptr[i].lsn),
+				  path->filepos - (accum_size - seg_size_bytes),
+				  buf_ptr, read_size);
+
+		if (ec != 0)
+		{
+			*size -= bytes_left;
+
+			return ec;
+		}
+
 
 
 		/* 4. Look for line terminator in this fresh buffer. */
@@ -152,7 +160,8 @@ error_code _os9_readln(os9_path_id path, void *buffer, u_int * size)
 			if (*z == 0x0D)
 			{
 				read_size = (int) (z - buf_ptr) + 1;
-				*size = read_size;
+				/* Include bytes already read from earlier segments. */
+				*size = (u_int) (buf_ptr - (char *) buffer) + read_size;
 				bytes_left = read_size;
 				break;
 			}

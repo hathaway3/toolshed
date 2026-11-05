@@ -118,7 +118,7 @@ int qDeleteNode(NodeType * head, NodeType targetNode)
 	}
 
 	/* other case: walk the queue to find the node to delete */
-	while (p->next != NULL)
+	while (p != NULL)
 	{
 		if (p == targetNode)
 		{
@@ -139,28 +139,40 @@ int qDeleteNode(NodeType * head, NodeType targetNode)
 
 int qDeleteLastNode(NodeType * head)
 {
-	NodeType p = *head;
-	NodeType prev = *head;
+	NodeType p;
+	NodeType prev = NULL;
 
-	/* take 1st case where queue is empty */
-	if (p == NULL)
+	/* 1. Guard against invalid pointer or empty queue */
+	if (head == NULL || *head == NULL)
 	{
 		return 0;
 	}
-	/* walk queue to find last node */
-	while (p != NULL)
+
+	p = *head;
+
+	/* 2. Walk queue to find last node and its predecessor */
+	while (p->next != NULL)
 	{
-		if (p->next == NULL)
-		{
-			break;
-		}
 		prev = p;
 		p = p->next;
 	}
 
+	/* 3. Update the pointers FIRST while memory is valid */
+	if (prev != NULL)
+	{
+		/* Case A: Queue has 2 or more nodes */
+		prev->next = NULL;
+	}
+	else
+	{
+		/* Case B: Queue has only 1 node — head becomes NULL */
+		*head = NULL;
+	}
+
+	/* 4. Free the node memory LAST */
 	free(p->data);
 	free(p);
-	prev->next = NULL;
+
 	return 0;
 }
 

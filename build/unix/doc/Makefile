@@ -1,10 +1,8 @@
-
 include ../rules.mak
 
 DOCDIR      = ../../../doc
 HTML        = ToolShed.html
 MARKDOWN    = markdown
-CLEAN_FILES = $(HTML)
 
 all: $(HTML)
 
@@ -23,3 +21,6 @@ $(HTML):
 		echo "WARNING: Neither 'markdown' tool nor pre-built ToolShed.html found; creating placeholder."; \
 		printf '<html><body><h1>ToolShed Documentation</h1><p>See the doc/ directory for documentation.</p></body></html>\n' > $@; \
 	fi
+
+clean:
+	$(RM) $(HTML)

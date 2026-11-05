@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include "cocotypes.h"
 #include "cococonv.h"
+#include "diskimage.h"
 #ifndef WIN32
 #include <dirent.h>
 #endif
@@ -62,9 +63,13 @@ typedef struct
 		dd_bt[3],
 		dd_bsz[2],
 		dd_dat[5],
-		dd_nam[32],
+		dd_nam[32];
 		/* These used to be called dd_opt[32] */
-			pd_dtp[1],
+	union
+	{
+		struct
+		{
+			u_char	pd_dtp[1],
 			pd_drv[1],
 			pd_stp[1],
 			pd_typ[1],
@@ -83,9 +88,33 @@ typedef struct
 			pd_fd[3],
 			pd_dfd[3],
 			pd_dcp[4],
-			pd_dvt[2],
+				pd_dvt[2];
+		} m6809;
+		struct {
+			u_char	pd_dtp[1],
+				pd_drv[1],
+				pd_stp[1],
+				pd_typ[1],
+				pd_dns[1],
+				pd_res1[1],
+				pd_cyl[2],
+				pd_sid[1],
+				pd_vfy[1],
+				pd_sct[2],
+				pd_t0s[2],
+				pd_sas[2],
+				pd_ilv[1],
+				pd_tfm[1],
+				pd_toffs[1],
+				pd_soffs[1],
+				pd_ssize[2],
+				pd_cntl[2],
+				pd_trys[1];
+		} m68k;
+	} dd_opt;
+
 		/* These are used by OS-9/68K */
-		dd_res1[1],
+	u_char	dd_res2[1],
 		dd_sync[4],		/* CRUZ */
 		dd_maplsn[4],
 		dd_lsnsize[2],
@@ -100,13 +129,19 @@ typedef struct _os9_path_id
 	char		*pathlist;	/* pointer to pathlist */
 	unsigned int	pl_fd_lsn;	/* pathlist's FD LSN */
 	unsigned int	filepos;	/* file position */
-	FILE		*fd;		/* file path pointer */
+	diskimage_id	disk;		/* the image file */
+	int		raw_image;	/* the image file is a raw image */
+	int		quiet;		/* do not warn about bad CRCs */
 	lsn0_sect	*lsn0;		/* copy of LSN0 */
 	u_char		*bitmap;	/* bitmap */
+	u_char		*saved_bitmap;	/* bitmap as read, to tell if it changed */
+	error_code	bitmap_ec;	/* why the bitmap could not be read */
 	unsigned int	spc;		/* sectors per cluster */
 	unsigned int	bps;		/* bytes per sector */
 	unsigned int	spt;		/* sectors per track */
 	unsigned int	t0s;		/* sectors per track on track zero */
+	unsigned int	sides;		/* sides of a disk image with tracks */
+	unsigned int	first_sector;	/* number of a track's first sector */
 	int		cs;		/* cluster size in bytes */
 	int		bitmap_bytes;
 	int		israw;		/* raw flag */
@@ -124,7 +159,11 @@ error_code _os9_read(os9_path_id, void *, u_int *);
 error_code _os9_readdir(os9_path_id, os9_dir_entry *);
 error_code _os9_ncpy_name( os9_dir_entry e, u_char *name, size_t len );
 error_code _os9_seek(os9_path_id, int, int);
-int _os9_lsn_fseek(os9_path_id seek_path, int lsn);
+error_code _os9_identify(const char *pathname, int *found);
+error_code _os9_lsn_get(os9_path_id path, int lsn, u_int offset, void *buffer, u_int size);
+error_code _os9_lsn_put(os9_path_id path, int lsn, u_int offset, const void *buffer, u_int size);
+u_int _os9_lsn_read(os9_path_id path, int lsn, u_int offset, void *buffer, u_int size);
+u_int _os9_lsn_write(os9_path_id path, int lsn, u_int offset, const void *buffer, u_int size);
 error_code _os9_allbit(u_char *bitmap, int firstbit, int numbits);
 error_code _os9_delbit(u_char *bitmap, int firstbit, int numbits);
 int _os9_ckbit( u_char *bitmap, int LSN );
@@ -142,6 +181,9 @@ error_code _os9_delete_directory(char *pathlist);
 error_code _os9_rename( char *pathlist, char *new_name );
 error_code _os9_rename_ex(char *pathlist, char *new_name, os9_dir_entry *dentry);
 error_code _os9_close(os9_path_id);
+/* As _os9_format, making the disk in this format.  Anything but raw makes a new
+   image of the whole disk, and doesn't replace a file that exists. */
+error_code _os9_format_image(char *pathname, diskimage_format format, int os968k, int tracks, int sectorsPerTrack, int sectorsTrack0, int heads, int sectorSize, int *clusterSize, char *diskName, int sectorAllocationSize, int tpi, int density, int formatEntire, int isDragon, int isHDD, int interleave, unsigned int *totalSectors, unsigned int *totalBytes);
 error_code _os9_format(char *pathname, int os968k, int tracks, int sectorsPerTrack, int sectorsTrack0, int heads, int sectorSize, int *clusterSize, char *diskName, int sectorAllocationSize, int tpi, int density, int formatEntire, int isDragon, int isHDD, int interleave, unsigned int *totalSectors, unsigned int *totalBytes);
 
 /* gs.c */

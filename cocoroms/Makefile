@@ -1,6 +1,7 @@
 AS	= lwasm
 ASFLAGS	= --raw
 RM	= rm -f
+MD5_TOOL := $(shell command -v md5 >/dev/null 2>&1 && echo md5 || echo md5sum)
 
 ROMS	= bas13.rom extbas11.rom disk11.rom coco3.rom
 
@@ -25,7 +26,7 @@ coco3.rom: equates.asm coco3.asm
 	$(AS) $(ASFLAGS) -o $@ $^
 
 checksum:
-	md5 *.rom > md5sums-new.txt
+	$(MD5_TOOL) *.rom >md5sums-new.txt
 
 clean:
-	$(RM) $(ROMS) *_equates.asm md5sums-new.txt
+	-$(RM) $(ROMS) *_equates.asm md5sums-new.txt

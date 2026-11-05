@@ -5,6 +5,7 @@
  ********************************************************************/
 
 #include "cecbpath.h"
+#include <limits.h>
 
 /*
  * _cecb_read_bits_cas()
@@ -62,15 +63,6 @@ error_code _cecb_read_bits_cas(cecb_path_id path, int count,
 error_code _cecb_parse_cas(cecb_path_id path)
 {
 	path->tape_type = CAS;
-
-	path->cas_start_byte = path->cas_current_byte = path->play_at / 8;
-	path->cas_start_bit = path->cas_current_bit =
-		0x01 << (path->play_at % 8);
-
-    //printf( "%ld, %x\n", path->cas_start_byte, path->cas_start_bit );
-
-	fseek(path->fd, path->cas_start_byte, SEEK_SET);
-
 	return 0;
 }
 

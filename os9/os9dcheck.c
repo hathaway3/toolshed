@@ -174,6 +174,13 @@ static int do_dcheck(char **argv, char *p)
 
 	/* open a path to the device */
 	ec = _os9_open(&os9_path, os9pathlist, FAM_READ);
+
+	if (ec == 0 && os9_path->bitmap_ec != 0)
+	{
+		ec = os9_path->bitmap_ec;
+
+		_os9_close(os9_path);
+	}
 	if (ec != 0)
 	{
 		fprintf(stderr, "%s: error %d opening '%s'\n", argv[0], ec,
@@ -349,7 +356,8 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 		printf("Directory %s has a circular reference. Skipping\n",
 		       path);
 		AddQuestionableCluster(dir_lsn);
-		return (0);
+		ec = 0;
+		goto clean;
 	}
 
 	/* Allocate directory file descriptor LSN in secondary allocation map */
@@ -381,14 +389,9 @@ static error_code BuildSecondaryAllocationMap(os9_path_id os9_path,
 		count = 0;
 		i = 0;
 
-		while (int3(dir_fd->fd_seg[i].lsn) != 0)
+		while (i < NUM_SEGS && int3(dir_fd->fd_seg[i].lsn) != 0)
 		{
 			theSeg = &(dir_fd->fd_seg[i]);
-
-			if (i >= NUM_SEGS)
-			{
-				break;
-			}
 
 			if (count >= fd_siz)
 			{
@@ -524,15 +527,9 @@ static error_code ParseFDSegList(fd_stats * fd, u_int dd_tot, char *path,
 	Fd_seg theSeg;
 	u_int num, curLSN;
 
-	while (int3(fd->fd_seg[i].lsn) != 0)
+	while (i < NUM_SEGS && int3(fd->fd_seg[i].lsn) != 0)
 	{
 		u_int mapSector;
-
-		if (i > NUM_SEGS)
-		{
-			i++;
-			break;
-		}
 
 		theSeg = &(fd->fd_seg[i]);
 		num = int2(theSeg->num);

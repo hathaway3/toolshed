@@ -106,6 +106,8 @@ int os9dir(int argc, char *argv[])
 				argv[0], ec, p);
 			return (ec);
 		}
+
+		_coco_print_other_filesystems(p, COCO_FS_OS9);
 	}
 
 	return (0);
@@ -122,6 +124,7 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 	NodeType q_head = NULL;
 	char filepath[256];
 	size_t plen;
+	error_code status = 0;
 
 
 	/* 1. Copy the passed pathlist into our own local buffer. */
@@ -198,7 +201,6 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 	while (_os9_gs_eof(path) == 0)
 	{
 		os9_dir_entry dentry;
-		os9_path_id path2 = NULL;
 		fd_stats fdbuf;
 		char fname[32];
 		char *filename;
@@ -230,26 +232,20 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 		{
 			/* EXTENDED directory output */
 
-			/* open path to file and get file desc */
+			/* read the file desc, which needs no permission on the file */
 			strcpy(filepath, os9pathlist);
 			strcat(filepath, "/");
 			strcat(filepath, filename);
 
-			ec = _os9_open(&path2, filepath, FAM_READ);
+			ec = _os9_lsn_get(path, int3(dentry.lsn), 0, &fdbuf, sizeof(fd_stats));
 			if (ec != 0)
 			{
-				ec = _os9_open(&path2, filepath,
-					       FAM_DIR | FAM_READ);
-				if (ec != 0)
-				{
-					free(filename);
-					continue;
-				}
+				fprintf(stderr, "%s: error %d reading the file descriptor of '%s'\n",
+					argv[0], ec, filepath);
+				free(filename);
+				status = ec;
+				continue;
 			}
-
-			_os9_gs_fd(path2, sizeof(fd_stats), &fdbuf);
-			_os9_close(path2);
-			path2 = NULL;
 
 			if (extended == 1)
 			{
@@ -343,7 +339,11 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 		while (node != NULL)
 		{
 			depth++;
-			do_dir(argv, (char *) node->data, q_recursion);
+			ec = do_dir(argv, (char *) node->data, q_recursion);
+			if (ec != 0)
+			{
+				status = ec;
+			}
 			depth--;
 			deadNode = node;
 			node = qGetNextNode(node);
@@ -357,5 +357,5 @@ static int do_dir(char **argv, char *p, NodeType *q_recursion)
 	_os9_close(path);
 	qDeleteLastNode(q_recursion);
 
-	return (0);
+	return status;
 }

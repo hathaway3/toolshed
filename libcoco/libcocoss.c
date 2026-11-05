@@ -12,6 +12,17 @@
 #include "cocopath.h"
 
 
+/* Dragon DOS has no permissions, but protecting a file makes it read only. */
+static error_code dragondos_set_attributes(dragondos_path_id path, int attributes)
+{
+	dragondos_file_stat stat;
+
+	stat.protected_file = !(attributes & FAP_WRITE);
+	stat.file_size = 0;
+	return _dragondos_ss_fd(path, &stat);
+}
+
+
 error_code _coco_ss_attr(coco_path_id path, int perms)
 {
 	error_code ec = 0;
@@ -31,6 +42,10 @@ error_code _coco_ss_attr(coco_path_id path, int perms)
 
 	case DECB:
 //                      ec = _decb_ss_attr(path->path.decb, perms);
+		break;
+
+	case DRAGONDOS:
+		ec = dragondos_set_attributes(path->path.dragondos, perms);
 		break;
 
 	case CECB:
@@ -93,6 +108,10 @@ error_code _coco_ss_fd(coco_path_id path, coco_file_stat * statbuf)
 #endif
 		native_stat.st_uid = statbuf->user_id;
 		native_stat.st_gid = statbuf->group_id;
+	/* Note: st_ctime (inode-change time) cannot be set by user-space
+	 * on POSIX systems -- the kernel updates it automatically.  Only
+	 * st_mtime (last-modified time) can be restored via utime()/utimes().
+	 * We propagate last_modified_time into st_mtime on all platforms. */
 #if defined(WIN32)
 		native_stat.st_ctime = statbuf->create_time;
 		native_stat.st_mtime = statbuf->last_modified_time;
@@ -109,6 +128,31 @@ error_code _coco_ss_fd(coco_path_id path, coco_file_stat * statbuf)
 		break;
 
 	case OS9:
+	{
+		time_t create_epoch, modify_epoch;
+		int use_sde = 0;
+		char *sde_env = getenv("SOURCE_DATE_EPOCH");
+
+		/* 1. Parse SOURCE_DATE_EPOCH if present */
+		if (sde_env != NULL)
+		{
+			char *endptr;
+			time_t sde_val = (time_t)strtoll(sde_env, &endptr, 10);
+			if (*endptr == '\0' && sde_val >= 0)
+			{
+				use_sde = 1;
+				create_epoch = sde_val;
+				modify_epoch = sde_val;
+			}
+		}
+
+		/* 2. Fall back to statbuf timestamps if SOURCE_DATE_EPOCH is not set */
+		if (!use_sde)
+		{
+			create_epoch = statbuf->create_time;
+			modify_epoch = statbuf->last_modified_time;
+		}
+
 		ec = _os9_gs_fd(path->path.os9, sizeof(os9_stat), &os9_stat);
 		os9_stat.fd_att &=
 			~(FAP_READ | FAP_WRITE | FAP_EXEC | FAP_PREAD |
@@ -116,24 +160,40 @@ error_code _coco_ss_fd(coco_path_id path, coco_file_stat * statbuf)
 		os9_stat.fd_att |= statbuf->attributes;
 		os9_stat.fd_own[1] = statbuf->user_id;
 		os9_stat.fd_own[0] = statbuf->group_id;
-		timepak = localtime(&(statbuf->create_time));
-		os9_stat.fd_creat[0] = timepak->tm_year;
-		os9_stat.fd_creat[1] = timepak->tm_mon + 1;
-		os9_stat.fd_creat[2] = timepak->tm_mday;
-		timepak = localtime(&(statbuf->last_modified_time));
-		os9_stat.fd_dat[0] = timepak->tm_year;
-		os9_stat.fd_dat[1] = timepak->tm_mon + 1;
-		os9_stat.fd_dat[2] = timepak->tm_mday;
-		os9_stat.fd_dat[3] = timepak->tm_hour;
-		os9_stat.fd_dat[4] = timepak->tm_min;
+
+		/* 3. Format Creation Time: gmtime for SOURCE_DATE_EPOCH, localtime for normal */
+		timepak = use_sde ? gmtime(&create_epoch) : localtime(&create_epoch);
+		if (timepak != NULL)
+		{
+			os9_stat.fd_creat[0] = timepak->tm_year;
+			os9_stat.fd_creat[1] = timepak->tm_mon + 1;
+			os9_stat.fd_creat[2] = timepak->tm_mday;
+		}
+
+		/* 4. Format Modification Time: gmtime for SOURCE_DATE_EPOCH, localtime for normal */
+		timepak = use_sde ? gmtime(&modify_epoch) : localtime(&modify_epoch);
+		if (timepak != NULL)
+		{
+			os9_stat.fd_dat[0] = timepak->tm_year;
+			os9_stat.fd_dat[1] = timepak->tm_mon + 1;
+			os9_stat.fd_dat[2] = timepak->tm_mday;
+			os9_stat.fd_dat[3] = timepak->tm_hour;
+			os9_stat.fd_dat[4] = timepak->tm_min;
+		}
+
 		ec = _os9_ss_fd(path->path.os9, sizeof(os9_stat), &os9_stat);
 		break;
+	}
 
 	case DECB:
 		ec = _decb_gs_fd(path->path.decb, &decb_stat);
 		decb_stat.file_type = statbuf->file_type;
 		decb_stat.data_type = statbuf->data_type;
 		ec = _decb_ss_fd(path->path.decb, &decb_stat);
+		break;
+
+	case DRAGONDOS:
+		ec = dragondos_set_attributes(path->path.dragondos, statbuf->attributes);
 		break;
 
 	case CECB:
@@ -168,6 +228,10 @@ error_code _coco_ss_size(coco_path_id path, int size)
 
 	case DECB:
 		ec = _decb_ss_size(path->path.decb, size);
+		break;
+
+	case DRAGONDOS:
+		ec = _dragondos_ss_size(path->path.dragondos, size);
 		break;
 
 	case CECB:

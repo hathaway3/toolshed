@@ -1,33 +1,61 @@
+# Makefile for Unit Tests
 include ../rules.mak
+
+.DEFAULT_GOAL := testall
+.PHONY: all testall test clean
 
 vpath %.c ../../../unittest
 vpath %.c ../../../tests
 
 # Allow tests in tests/ to include headers from unittest/ (e.g. tinytest.h)
-CFLAGS += -I../../../unittest
+# and rebuild when an included header changes.
+CFLAGS += -I../../../unittest -MMD -MP
 
-# Object files needed by all tests
-TINYTEST_OBJ = tinytest.o
-TESTS = librbftest libdecbtest libcecbtest libtoolshedtest os9commandtest os9_tool_test
-CLEAN_FILES = $(TESTS)
+LDLIBS += -L../libtoolshed -L../libcoco -L../libcecb -L../libdecb -L../libdragondos -L../libdiskimage \
+          -L../librbf -L../libnative -L../libmisc -L../libsys \
+          -ltoolshed -lcoco -lcecb -ldecb -ldragondos -ldiskimage -lrbf -lnative -lmisc -lsys -lm
 
-all: $(TINYTEST_OBJ) $(TESTS)
+TEST_LIBS = \
+    ../libtoolshed/libtoolshed.a \
+    ../libcoco/libcoco.a \
+    ../libcecb/libcecb.a \
+    ../libdecb/libdecb.a \
+    ../libdragondos/libdragondos.a \
+    ../libdiskimage/libdiskimage.a \
+    ../librbf/librbf.a \
+    ../libnative/libnative.a \
+    ../libmisc/libmisc.a \
+    ../libsys/libsys.a
 
-testall: all
+TESTS = librbftest libdecbtest libcecbtest libtoolshedtest libnativetest libmisctest os9commandtest \
+	decbcommandtest cecbcommandtest libsystest libdiskimagetest infocommandtest libdragondostest \
+	dgndoscommandtest commandaliastest os9_tool_test
+
+all: $(TESTS)
+
+# Only the source and libraries are linked, not the headers the .d files add.
+$(TESTS): %: %.c $(TEST_LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(TEST_LIBS) $(LDLIBS) -o $@
+
+testall: $(TESTS)
 ifeq (,$(NOTEST))
 	./librbftest
 	./libdecbtest
 	./libcecbtest
 	./libtoolshedtest
+	./libnativetest
+	./libmisctest
+	./libsystest
 	./os9commandtest
+	./decbcommandtest
+	./cecbcommandtest
+	./libdiskimagetest
+	./infocommandtest
+	./libdragondostest
+	./dgndoscommandtest
+	./commandaliastest
 	./os9_tool_test
 endif
-
-# Rule to build binaries, linking tinytest.o
-$(TESTS): %: %.o $(TINYTEST_OBJ)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-.PHONY: all testall test
 
 # Summarized test report
 test: testall
@@ -41,3 +69,8 @@ test: testall
 	@echo "CLI Integration Test Summary"
 	@echo "--------------------------------------------------"
 	@bash ../../../tests/os9_test.sh && echo "os9_test.sh: PASSED" || { echo "os9_test.sh: FAILED"; exit 1; }
+
+clean:
+	$(RM) *.o *.d *.dsk *.wav *.cas *.c10 $(TESTS)
+
+-include $(TESTS:=.d)

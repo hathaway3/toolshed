@@ -104,30 +104,20 @@ static int do_dir(char **argv, char *p)
 	char asciiflag;
 	cecb_dir_entry dir_entry;
 
-	ec = _cecb_open(&path, p, FAM_READ);
+	ec = _cecb_open(&path, p, FAM_READ | FAM_RAW);
 
 	if (ec == 0)
 	{
-		while (ec == 0)
+		printf("Directory of: %s\n\n", p);
+
+		while (1)
 		{
 			ec = _cecb_read_next_dir_entry(path, &dir_entry);
 
 			if (ec == EOS_EOF)
 			{
-				ec = 0;
 				break;
 			}
-
-			if (ec == EOS_CRC)
-			{
-				ec = 0;
-				printf("!");
-			}
-			else
-				printf(" ");
-
-			if (ec != 0)
-				break;
 
 			switch (dir_entry.ascii_flag)
 			{
@@ -142,8 +132,9 @@ static int do_dir(char **argv, char *p)
 				break;
 			}
 
-			printf(" %8.8s %d %c\n", dir_entry.filename,
-			       dir_entry.file_type, asciiflag);
+			printf("%c %8.8s %d ($%02x) %c ($%02x)\n", ec == EOS_CRC ? '!' : ' ',
+				dir_entry.filename, dir_entry.file_type, dir_entry.file_type, asciiflag,
+				asciiflag);
 		}
 
 		ec = _cecb_close(path);

@@ -1,4 +1,4 @@
-ToolShed v2.4
+ToolShed v2.6.1
 -------------
 
 ## A Color Computer Cross-Development Toolset
@@ -10,6 +10,7 @@ ToolShed v2.4
 ---
 
 * [Introduction](#introduction)
+* [Modular Architecture and Library Reuse](#libraries)
 * [A Tutorial On Disk Images](#tutorial)
   * [Disk Extraction Under Windows/DOS](#de_win)
   * [Disk Extraction Under Linux](#de_linux)
@@ -31,14 +32,17 @@ ToolShed v2.4
   * [GEN](#gen) - Prepare a disk image for booting
   * [ID](#id) - Display sector 0 of an image
   * [IDENT](#ident) - Display OS-9 module information
+  * [INFO](#info) - Report disk image format and track layout, or change write protection
   * [LIST](#list_os9) - Display contents of a text file
   * [MAKDIR](#makdir) - Create one or more directories
   * [MODBUST](#modbust) - Bust a single merged file of OS-9 modules into separate files
   * [PADROM](#padrom) - Pad a file to a specific length
   * [RENAME](#rename_os9) - Give a file a new filename
+  * [REVEAL](#reveal_os9) - Explain what lives at a given LSN of a disk image
 * [decb](#decb) - Manipulate RSDOS formatted disk images
   * [Options](#decb_exec_option) - The DECB executive's option
   * [ATTR](#attr_decb) - Display or modify file attributes
+  * [BINBUST](#binbust) - Remove ambles from DECB binaries
   * [COPY](#copy_decb) - Copy one or more files to a target directory
   * [DIR](#dir_decb) - Display the directory of a Disk BASIC image
   * [DSAVE](#dsave_decb) - Copy the contents of a directory or device
@@ -47,19 +51,37 @@ ToolShed v2.4
   * [FREE](#free_decb) - Display the number of free granules
   * [FSTAT](#fstat_decb) - Display the file descriptor sector for a file
   * [HDBCONV](#hdbconv) - Converts an HDB-DOS disk image into a 512-byte sector compatible one
+  * [INFO](#info) - Report disk image format and track layout, or change write protection
   * [KILL](#kill) - Remove files from a Disk BASIC image
   * [LIST](#list_decb) - Display the contents of a file
+  * [REVEAL](#reveal_decb) - Explain a disk image location
   * [RENAME](#rename_decb) - Give a file a new filename
 * [cecb](#cecb) - Manipulate Color BASIC and Micro Color BASIC cassette files
   * [BULKERASE](#bulkerase) - Create a container for casette data
   * [DIR](#dir_cecb) - Display the directory of a Cassette BASIC image
   * [FSTAT](#fstat_cecb) - Display the file descriptor for a file
   * [DUMP](#dump_cecb) - Display the contents of a binary file
+  * [DUMPBLOCK](#dumpblock_cecb) - Scan and print a hex dump of CoCo Cassette blocks
   * [LIST](#list_cecb) - Display the contents of a file
   * [COPY](#copy_cecb) - Copy one or more files to a casette container
+  * [LEADER](#leader_cecb) - Analyse leader in a WAV file
 * [ar2](#ar2)
 * [dis68](#dis68)
 * [lst2cmt](#lst2cmt) - Create MAME comment file
+* [dgndos](#dgndos) - Manipulate Dragon DOS formatted disk images
+  * [ATTR](#attr_dgndos) - Display or change whether files are protected
+  * [COPY](#copy_dgndos) - Copy one or more files to a target file or directory
+  * [DIR](#dir_dgndos) - Display the contents of a disk's directory
+  * [DSAVE](#dsave_dgndos) - Copy the contents of a disk or directory
+  * [DSKINIT](#dskinit_dgndos) - Create a Dragon DOS image
+  * [DUMP](#dump_dgndos) - Display the contents of a binary file
+  * [FREE](#free_dgndos) - Display the amount of free space on an image
+  * [FSTAT](#fstat_dgndos) - Display detailed information about a file
+  * [INFO](#info) - Report disk image format and track layout, or change write protection
+  * [KILL](#kill_dgndos) - Delete one or more files
+  * [LIST](#list_dgndos) - Display the contents of a text file
+  * [REVEAL](#reveal_dgndos) - Explain a disk image location
+  * [RENAME](#rename_dgndos) - Give a file a new filename
 
 ---
 
@@ -80,6 +102,13 @@ ToolShed started out life in the mid-to-late 1990s as a 6809 cross-assembler und
 ### os9, decb & cecb
 
 The main task of the these tools is to allow the manipulation, inspection and copying of files from disk and cassette images to your PC's file system, and vice versa. The os9 tool recognizes disk images that contain data in the RBF file format created under OS-9 or NitrOS-9, while the decb tool recognizes disk images formatted under Disk BASIC for the Color Computer. The cecb tool recognizes cassette data in the wave, CAS, and C10 formats, for both Color BASIC and Micro Color BASIC.
+
+The `os9`, `decb`, `dgndos`, and `cecb` executives also accept two-letter
+subcommand codes. Run an executive without arguments (or with `-h`) to list
+each full name, its code in parentheses, and a short description. For example,
+`decb dr disk.dsk,` is equivalent to `decb dir disk.dsk,`. Shared subcommands
+use the same codes across executives; full names remain supported. OS-9's
+`id` command is already two letters and remains `id`.
 
 ### rma & rlink
 
@@ -108,6 +137,108 @@ Carl Kreider is a long time OS-9/6809 user and programmer, and has graciously gi
 ### lst2cmt
 
 This is a tool used to convert lwasm listing files into MAME comment files.
+
+### info subcommand
+
+The os9, decb and dgndos tools share an info subcommand to report the format and track layout of DMK, SDF, JVC, VDK and raw disk images.
+
+### dgndos
+
+This is a tool used to manipulate, inspect and copy files on disk images formatted under Dragon DOS.
+
+---
+<h2 id="libraries">Modular Architecture and Library Reuse</h2>
+
+ToolShed is more than a collection of command-line programs. Its disk, filesystem and cassette operations are implemented in reusable C libraries. The command-line tools provide argument handling and presentation, while the libraries handle image formats, directories, file allocation and data transfer. Another application can call these libraries directly without running the ToolShed commands or parsing their output.
+
+### Library Layers
+
+Image formats and filesystems are separate concerns. For example, DMK describes how tracks and sectors are stored in a host file, while Disk BASIC describes how files are organized within those sectors. The same filesystem code can therefore work with several image formats.
+
+The main layers are:
+
+* **Image access:** `libdiskimage` reads and writes sectors in supported disk-image containers.
+* **Filesystem and cassette access:** `librbf`, `libdecb`, `libdragondos` and `libcecb` interpret files and directories; `libnative` accesses the host filesystem.
+* **Common file access:** `libcoco` presents a shared interface over those backends.
+* **Shared tool operations:** `libtoolshed` builds higher-level operations on the common interface.
+* **Supporting routines:** `libmisc` and `libsys` supply conversions, checksums and other common services.
+
+These are cooperating libraries, not isolated packages: callers must also link the dependencies of the layer they use.
+
+### Libraries and Their Uses
+
+The library source directories are at the project root. Their public headers are in `include/`; the Unix build produces static archives in the corresponding `build/unix/` directories.
+
+| Library | Main headers | Purpose and use |
+| --- | --- | --- |
+| `libdiskimage` | `diskimage.h` | Identifies, creates and accesses raw, JVC, VDK, DMK and SDF images. Provides geometry queries, sector enumeration, sector reads and writes, and write-protection handling. Used by the disk filesystem libraries and the shared `info` subcommand; useful independently for image inspectors, sector editors and emulator utilities. |
+| `librbf` | `os9path.h`, `rbfutil.h` | Implements OS-9/NitrOS-9 RBF filesystems, including directories, allocation bitmaps, file attributes, formatting and file I/O. Supplies the filesystem operations behind `os9` and the OS-9 backend of `libcoco`. |
+| `libdecb` | `decbpath.h`, `decbutil.h` | Implements Disk BASIC filesystems, FAT/granule allocation, directory entries, formatting and HDB-DOS drive/offset access. Also supplies BASIC token conversion and binary conversion helpers. Used by `decb` and the Disk BASIC backend of `libcoco`. |
+| `libdragondos` | `dragondospath.h` | Implements Dragon DOS directories, allocation, file access, protection attributes, formatting and BASIC token conversion. Used by `dgndos` and the Dragon DOS backend of `libcoco`. |
+| `libcecb` | `cecbpath.h` | Implements cassette file access for WAV, CAS and C10 containers, including cassette blocks and BASIC token conversion. Used by `cecb` and the cassette backend of `libcoco`; it does not use the disk-sector layer. |
+| `libnative` | `nativepath.h` | Wraps host files and directories in a path-based API similar to the image backends. Enables transfers between host files and image contents through `libcoco`. |
+| `libcoco` | `cocopath.h` | Dispatches common open, read, write, seek, directory and metadata operations to native, OS-9, Disk BASIC, Dragon DOS or cassette paths. Also detects possible disk filesystems, including multiple filesystems in one image. Used by shared copy operations and applications that work across several backends. |
+| `libtoolshed` | `toolshed.h`, `cocodump.h` | Supplies shared operations such as file copying, line-ending conversion, ROM padding, hex dumps and DSAVE command generation/execution. Used by command-line tools to avoid duplicating higher-level behavior. Some routines print output or invoke commands, so use the lower-level file APIs when an application needs full control of presentation and execution. |
+| `libmisc` | `cococonv.h`, `queue.h`, `util.h` | Supplies byte-order and string conversions, queues, host-to-CoCo error mapping and miscellaneous utility routines used throughout the libraries and tools. |
+| `libsys` | `cocosys.h` | Supplies OS-9-style CRC and pathname-parsing routines used by other ToolShed components. |
+
+### Using the Libraries in Other Projects
+
+Choose the lowest layer that meets the application's needs:
+
+* A sector viewer can use `libdiskimage` without interpreting any filesystem.
+* An OS-9 image editor can use the `_os9_*` API in `os9path.h`; a Disk BASIC or Dragon DOS editor can use `_decb_*` or `_dragondos_*` respectively.
+* A file browser or extraction utility supporting several systems can use `_coco_open()`, `_coco_read()`, `_coco_readdir()` and related calls. Paths such as `disk.dsk,FILE.TXT` identify a file inside an image; host paths identify native files. See [Pathname Elements](#path_elements) for the syntax.
+* A build tool can use shared copy or conversion routines to place generated files into images.
+
+For images containing more than one filesystem, `_coco_detect_filesystems()` returns a bitmask of possible filesystems. Automatic selection is not a substitute for choosing the intended filesystem: use its specific API when that choice matters. Image-format detection and filesystem detection are separate operations.
+
+Build the libraries with `make -C build/unix`, add `include/` to the compiler's header search path, and link the required archives from `build/unix/lib*/`. With static linking, put dependent libraries before the libraries that supply their dependencies. The application and unit-test Makefiles show working link configurations for the complete file-access stack. The normal Unix install target installs tools and documentation, not a separate library development package.
+
+For example, this small program queries an image's geometry without opening a filesystem. Save it as `image_geometry.c`:
+
+```c
+#include <stdio.h>
+#include <cocopath.h> /* FAM_READ */
+#include <diskimage.h>
+
+int main(int argc, char **argv)
+{
+    diskimage_id disk;
+    diskimage_geometry geometry;
+    error_code ec;
+    error_code close_ec;
+
+    if (argc != 2)
+        return 1;
+
+    ec = _diskimage_open(&disk, argv[1], FAM_READ);
+    if (ec != 0)
+        return 1;
+
+    ec = _diskimage_query_geometry(disk, &geometry);
+    if (ec == 0)
+        printf("%u cylinders, %u sides, %u logical sectors\n",
+               geometry.cylinders, geometry.sides, geometry.total_sectors);
+
+    close_ec = _diskimage_close(disk);
+    return ec != 0 || close_ec != 0;
+}
+```
+
+From the ToolShed root, compile and run it on a Unix-like host with:
+
+```sh
+cc -Iinclude image_geometry.c \
+    build/unix/libdiskimage/libdiskimage.a \
+    build/unix/libmisc/libmisc.a \
+    build/unix/libsys/libsys.a -lm -o image_geometry
+./image_geometry disk.dsk
+```
+
+The headers describe the APIs and data structures; `unittest/` contains examples of opening, creating, reading and modifying images. Most I/O routines return an `error_code` (`0` for success), and read/write calls use an in/out size parameter. Check each call's documented behavior, handle errors and short transfers, and close every successfully opened path. Some routines may also emit diagnostics.
+
+An application can alternatively compile the required library sources into its own build. DiskShed, the wxWidgets GUI in `gui/wx/`, demonstrates this approach: its CMake configuration builds the filesystem sources into a static library and links a C++ application against it. Use the public headers rather than private implementation headers, retain the applicable license notices, and consult the current source and tests when updating an integration.
 
 ---
 <h2 id="tutorial">A Tutorial On Disk Images</h2>
@@ -158,7 +289,7 @@ On our theoretical host computer, a file exists that you wished to have copied t
 
 Notice the use of the comma at the end of the second parameter. This tells the os9 program that you wish to copy the file test1 over to the root directory of the os9.dsk image.
 
-What happened if you didn't put the comma at the end of the second parameter?  os9 copy would have copied test1 on top of the os9.dsk image, effectively replacing your entire disk image with the contents of test1. This is probably not the intended effect.
+What happens if you don't put the comma at the end of the second parameter?  os9 copy would copy test1 on top of the os9.dsk image, replacing your entire disk image with the contents of test1, so the copy commands refuse to do that. An existing file on the host that is or looks like a disk image is never replaced, even with -r. The copy is refused, and says why. A file looks like one if it has the extension .dsk, .vdk, .dmk, .sdf, .jvc, .os9, .img or .ima, has the header of a disk image format, or is at least a track long (4608 bytes) and a whole number of sectors. This applies to os9, decb, cecb and dgndos copy, and to dsave. To replace such a file, delete it first.
 
 Let's take the example a step further. A file exists in the os9.dsk image file, in RBF format, that you wish to copy to your host file system, in the root directory. The file on the disk image is named test2, and resides in the RBF subdirectory path DIR1/DIR2. How would you copy the file to your host file system's root?
 
@@ -192,7 +323,7 @@ will display the extended directory on the current directory of the host file sy
 
 <h3 id="de_hdb_dos">Support for HDB-DOS</h3>
 
-Toolshed supports specialized path symbols for HDB-DOS hard disk images.
+Toolshed supports specialized path symbols for HDB-DOS hard disk images. A pathlist with a drive number or offset, and `decb dskini -h` with more than one drive, require a raw disk image; on any other image they fail.
 
 The colon allows you to select which disk image is active:
 
@@ -303,12 +434,13 @@ Comparing two files of different size and content:
 This command will work on Disk BASIC and RBF disk image files as well as host files.
 
 #### Options
-<table>
-<tr><td>-b=size</td><td>size of copy buffer in bytes or K-bytes</td></tr>
-<tr><td>-l</td><td>perform end of line translation</td></tr>
-<tr><td>-o=id</td><td>set file's owner as id</td></tr>
-<tr><td>-r</td><td>rewrite if file exists</td></tr>
-</table>
+| Option        | Description |
+|---------------|-------------|
+| `-b=size`     | Set copy buffer size in bytes or kilobytes (e.g. `512`, `4K`) |
+| `-l`          | Enable end-of-line translation (use for text files only) |
+| `-o=id`       | Set file owner ID in the destination file descriptor |
+| `-r`          | Overwrite the destination file if it already exists |
+| `-a=erpepr`   | Set OS-9 file attributes using ERPEPR permission mask |
 
 #### Description
 
@@ -316,13 +448,15 @@ The copy command will create an exact copy of a file on either an RBF disk image
 
 The -l option performs end of line translation when copying between the host file system and the RBF disk image. You should only use the -l option on text files, not binary files. When copying files to a disk image, the user id of the user on the host system is set in the file's ID sector. If you want to override this, you can use the -o option, specifying the ID of the file's owner as it resides on the RBF disk image.
 
+The `-a=erpepr` option allows explicit control of OS-9 file attribute bits (ERPEPR), which define the file’s access permissions as stored in the file descriptor sector.
+
 #### Examples
 
 Copying a file from an RBF disk image to the host:
 
     os9 copy os9l2.dsk,cmds/procs procs
     Copying a file from the host to an RBF disk image:
-    os9 copy binary_file os9l2.dsk,binfile
+    os9 copy -a=epe binary_file os9l2.dsk,binfile
     Copying a text file from the host to an RBF disk image:
     os9 copy -l text_file os9l2.dsk,txtfile
 
@@ -466,11 +600,14 @@ This command will work on Disk BASIC and RBF disk image files as well as host fi
 <tr><td>-e</td><td>actually execute commands</td></tr>
 <tr><td>-l</td><td>perform end of line translation on copy</td></tr>
 <tr><td>-r</td><td>force rewrite on copy</td></tr>
+<tr><td>-x=path</td><td>os9 executable to run the commands with, rather than the one the shell finds</td></tr>
 </table>
 
 #### Description
 
 The dsave command recursively copies files from a directory to another device.
+
+dsave runs `os9 copy` and `os9 makdir` to do the copying, and by default the shell finds `os9` as it would any command. Use -x to name the one to use, such as the one you just built. Without -e it only shows the commands. If a command fails, dsave stops and exits with its status.
 
 ---
 
@@ -532,6 +669,7 @@ This command is intended to work on the host file system only.
 <tr><td>-bsX</td><td>bytes per sector (default = 256)</td></tr>
 <tr><td>-cX</td><td>cluster size</td></tr>
 <tr><td>-e</td><td>format entire disk (make full sized image)</td></tr>
+<tr><td>-fX</td><td>image format: raw, jvc, vdk, dmk or sdf (default from the disk's extension, otherwise raw)</td></tr>
 <tr><td>-k</td><td>make OS-9/68K LSN0</td></tr>
 <tr><td>-nX</td><td>disk name</td></tr>
 <tr><td>-q</td><td>quiet; do not report format summary</td></tr>
@@ -558,6 +696,8 @@ This command is intended to work on the host file system only.
 </table>
 
 #### Description
+
+Without -f, the format comes from the disk's extension, and otherwise it is raw. A raw image replaces a file that exists, and any other format does not. Those formats always hold the whole disk, with or without -e, and can't be made with every layout: see the limits of each format in diskimage.h.
 
 The format command creates a file on the host file system which itself is an empty RBF disk image. This image ca then be used to hold files and directories.
 
@@ -645,8 +785,28 @@ This command will work on RBF disk images only.
 
 #### Description
 
-The gen command gives a disk image the ability to become a bootable disk for a CoCo or Dragon machine.
+The gen command gives a disk image the ability to become a bootable disk for a CoCo, Dragon or MM/1.
 
+#### Examples
+
+* **Local files example:**
+  ```bash
+  os9 gen -b=OS9Boot -t=customtrack.bin new.dsk
+  ```
+  Copies the standalone boot file (`OS9Boot`) and kernel track file (`customtrack.bin`) from your host system and writes them directly into `new.dsk`.
+
+* **Files inside an image example:**
+  ```bash
+  os9 gen -b=disk.dsk,folder/MyBootFile -t=disk.dsk,folder/ts.bin new.dsk
+  ```
+  Extracts the boot file and kernel track file located *inside* an existing disk image (`disk.dsk`), then writes them into `new.dsk`.
+
+* **Default paths example:**
+  ```bash
+  os9 gen -b=disk.dsk, -t=disk.dsk, new.dsk
+  ```
+  Uses the standard default boot and track file locations inside `disk.dsk` to prepare `new.dsk` for booting.
+  
 ---
 
 <h3 id="id">ID - Display sector 0 of an image</h3>
@@ -802,6 +962,47 @@ The rename command renames a file with a new filename.
 
 ---
 
+<h3 id="reveal_os9">REVEAL - Explain what lives at a given LSN of a disk image</h3>
+
+#### Syntax and Scope
+
+    reveal {[<opts>]} <disk> <lsn>[:<offset>]
+    reveal -b <disk> <byte-offset>
+
+This command is intended for RBF disk image files only.
+
+#### Description
+
+Reveal takes an LSN (and, optionally, a byte offset within that sector) or an absolute byte offset into the image, and explains, in plain English, exactly what lives at that location: a field of LSN0, a bitmap byte and the cluster/LSN range it tracks, a file descriptor and which field of it, a segment entry, a directory entry (and which byte of its name or LSN pointer), or a byte inside a file's data. If the LSN doesn't map to anything reveal recognizes, it reports whether the bitmap marks it allocated or free, and whether it falls within the boot track.
+
+With `-b`, the offset is a byte position in the actual container file, including image headers and inter-sector data. Reveal recognizes image and track headers, sector ID fields, data address marks, sector data, data CRCs, JVC attribute bytes, and unused raw-image slots on a short track zero. A byte inside a logical sector's data is translated to its filesystem LSN and described as above. Other bytes are described at the container level, without interpreting them as filesystem data. Duplicated single-density bytes map to the same decoded sector byte.
+
+For gaps, reveal reports the distances to the nearest preceding and following sector fields in physical file order, with sector numbers, cylinders and sides. These need not be consecutive sector numbers on an interleaved disk. For example:
+
+    Byte 495 is in inter-sector data, 6 bytes after the last byte of sector 1's data CRC (cylinder 0, side 0), and 30 bytes before sector 7's ID field (cylinder 0, side 0).
+
+Distances are measured from the preceding field's last byte and the following field's first byte. Sector numbers in these descriptions are on-disk IDs, not OS-9 LSNs. Missing sectors do not renumber later LSNs. IDs and data belonging to rejected sectors can still be described as container structures, but are not interpreted as live filesystem sectors. Image headers and gaps can be examined even if the container does not hold a readable OS-9 filesystem.
+
+Without `-b`, `LSN[:offset]` continues to address filesystem sector data; the optional offset must be smaller than the filesystem's bytes per sector. Numeric inputs accept decimal or a `0x` hexadecimal prefix.
+
+Options:
+
+    -b    Treat <offset> as an absolute byte offset from the start
+          of the disk image, rather than an LSN[:offset] pair.
+          Describe container fields and gaps, or filesystem contents
+          when the byte is inside logical sector data.
+    -d    Dragon disk (used to find the location of a boot track)
+
+#### Example
+
+    os9 reveal 68SDC.VHD -b 88179138
+
+    Examining LSN 344,449, byte 194 of '68SDC.VHD'...
+
+    This is byte 164,290 of file "/SOURCECODE/ASM/NITROS9/CMDS/grfdrv_older_source.lzh" (the 164,291st byte overall), found in the 2nd segment/extent of this file, which begins at LSN 344,064.
+
+---
+
 <h2 id="decb">decb</h2>
 
 The following pages document the commands built into the decb tool. Its interface is similar to that of the os9 tool discussed in previous pages.
@@ -851,6 +1052,30 @@ Every file in the Disk BASIC file system possesses attributes. These attributes 
 Change a file's attribute to a text file:
 
     decb attr decb.dsk,TEST.DAT -3
+
+---
+
+<h3 id="binbust">BINBUST - Remove ambles from DECB binaries</h3>
+
+#### Syntax and Scope
+
+    binbust <input file> <output file>
+
+This command is for a file from anywhere.
+
+#### Options
+
+No options.
+
+#### Description
+
+DECB binary files are composed of one or more data records, each preceded by a 5-byte header (type, length, load address), followed by a final 5-byte execution record. Binbust removes these record headers and trailers, concatenating the data blocks into a single unadorned binary file.
+
+#### Examples
+
+Process a file:
+
+    decb binbust decb.dsk,EPROM.BIN dos.bin
 
 ---
 
@@ -925,11 +1150,14 @@ This command will work on Disk BASIC and RBF disk image files as well as host fi
 <tr><td>-e</td><td>actually execute commands</td></tr>
 <tr><td>-l</td><td>perform end of line translation on copy</td></tr>
 <tr><td>-r</td><td>force rewrite on copy</td></tr>
+<tr><td>-x=path</td><td>decb executable to run the commands with, rather than the one the shell finds</td></tr>
 </table>
 
 #### Description
 
 The dsave command recursively copies files from a directory to another device.
+
+dsave runs `decb copy` and `decb makdir` to do the copying, and by default the shell finds `decb` as it would any command. Use -x to name the one to use, such as the one you just built. Without -e it only shows the commands. If a command fails, dsave stops and exits with its status.
 
 ---
 
@@ -946,6 +1174,7 @@ This command is intended to work on the host file system only.
 <tr><td>-3</td><td>35 track disk (default)</td></tr>
 <tr><td>-4</td><td>40 track disk</td></tr>
 <tr><td>-8</td><td>80 track disk</td></tr>
+<tr><td>-f<name></td><td>image format: raw, jvc, vdk, dmk or sdf (default from the disk's extension, otherwise raw)</td></tr>
 <tr><td>-h<num></td><td>create <num> HDB-DOS drives</td></tr>
 <tr><td>-n<name></td><td>HDB-DOS disk name</td></tr>
 <tr><td>-s</td><td>create a "skitzo" disk</td></tr>
@@ -965,6 +1194,11 @@ To create an empty disk image that will fit neatly onto a 35 track single-sided 
     decb dskini ss80.dsk -8
     For a disk image containing 124 HDB-DOS 35 track single-sided virtual drives:
     decb dskini hdbdrives.dsk -h124
+    For a DMK image, by its extension or by asking for it:
+    decb dskini ss35.dmk
+    decb dskini -fdmk ss35.img
+
+Without -f, the format comes from the disk's extension, and otherwise it is raw. Only a raw image can hold more than one HDB-DOS drive. An existing disk in another format than the one asked for is left alone.
 
 ---
 
@@ -1070,7 +1304,7 @@ fstat display detailed information about a file.
 </table>
 #### Description
 
-This command converts an HDB-DOS disk image into a 512-byte sector compatible one.
+This command converts an HDB-DOS disk image into a 512-byte sector compatible one. The source must be a raw disk image, and an existing target that looks like a disk image is not replaced.
 
 ---
 
@@ -1119,6 +1353,25 @@ The list command displays the contents of text files. It can list ASCII text fil
 
 ---
 
+<h3 id="reveal_decb">REVEAL - Explain a disk image location</h3>
+
+    decb reveal <disk> <lsn>[:<offset>]
+    decb reveal -b <disk> <byte-offset>
+
+Explain a zero-based LSN (track * 18 + sector - 1), optionally with a byte
+offset from 0 through 255. Reveal identifies FAT links, directory entry fields,
+reserved sectors, file ownership and file byte offsets, allocation space past
+EOF, and free or unclaimed granules. The executive's `-g` option controls the
+granule count for extended disks. Disk paths accept the usual `,:drive[+offset]`
+selection for raw images.
+
+With `-b`, the offset is absolute within the image file. Reveal describes image
+and track headers, sector ID fields, CRCs, attributes and gaps, then explains
+the filesystem location if the byte belongs to sector data. Raw, DMK, SDF,
+VDK and JVC images are supported. Numbers accept decimal or a `0x` hexadecimal
+prefix. Missing sectors and unreadable filesystem metadata are reported;
+granule chains are bounded to safely inspect damaged images.
+
 <h3 id="rename_decb">RENAME - Give a file a new filename</h3>
 
 #### Syntax and Scope
@@ -1151,17 +1404,19 @@ This command is intended for BASIC cassette and disk image files only.
 
 #### Options
 <table>
-<tr><td>-t [%]</td><td>Set threshold to remove background noise (for WAV files).</td></tr>
-<tr><td>-f [n]</td><td>Set FSK delineation frequency (for WAV files).</td></tr>
-<tr><td>-p [e|o]</td><td>Set even or odd WAV file parity (for WAV files).</td></tr>
-<tr><td>-s [n]</td><td>Start at sample/bit n in WAV/CAS/C10 file.</td></tr>
-<tr><td>-z</td><td>suggest MC10 mode.</td></tr>
+<tr><td>-r[real]</td><td>Set WAV file FSK aspect ratio for autodetection. Default: 1.85</td></tr>
+<tr><td>-t[%]</td><td>Set WAV file FSK aspect ratio threshold. Default: 0.3 (30%)</td></tr>
+<tr><td>-n[%]</td><td>Set near-zero threshold for WAV samples. Default: 0.01 (1%)</td></tr>
+<tr><td>-s [n]</td><td>Start at sample/bit [n] in the input file.</td></tr>
+<tr><td>-z</td><td>Suggest MC-10 mode. Use MC-10 WAV files and MicroColor BASIC tokens.</td></tr>
 </table>
 % is a decimal number between 0 and 1.
 
 The MC10 mode give the command hints on when to use MC10 characteristics. It uses different audio wave forms in WAV files. It also uses MC10 (and MCX128) BASIC tokens.
 
 The C10 format defaults to MC10 formats. The WAV and CAS default to CoCo formats.
+
+The aspect ratio mention above is low frequency divided by the high frequency. People normally think the two FSK Color Computer tape format frequencies are 2400 Hz and 1200 Hz. This is an aspect ratio of 2.0. But the actual ratio coming from the Color Computer's circuitry is 1.85. The value is adjustable because aging tapes, and badly configured tape players, can cause the ratio to drift over time.
 
 ---
 <h3 id="bulkerase">BULKERASE - Create a cassette image of a given characteristics.</h3>
@@ -1175,7 +1430,7 @@ This command is intended to work on the host file system only.
 #### Options
 <table>
 <tr><td>-s[num]</td><td>Sample rate of WAV file (11025, 22050, 44100, etc. Default: 22050).</td></tr>
-<tr><td>-b[num]</td><td>Bits per sample of WAV files (8 or 16, default: 8).</td></tr>
+<tr><td>-b[num]</td><td>Bits per sample of WAV files (8, 16, 24, 32, default: 16).</td></tr>
 <tr><td>-l[num]</td><td>Length of silence to record in WAV file. (default: 0.5 seconds).</td></tr>
 </table>
 #### Description
@@ -1189,7 +1444,7 @@ To create an empty image, type:
     cecb bulkerase test.wav
     Creating WAV file: test.wav
           Sample Rate: 22050
-      Bits Per Sample: 8
+      Bits Per Sample: 16
        Silence Length: 0.500000
 
 ---
@@ -1204,13 +1459,14 @@ This command is intended for Cassette BASIC images only.
 
 #### Description
 
-The dir command displays the directory of a Disk BASIC disk image or the host file system.
+The dir command displays the directory of a BASIC cassette image.
 
 #### Examples
 
 Displaying an extended directory
 
     cecb dir test.wav,
+    Directory of test.wav:
       HELLO    0 B
 
 ---
@@ -1282,14 +1538,55 @@ Note that the address of the offset on the left column increases by 16 ($10) byt
 Additional command line options are provided to omit certain parts of the dump output, including the header and ASCII data. Also, the -a and -b options are provided to allow dumping of a file's contents into a format digestible by certain assemblers.
 
 ---
+<h3 id="dumpblock_cecb">DUMPBLOCK - Scan and print a hex dump of CoCo Cassette blocks</h3>
 
+#### Syntax and Scope
+
+    dumpblock {[<opts>]} <imagefile> {[<opts>]}
+
+This command is intended for Cassette BASIC images (`.wav`, `.cas`, `.c10`) only.
+
+#### Description
+
+The `dumpblock` command scans a Color Computer cassette image file sequentially, printing the header details (block type, length, checksum, and exact image position markers) followed by a dump of each raw block's contents. It uses the same formatter as `os9 dump`, `decb dump`, and `cecb dump`, with offsets restarting at zero for each block. It continues through non-fatal checksum warnings and end-of-file blocks (type `0xFF`) to scan the entire image.
+
+#### Options
+
+* `-h`, `?` : Show the help message and exit.
+* `-a` : Dump output in assembler format (hex).
+* `-b` : Dump output in assembler format (binary).
+* `-e` : Dump output in C format.
+* `-c` : Omit ASCII character data.
+* `-t` : Omit the dump column header.
+* `-l` : Omit line labels/counts.
+
+Formatting options may be combined and placed before or after the image name.
+Block metadata is always displayed. When output is a terminal, all four dump
+commands show printable ASCII byte values and characters in green; redirected
+output contains no color codes. Checksum warnings are also colored on a terminal.
+
+#### Examples
+
+Scanning a `.cas` image and dumping a header block:
+
+Scanning a `.wav` image file:
+
+    cecb dumpblock -t test.wav
+    Scanning blocks in: test.wav
+    Format: WAV
+    ------------------------------------------------------------
+    Block: Type=0x00, Len=15, CKSUM=0x02, End Sample=243200
+
+    00000000  4845 4c4c 4f20 2020 0000 0042 4153 49   HELLO   ...BASI
+
+---
 <h3 id="list_cecb">LIST - Display the contents of a file</h3>
 
 #### Syntax and Scope
 
     list {[<opts>]} {<file> [<...>]} {[<opts>]}
 
-This command is intended for Disk BASIC disk image files.
+This command is intended for BASIC image files.
 
 #### Options
 <table>
@@ -1308,7 +1605,7 @@ The list command displays the contents of text files. It can list ASCII text fil
 
 ---
 
-<h3 id="copy_cecb">COPY - Copy one or more files to a target image</h3>
+<h3 id="copy_cecb">COPY - Copy one or more files the end of a target image</h3>
 
 #### Syntax and Scope
 
@@ -1317,18 +1614,25 @@ The list command displays the contents of text files. It can list ASCII text fil
 This command will work on Disk BASIC, RBF disk image files and Cassette image as well as host files.
 
 #### Options
+
 <table>
-<tr><td>-[0-3]</td><td>file type (when copying to a cassette or disk BASIC image)</td></tr>
+<tr><td>-[0-3]</td><td>file type (when copying to a Cassette BASIC image)</td></tr>
 <tr><td></td><td>0 = BASIC program</td></tr>
 <tr><td></td><td>1 = BASIC data file</td></tr>
 <tr><td></td><td>2 = machine-language program</td></tr>
 <tr><td></td><td>3 = text editor source file</td></tr>
 <tr><td>-[a|b]</td><td>data type (a = ASCII, b = binary)</td></tr>
-<tr><td>-l</td><td>perform end of line translation</td></tr>
-<tr><td>-r</td><td>rewrite if file exists</td></tr>
-<tr><td>-t</td><td>perform BASIC token translation</td></tr>
-<tr><td>-c</td><td>perform segment concatenation on machine language loadables</td></tr>
+<tr><td>-[g|n]</td><td>gap mode (g = gaps, n = no gaps)</td></tr>
+<tr><td>e[n]</td><td>execution address</td></tr>
+<tr><td>-l</td><td>translate line endings</td></tr>
+<tr><td>-t</td><td>entokenize BASIC ASCII text</td></tr>
+<tr><td>-k</td><td>detokenize BASIC program</td></tr>
+<tr><td>-s</td><td>encode as Motorola S-record</td></tr>
+<tr><td>-f</td><td>decode Motorola S-record</td></tr>
+<tr><td>-c</td><td>concatenate machine-language segments</td></tr>
+<tr><td>-p</td><td>honor global start position (may overwrite data)</td></tr>
 </table>
+
 #### Description
 
 The copy command will create an exact copy of a file on either a Disk BASIC disk image or on the host file system. The -l option performs end of line translation when copying between the host file system and the Disk BASIC disk image. You should only use the -l option on text files, not binary files. If a file already exists on the destination disk image or file system, an error will be returned. If you want to force the copy, use the -r option.
@@ -1341,7 +1645,38 @@ Copying a file from a Disk BASIC disk image to the host:
     Copying a BASIC file from the host to a Disk BASIC disk image with tokenization:
     cecb copy myprog.bas -t cecb.wav,MYPROG
     Copying a text file from the host to a cassette BASIC image:
-    cecb copy -l -3 -a file.txt cecb.wav,FILE
+    cecb copy -l3a file.txt cecb.wav,FILE
+
+---
+
+<h3 id="leader_cecb">LEADER - Analyse leader in a WAV file.</h3>
+
+#### Syntax and Scope
+
+    leader <wavfile>
+
+This command looks for alternating frequencies with the aspect ratio specified in the cecb executavie options. Staticts are provided for each block found.
+
+#### Options
+
+#### Description
+
+During preservation of CoCo cassette tapes, recovering data is essential. There are two known frequencies that are written. But due to a variety of factors the wave formas captured can be shifted in frequency. With this command, you can try different aspect ratios (and threasholds) to see if any leaders are found. You can then use the results to tune further data extraction attempts.
+
+#### Examples
+
+    cecb -r1.5 -t0.25 leader file.wav
+
+    Leader analysis. Find alternating frequencies.
+	Target ratio: 1.500000 (1.125000 - 1.875000)
+
+	Block length 0.714172 seconds (71685-103180)
+	Zero crossing count: 515
+	Average ratio: 1.904762
+	High frequency average: 2100.0 Hz, max: 2100.0 Hz, min 2100.0 Hz
+	Low frequency average: 1102.5 Hz, max: 1102.5 Hz, min 1102.5 Hz
+
+The numbers after block length are the start and end samples.
 
 ---
 
@@ -1468,3 +1803,326 @@ This tool allows you to process lwasm's listing files to produce a file MAME can
 3. MAME comments are automatically loaded. By default, the comment file location is next to the MAME executable in a folder called 'comments'. The name of the comment file must be the MAME driver short name and dot 'cmt'. Inside the comment file, the name of the driver must match the driver you are running. Inside the comment file, the name of the cpu must also match the running driver.
 4. MAME does not have comments turned on by default. There is a menu item to turn them off.
 5. MAME display comments very far to the right in the disasembly. You may have to make the window very large to see them.
+
+---
+
+<h2 id="info">info (os9, decb and dgndos)</h2>
+
+This shared subcommand reports the format and track layout of disk images, and sets or clears their write protect flag. Each tool accepts every supported image format, regardless of its filesystem.
+
+#### Syntax and Scope
+
+    os9 info {[<opts>]} <file> {<file> ...}
+    decb info {[<opts>]} <file> {<file> ...}
+    dgndos info {[<opts>]} <file> {<file> ...}
+    -p  set the write protect flag of a DMK, SDF or VDK image
+    -u  clear the write protect flag of a DMK, SDF or VDK image
+    -s  report one file's possible filesystems in the exit status
+
+#### Description
+
+For each file, info reports its disk image format, then the sectors on its tracks. Tracks with the same layout are reported together.
+
+    test.dsk is a DMK disk image.
+    Tracks 0 to 16 are 18 sectors (1-18), 256 bytes each.
+    Track 17 is 1 512 byte sector (4).
+    Track 18 is 18 sectors (1-18), 256 bytes each. Sector 3 has a deleted data mark. Sector 17 has a CRC error in its data segment.
+    Tracks 19 to 34 are 18 sectors (1-18), 256 bytes each.
+
+On a two sided image, a run of tracks is reported once if both sides match, and once for each side if not.
+
+    Track 0, side 0, is 10 sectors (1-10), 256 bytes each.
+    Track 0, side 1, is 18 sectors (1-18), 256 bytes each.
+    Tracks 1 to 34, both sides, are 18 sectors (1-18), 256 bytes each.
+
+A file that is not a disk image is reported as such.
+
+If the image could hold an OS-9, Disk BASIC or Dragon DOS filesystem, info names them. A disk can hold more than one, and Disk BASIC has nothing to identify it, so this is only what could be there.
+
+    test.dsk is a raw disk image.
+    Possible filesystems: OS-9, Disk BASIC
+    Tracks 0 to 34 are 18 sectors (1-18), 256 bytes each.
+
+`os9 dir`, `decb dir` and `dgndos dir` end their listing by naming any other filesystems the image could hold.
+
+    Other possible filesystems: Disk BASIC
+
+With -s, info prints nothing, and its exit status says which filesystems the one file named could hold. A status that isn't 0 isn't a failure here, so scripts using `set -e` or `&&` need to allow for it.
+
+    0   a disk image, with no filesystem found
+    1   OS-9
+    2   Disk BASIC
+    4   Dragon DOS
+    64  not a disk image, can't be read, or the arguments are wrong
+
+The filesystems add together, so 3 is OS-9 and Disk BASIC. -s takes one file, and can't be used with other options. For example:
+
+    os9 info -s disk.dmk; fs=$?
+    if [ $((fs & 64)) -ne 0 ]; then echo "error"; elif [ $((fs & 1)) -ne 0 ]; then echo "has OS-9"; fi
+
+With -p or -u, info changes the write protect flag instead of reporting the layout. Raw and JVC images have no such flag. os9, decb and dgndos can read a write protected image, but cannot change it.
+
+    file.txt is not a DMK, SDF, JVC, VDK, nor raw disk image.
+
+#### Notes
+
+1. The exit status is 0 only if every file is a disk image.
+2. Only sectors a floppy controller could find are reported. On DMK and SDF images, these are not: sectors with a bad CRC in their ID field, an ID whose track number is not the physical track, no data field, a field crossing the end of the track, or the number of an earlier sector on the same track. On JVC images with sector attributes, sectors marked "not found" are not reported either.
+3. Any file whose size is a multiple of 256 bytes, including an empty file, is a valid raw disk image.
+
+---
+
+<h2 id="dgndos">dgndos</h2>
+
+The following pages document the commands built into the dgndos tool. Its interface is similar to that of the decb tool.
+
+Issuing the dgndos command without any parameters will provide a list of available subcommands. Issuing a subcommand without any parameters will display help on using the subcommand.
+
+Use dgndos to copy files to and from Dragon DOS formatted disk images and your host file system. It works on raw, JVC, VDK, DMK and SDF images, and an image can lack any sectors a command doesn't need. A file on a disk is named `<disk>,<file>`.
+
+Filenames follow the rules of Dragon DOS: up to 8 of A-Z, 0-9 and "-", then optionally "." or "/" and up to 3 more. Lower case is made upper. Extra characters in the first part are ignored, along with all that follows them. Extra characters in the extension are an error.
+
+---
+
+<h3 id="attr_dgndos">ATTR - Display or change whether files are protected</h3>
+
+#### Syntax and Scope
+
+    attr {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+#### Options
+
+    -p        protect the file
+    -u        unprotect the file
+
+#### Description
+
+With no options, each file is reported as protected or not. A protected file can't be written to, renamed or deleted.
+
+---
+
+<h3 id="copy_dgndos">COPY - Copy one or more files to a target file or directory</h3>
+
+#### Syntax and Scope
+
+    copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}
+
+#### Options
+
+    -l         perform end of line translation
+    -r         rewrite if file exists
+    -t         perform BASIC token translation
+
+#### Description
+
+A target of `<disk>,` or a host directory takes each file under its own name. Allocation follows the algorithm of the Dragon DOS 1.0 ROM.
+
+An existing file on the host that is or looks like a disk image is never replaced, even with -r. The copy is refused, and says why. A file looks like one if it has the extension .dsk, .vdk, .dmk, .sdf, .jvc, .os9, .img or .ima, has the header of a disk image format, or is at least a track long (4608 bytes) and a whole number of sectors. This guards against `dgndos copy file disk.vdk` where `disk.vdk,` was meant. Other host files are replaced without -r.
+
+A file that doesn't fit is removed, and the error reported.
+
+With -t, a file with the header of a saved BASIC program is listed as text, with its lines ending the way the target's system ends them. Anything else is taken to be a program's text, and is tokenized as Dragon BASIC with Dragon DOS would, giving the same file as its SAVE command. Lines must have ascending numbers, and only upper case is recognized as a keyword. Dragon BASIC's tokens differ from those of Color BASIC.
+
+#### Examples
+
+    dgndos copy game.bin disk.vdk,GAME.BIN
+    dgndos copy -l notes.txt readme.txt disk.vdk,
+    dgndos copy disk.vdk,GAME.BIN game.bin
+    dgndos copy -t program.txt disk.vdk,PROGRAM.BAS
+    dgndos copy -t disk.vdk,PROGRAM.BAS program.txt
+
+---
+
+<h3 id="dir_dgndos">DIR - Display the contents of a disk's directory</h3>
+
+#### Syntax and Scope
+
+    dir {[<opts>]} {<disk> [<...>]} {[<opts>]}
+
+#### Description
+
+Each file is listed with its name, extension, a P if it is protected, and its size in bytes.
+
+    Directory of: disk.vdk,
+
+    HW1      BAS  .       41
+    HW2      BAS  P       41
+
+    2 files, 682 sectors free (174592 bytes)
+
+Entries in sectors that can't be read don't stop the rest being listed, but the first error is reported afterwards.
+
+---
+
+<h3 id="dsave_dgndos">DSAVE - Copy the contents of a disk or directory</h3>
+
+#### Syntax and Scope
+
+    dsave {[<opts>]} {[<source>]} <target> {[<opts>]}
+
+This command will work on Dragon DOS disk image files as well as host files.
+
+#### Options
+<table>
+<tr><td>-e</td><td>actually execute commands</td></tr>
+<tr><td>-l</td><td>perform end of line translation on copy</td></tr>
+<tr><td>-r</td><td>force rewrite on copy</td></tr>
+<tr><td>-t</td><td>perform BASIC token translation</td></tr>
+<tr><td>-x=path</td><td>dgndos executable to run the commands with, rather than the one the shell finds</td></tr>
+</table>
+
+#### Description
+
+The dsave command copies each file from a disk or directory to another. It runs `dgndos copy` to do the copying, and by default the shell finds `dgndos` as it would any command. Use -x to name the one to use, such as the one you just built. Without -e it only shows the commands. If a command fails, dsave stops and exits with its status.
+
+Dragon DOS has no directories, so a source directory that holds one is refused when dsave reaches it.
+
+#### Examples
+
+    dgndos dsave -e disk.vdk, saved
+    dgndos dsave -e -x=build/unix/dgndos/dgndos saved disk.vdk,
+
+---
+
+<h3 id="dskinit_dgndos">DSKINIT - Create a Dragon DOS image</h3>
+
+#### Syntax and Scope
+
+    dskinit {[<opts>]} <disk> {[<...>]} {[<opts>]}
+
+#### Options
+
+    -t<num>  = tracks, 21 to 80 (default 40)
+    -s<num>  = sides, 1 or 2 (default 1)
+    -f<name> = image format: raw, jvc, vdk, dmk or sdf
+
+#### Description
+
+Without -f, the format comes from the disk's extension, and otherwise it is raw. An existing file is not replaced. Disks are formatted as the DSKINIT command of Dragon DOS does, except that an 80 track single sided disk has all of its sectors free, as SuperDOS makes them. Dragon DOS 1.0 leaves half of such a disk used.
+
+The tracks of a DMK or SDF image are laid out like a disk formatted by Dragon DOS in MAME: each starts with an index mark, and its sectors are numbered 1, 10, 2, 11 and so on around the track.
+
+#### Examples
+
+    dgndos dskinit disk.vdk
+    dgndos dskinit -t80 -s2 -fdmk big.img
+
+---
+
+<h3 id="dump_dgndos">DUMP - Display the contents of a binary file</h3>
+
+#### Syntax and Scope
+
+    dump {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+#### Options
+
+    -a        dump output in assembler format (hex)
+    -b        dump output in assembler format (binary)
+    -c        don't display ASCII character data
+    -e        dump output in C format
+    -t        don't display header
+    -h        don't display header (deprecated, use -t)
+    -l        don't display line label/count
+    -z        decode DECB or Dragon DOS binary
+
+#### Description
+
+This is the same dump command as in the os9 and decb tools. With -z, a file with the header SAVE writes is decoded: its data is shown at its load address, followed by its execution address. Dragon DOS files hold a single block, unlike Disk BASIC's.
+
+---
+
+<h3 id="free_dgndos">FREE - Display the amount of free space on an image</h3>
+
+#### Syntax and Scope
+
+    free {[<opts>]} {<disk> [<...>]} {[<opts>]}
+
+---
+
+<h3 id="fstat_dgndos">FSTAT - Display detailed information about a file</h3>
+
+#### Syntax and Scope
+
+    fstat {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+#### Description
+
+Extents are listed as `[LSN:sectors]`.
+
+A file saved by the SAVE command starts with a 9 byte header, which holds its type, load address, length and exec address. These are shown for a file that has one. Dragon DOS does not record a file's type anywhere else: its directory has no type or ASCII flag.
+
+    File Information for disk.vdk,HW1.BAS
+      Filename           : HW1.BAS
+      Protected          : No
+      File size          : 41 bytes
+      First entry        : 0
+      Extents            : [324:1]
+      Directory entries  : 1
+      File type          : 1 (BASIC program)
+      Load address       : $2401
+      Data length        : 32 bytes
+      Exec address       : $8B8D
+
+Other files show `File header : None`, and `Unreadable` if the image lacks the file's first sector.
+
+---
+
+<h3 id="kill_dgndos">KILL - Delete one or more files</h3>
+
+#### Syntax and Scope
+
+    kill {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+---
+
+<h3 id="list_dgndos">LIST - Display the contents of a text file</h3>
+
+#### Syntax and Scope
+
+    list {[<opts>]} {<file> [<...>]} {[<opts>]}
+
+#### Options
+
+    -t         perform BASIC token translation
+
+#### Description
+
+Carriage returns are shown as the host's line endings. With -t, a saved BASIC program is listed as Dragon BASIC would. A file that isn't one is an error.
+
+---
+
+<h3 id="reveal_dgndos">REVEAL - Explain a disk image location</h3>
+
+    dgndos reveal <disk> <lsn>[:<offset>]
+    dgndos reveal -b <disk> <byte-offset>
+
+Explain a zero-based logical sector number, optionally with a byte offset
+from 0 through 255. On double-sided disks, each track's side 0 precedes
+side 1. Reveal describes allocation bitmap bytes and their sector ranges,
+geometry fields, directory flags, filenames, extent fields, continuation
+pointers, and last-sector byte counts. It identifies both the primary directory
+on track 20 and its backup on track 16, using the recorded bytes of the selected
+copy. File lookup uses the library's normal backup-directory recovery.
+
+For file data, Reveal follows extents and continuation entries to report the
+filename and byte position, including unused allocation space past EOF. For
+unclaimed sectors it reports whether the bitmap marks them allocated or free.
+Missing sectors, unreadable metadata and corrupt continuation chains are
+reported, and chain traversal is bounded.
+
+With `-b`, the offset is absolute within the image file. Reveal describes image
+and track headers, sector ID fields, CRCs, attributes and gaps, then explains
+the filesystem location when the byte belongs to sector data. Raw, DMK, SDF,
+VDK and JVC images are supported, with one or two sides. Numbers accept decimal
+or a `0x` hexadecimal prefix.
+
+<h3 id="rename_dgndos">RENAME - Give a file a new filename</h3>
+
+#### Syntax and Scope
+
+    rename {<file> <newfilename>}
+
+#### Examples
+
+    dgndos rename disk.vdk,OLD.BAS NEW.BAS

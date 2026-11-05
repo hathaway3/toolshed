@@ -251,6 +251,15 @@ error_code _decb_extract_first_segment(u_char * buffer, u_int buffer_size,
 
 			first = 1;
 		}
+		else if (amble == PREAMBLE)
+		{
+			u_int length;
+
+			/* Skip the load address and data of subsequent segments. */
+			length = buffer[buffer_position++] << 8;
+			length += buffer[buffer_position++];
+			buffer_position += 2 + length;
+		}
 		else if (amble == POSTAMBLE)
 		{
 			post_amble_var = buffer[buffer_position++] << 8;

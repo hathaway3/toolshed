@@ -101,12 +101,11 @@ error_code _cecb_readln(cecb_path_id path, void *buffer, u_int * size)
 		if (read_size != 1)
 			break;
 
-		char c = *current;
 		current++;
 		*size += 1;
 		requested_bytes -= 1;
 
-		if (c == 0x0d)
+		if (current[-1] == 0x0d)
 			break;
 	}
 
@@ -118,22 +117,25 @@ error_code _cecb_read_next_dir_entry(cecb_path_id path,
 {
 	error_code ec = 0;
 	unsigned char data[256];
-	unsigned char block_type, block_length;
+	unsigned char block_type = 0xFF;
+	unsigned char block_length = 0;
 
-	while (ec == 0)
+	while (1)
 	{
-		ec = _cecb_read_next_block(path, &block_type, &block_length,
-					   data);
+		ec = _cecb_read_next_block(path, &block_type, &block_length, data);
 
-		if ((ec == EOS_CRC) || (ec == 0))
+		// If we hit a hard read error (not a CRC warning), stop entirely
+		if (ec != 0 && ec != EOS_CRC)
 		{
-			if ((block_type == 0)
-			    && (block_length == sizeof(cecb_dir_entry)))
-			{
-				memcpy(dir_entry, data,
-				       sizeof(cecb_dir_entry));
 				break;
 			}
+		
+		// We found a valid directory header block
+		if ((block_type == 0) && (block_length == sizeof(cecb_dir_entry)))
+		{
+			memcpy(dir_entry, data, sizeof(cecb_dir_entry));
+			ec = 0; // Clear the EOS_CRC warning if there was one
+			break;  // Success! Exit loop
 		}
 	}
 
@@ -160,14 +162,13 @@ error_code _cecb_read_next_block(cecb_path_id path, unsigned char *block_type,
 {
 	error_code ec = 0;
 	unsigned char find_block;
-	unsigned char checksum, checksum_ck;
 	int i;
 
 	find_block = 0;
 
 	while (find_block != 0x3c)
 	{
-		unsigned char newbit;
+		unsigned char newbit = 0;
 
 		find_block >>= 1;
 
@@ -178,26 +179,26 @@ error_code _cecb_read_next_block(cecb_path_id path, unsigned char *block_type,
 
 		find_block |= (unsigned short) newbit;
 
-		//printf( "find_block: %4.4x, sample: %d\n", find_block, path->wav_current_sample );
+// 		printf( "find_block: %2x, sample: %ld\n", find_block, path->wav_current_sample );
 	}
 
 	ec = _cecb_read_bits(path, 8, block_type);
 	ec = _cecb_read_bits(path, 8, block_length);
 
-	checksum = *block_type + *block_length;
+	path->block_cksum_calc = *block_type + *block_length;
 
-	//printf( "\nLength: %d\n", *block_length );
+// 	printf( "\nblock type: %d, Length: %d\n", *block_type, *block_length );
 
 	for (i = 0; i < *block_length; i++)
 	{
 		ec = _cecb_read_bits(path, 8, &(data[i]));
-		checksum += data[i];
+		path->block_cksum_calc += data[i];
 		//printf( "c: %2.2x, i: %d\n", data[i], i );
 	}
 
-	ec = _cecb_read_bits(path, 8, &checksum_ck);
+	ec = _cecb_read_bits(path, 8, &path->block_cksum);
 
-	if (checksum != checksum_ck)
+	if ( ec == 0 && (path->block_cksum_calc != path->block_cksum))
 		ec = EOS_CRC;
 
 	return ec;

@@ -46,7 +46,6 @@ error_code _os9_prsnam(const char *filename)
 error_code _decb_prsnam(const char *filename)
 {
 	error_code ec = 0;
-	char *dot;
 
 	if (filename == NULL || *filename == '\0')
 	{
@@ -54,11 +53,18 @@ error_code _decb_prsnam(const char *filename)
 	}
 
 	/* 1. Check if filename contains a dot */
-	dot = strchr(filename, '.');
+	const char *dot = strchr(filename, '.');
+
+	/* A basename is required, even when an extension is present. */
+	if (dot == filename)
+	{
+		return EOS_BPNAM;
+	}
 
 	if (dot != NULL)
 	{
-		if (dot - filename > 8 || strlen(dot + 1) > 3)
+		if (dot - filename > 8 || strlen(dot + 1) > 3
+		    || strchr(dot + 1, '.') != NULL)
 		{
 			ec = EOS_BPNAM;
 		}
@@ -80,7 +86,7 @@ error_code _cecb_prsnam(const char *filename)
 	error_code ec = 0;
 	int i;
 
-	if (strlen(filename) > 8)
+	if (filename == NULL || strlen(filename) > 8)
 	{
 		ec = EOS_BPNAM;
 	}
@@ -88,7 +94,7 @@ error_code _cecb_prsnam(const char *filename)
 	{
 		for (i = 0; i < strlen(filename); i++)
 		{
-			if (isgraph((unsigned char)filename[i]) != 0)
+			if (isgraph((unsigned char)filename[i]) == 0)
 				ec = EOS_BPNAM;
 		}
 	}

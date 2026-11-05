@@ -75,7 +75,14 @@ int os9makdir(int argc, char *argv[])
 
 		ec = TSMakeDirectory(p);
 
-		if (ec != 0)
+		if (ec == EOS_FAE && TSIsDirectory(p))
+		{
+			fprintf(stderr, "%s: error %d creating '%s', already exists\n",
+				argv[0], ec, p);
+			
+			ec = 0;
+		}
+		else if (ec != 0)
 		{
 			fprintf(stderr, "%s: error %d creating '%s'\n",
 				argv[0], ec, p);

@@ -22,15 +22,23 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 
 	if (path->israw == 1)
 	{
-		if (pos != 0 && mode == SEEK_SET)
+		long long base = 0;
+
+		if (mode == SEEK_CUR)
 		{
-			if (path->t0s != path->spt)
-			{
-				return EOS_BMODE;
-			}
+			base = path->filepos;
+		}
+		else if (mode == SEEK_END)
+		{
+			base = (long long) int3(path->lsn0->dd_tot) * path->bps;
 		}
 
-		fseek(path->fd, pos, mode);
+		if (base + pos < 0)
+		{
+			return EOS_SE;
+		}
+
+		path->filepos = base + pos;
 	}
 	else
 	{
@@ -63,26 +71,4 @@ error_code _os9_seek(os9_path_id path, int pos, int mode)
 
 
 	return ec;
-}
-
-
-/*
- * _os9_lsn_fseek()
- *
- * Seek to proper LSN accounting for short track zero.
- */
-
-int _os9_lsn_fseek(os9_path_id path, int lsn)
-{
-	long offset;
-
-	if (lsn >= path->t0s)
-	{
-		/* Skip past missing sectors */
-		lsn += path->spt - path->t0s;
-	}
-
-	offset = lsn * path->bps;
-
-	return fseek(path->fd, offset, SEEK_SET);
 }

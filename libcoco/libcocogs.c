@@ -30,6 +30,30 @@ error_code _coco_gs_pathtype(coco_path_id path, _path_type * disk_type)
 
 
 
+/* Dragon DOS has no permissions, but protecting a file makes it read only.
+   A raw path is the root directory. */
+static error_code dragondos_attributes(dragondos_path_id path, int *attributes)
+{
+	dragondos_file_stat stat;
+	error_code ec;
+
+	*attributes = FAP_READ | FAP_WRITE | FAP_PREAD;
+	if (path->israw)
+	{
+		*attributes |= FAP_DIR;
+		return 0;
+	}
+
+	ec = _dragondos_gs_fd(path, &stat);
+	if (ec == 0 && stat.protected_file)
+	{
+		*attributes &= ~FAP_WRITE;
+	}
+	return ec;
+}
+
+
+
 error_code _coco_gs_attr(coco_path_id path, int *perms)
 {
 	error_code ec = 0;
@@ -49,6 +73,10 @@ error_code _coco_gs_attr(coco_path_id path, int *perms)
 
 	case DECB:
 		ec = EOS_BPNAM;
+		break;
+
+	case DRAGONDOS:
+		ec = dragondos_attributes(path->path.dragondos, perms);
 		break;
 
 	case CECB:
@@ -83,6 +111,10 @@ error_code _coco_gs_eof(coco_path_id path)
 
 	case DECB:
 		ec = _decb_gs_eof(path->path.decb);
+		break;
+
+	case DRAGONDOS:
+		ec = _dragondos_gs_eof(path->path.dragondos);
 		break;
 
 	case CECB:
@@ -166,17 +198,29 @@ error_code _coco_gs_fd(coco_path_id path, coco_file_stat * statbuf)
 		statbuf->attributes = os9_stat.fd_att;
 		statbuf->user_id = os9_stat.fd_own[1];
 		statbuf->group_id = os9_stat.fd_own[0];
+
+		/* Process Creation Time */
 		memset(&timepak, 0, sizeof(timepak));
+		/* Handle 2-digit OS-9 years: OS-9 year 0-99 maps to 1900-1999, >= 100 is 2000+ */
 		timepak.tm_year = os9_stat.fd_creat[0];
 		timepak.tm_mon = os9_stat.fd_creat[1] - 1;
 		timepak.tm_mday = os9_stat.fd_creat[2];
-		statbuf->create_time = mktime(&timepak);
+		timepak.tm_isdst = -1; /* let mktime determine DST */
+		
+		tp = mktime(&timepak);
+		statbuf->create_time = (tp == (time_t)-1) ? 0 : tp;
+
+		/* Process Modification Time */
+		memset(&timepak, 0, sizeof(timepak));
 		timepak.tm_year = os9_stat.fd_dat[0];
 		timepak.tm_mon = os9_stat.fd_dat[1] - 1;
 		timepak.tm_mday = os9_stat.fd_dat[2];
 		timepak.tm_hour = os9_stat.fd_dat[3];
 		timepak.tm_min = os9_stat.fd_dat[4];
-		statbuf->last_modified_time = mktime(&timepak);
+		timepak.tm_isdst = -1; /* let mktime determine DST */
+
+		tp = mktime(&timepak);
+		statbuf->last_modified_time = (tp == (time_t)-1) ? 0 : tp;
 		break;
 
 	case DECB:
@@ -190,13 +234,21 @@ error_code _coco_gs_fd(coco_path_id path, coco_file_stat * statbuf)
 		{
 			statbuf->attributes |= FAP_DIR;
 		}
-		/* Neither does Disk BASIC have date or time stamps. */
-		time(&tp);
+		/* Use SOURCE_DATE_EPOCH if set, or system clock as fallback */
+		tp = GetSafeTimestamp();
 		statbuf->create_time = tp;
 		statbuf->last_modified_time = tp;
 		/* Nor does it have user/group IDs. */
 		statbuf->user_id = 0;
 		statbuf->group_id = 0;
+		break;
+
+	case DRAGONDOS:
+		ec = dragondos_attributes(path->path.dragondos, &statbuf->attributes);
+		/* Use SOURCE_DATE_EPOCH if set, or system clock as fallback */
+		tp = GetSafeTimestamp();
+		statbuf->create_time = tp;
+		statbuf->last_modified_time = tp;
 		break;
 
 	case CECB:
@@ -209,8 +261,8 @@ error_code _coco_gs_fd(coco_path_id path, coco_file_stat * statbuf)
 
 		/* Since Cassette BASIC files have no permissions per se, we make our own. */
 		statbuf->attributes = FAP_READ | FAP_WRITE | FAP_PREAD;
-		/* Neither does Cassette BASIC have date or time stamps. */
-		time(&tp);
+		/* Use SOURCE_DATE_EPOCH if set, or system clock as fallback */
+		tp = GetSafeTimestamp();
 		statbuf->create_time = tp;
 		statbuf->last_modified_time = tp;
 		/* Nor does it have user/group IDs. */
@@ -218,7 +270,6 @@ error_code _coco_gs_fd(coco_path_id path, coco_file_stat * statbuf)
 		statbuf->group_id = 0;
 		break;
 	}
-
 
 	return ec;
 }
@@ -273,6 +324,10 @@ error_code _coco_gs_size(coco_path_id path, u_int * size)
 
 	case DECB:
 		ec = _decb_gs_size(path->path.decb, size);
+		break;
+
+	case DRAGONDOS:
+		ec = _dragondos_gs_size(path->path.dragondos, size);
 		break;
 
 	case CECB:
@@ -339,6 +394,10 @@ error_code _coco_gs_pos(coco_path_id path, u_int * pos)
 
 	case DECB:
 		ec = _decb_gs_pos(path->path.decb, pos);
+		break;
+
+	case DRAGONDOS:
+		ec = _dragondos_gs_pos(path->path.dragondos, pos);
 		break;
 
 	case CECB:

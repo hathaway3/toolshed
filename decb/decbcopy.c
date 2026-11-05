@@ -3,478 +3,579 @@
  *
  * $Id$
  ********************************************************************/
+#include <util.h>
+#include <string.h>
 #include <cococonv.h>
 #include <decbpath.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <util.h>
+
 
 #define YES 1
 #define NO 0
 
-/* globals */
-// static u_int buffer_size = 32768;
-// static char *buffer;
-
 static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
-                               int tokTranslate, int binary_concat, int rewrite,
-                               int file_type, int data_type);
+			       int tokTranslate, int binary_concat,
+			       int rewrite, int file_type, int data_type);
 static char *GetFilename(char *path);
+
 
 /* Help message */
 static char const *const helpMessage[] = {
-    "Syntax: copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}\n",
-    "Usage:  Copy one or more files to a target directory.\n",
-    "Options:\n",
-    "     -[0-3]     file type (when copying to a Disk BASIC image)\n",
-    "                  0 = BASIC program\n",
-    "                  1 = BASIC data file\n",
-    "                  2 = machine-language program\n",
-    "                  3 = text editor source file\n",
-    "     -[a|b]     data type (a = ASCII, b = binary)\n",
-    "     -l         perform end of line translation\n",
-    "     -r         rewrite if file exists\n",
-    "     -t         perform BASIC token translation\n",
-    "     -c         perform segment concatenation on machine language "
-    "loadables\n",
-    NULL};
+	"Syntax: copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}\n",
+	"Usage:  Copy one or more files to a target directory.\n",
+	"Options:\n",
+	"     -[0-3]     file type (when copying to a Disk BASIC image)\n",
+	"                  0 = BASIC program\n",
+	"                  1 = BASIC data file\n",
+	"                  2 = machine-language program\n",
+	"                  3 = text editor source file\n",
+	"     -[a|b]     data type (a = ASCII, b = binary)\n",
+	"     -l         perform end of line translation\n",
+	"     -r         rewrite if file exists\n",
+	"     -t         perform BASIC token translation\n",
+	"     -c         perform segment concatenation on machine language loadables\n",
+	NULL
+};
 
-int decbcopy(int argc, char *argv[]) {
-  error_code ec = 0;
-  char *p = NULL, *desttarget = NULL;
-  int i, j;
-  int targetDirectory = NO;
-  int count = 0;
-  int eolTranslate = 0, tokTranslate = 0, binary_concat = 0;
-  int rewrite = 0;
-  int file_type = -1, data_type = -1;
-  char df[256];
 
-  /* 1. Walk command line for options. */
 
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
-      for (p = &argv[i][1]; *p != '\0'; p++) {
-        switch (*p) {
-        case '0':
-          file_type = 0;
-          break;
+int decbcopy(int argc, char *argv[])
+{
+	error_code ec = 0;
+	char *p = NULL, *desttarget = NULL;
+	int i, j;
+	int targetDirectory = NO;
+	int count = 0;
+	int eolTranslate = 0, tokTranslate = 0, binary_concat = 0;
+	int rewrite = 0;
+	int file_type = -1, data_type = -1;
+	char df[256];
 
-        case '1':
-          file_type = 1;
-          break;
 
-        case '2':
-          file_type = 2;
-          break;
+	/* 1. Walk command line for options. */
 
-        case '3':
-          file_type = 3;
-          break;
+	for (i = 1; i < argc; i++)
+	{
+		if (argv[i][0] == '-')
+		{
+			for (p = &argv[i][1]; *p != '\0'; p++)
+			{
+				switch (*p)
+				{
+				case '0':
+					file_type = 0;
+					break;
 
-        case 'a':
-          data_type = 255;
-          break;
+				case '1':
+					file_type = 1;
+					break;
 
-        case 'b':
-          data_type = 0;
-          break;
+				case '2':
+					file_type = 2;
+					break;
 
-        case 'l':
-          eolTranslate = 1;
-          break;
+				case '3':
+					file_type = 3;
+					break;
 
-        case 'r':
-          rewrite = 1;
-          break;
+				case 'a':
+					data_type = 255;
+					break;
 
-        case 't':
-          tokTranslate = 1;
-          break;
+				case 'b':
+					data_type = 0;
+					break;
 
-        case 'c':
-          binary_concat = 1;
-          break;
+				case 'l':
+					eolTranslate = 1;
+					break;
 
-        case 'h':
-        case '?':
-          show_help(helpMessage);
-          return (0);
+				case 'r':
+					rewrite = 1;
+					break;
 
-        default:
-          fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return (1);
-        }
-      }
-    }
-  }
+				case 't':
+					tokTranslate = 1;
+					break;
 
-  /* 2. Count non option arguments. */
+				case 'c':
+					binary_concat = 1;
+					break;
 
-  for (i = 1, count = 0; i < argc; i++) {
-    if (argv[i] == NULL) {
-      continue;
-    }
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
 
-    if (argv[i][0] == '-') {
-      continue;
-    }
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (1);
+				}
+			}
+		}
+	}
 
-    count++;
-  }
+	/* 2. Count non option arguments. */
 
-  if (count == 0) {
-    show_help(helpMessage);
+	for (i = 1, count = 0; i < argc; i++)
+	{
+		if (argv[i] == NULL)
+		{
+			continue;
+		}
 
-    return 1;
-  }
+		if (argv[i][0] == '-')
+		{
+			continue;
+		}
 
-  /* 3. Walk backwards and get the destination first. */
+		count++;
+	}
 
-  for (i = argc - 1; i > 0; i--) {
-    error_code ec;
-    coco_path_id tmp_path;
+	if (count == 0)
+	{
+		show_help(helpMessage);
 
-    if (argv[i][0] != '-') {
-      desttarget = argv[i];
+		return 1;
+	}
 
-      /* 1. Determine if dest is native */
 
-      ec = _coco_open(&tmp_path, desttarget, FAM_DIR | FAM_READ);
+	/* 3. Walk backwards and get the destination first. */
 
-      //                      _coco_gs_pathtype(desttarget, &type);
+	for (i = argc - 1; i > 0; i--)
+	{
+		error_code ec;
+		coco_path_id tmp_path;
 
-      if (ec == 0) {
-        targetDirectory = YES;
 
-        _coco_close(tmp_path);
-      } else {
-        targetDirectory = NO;
-      }
+		if (argv[i][0] != '-')
+		{
+			desttarget = argv[i];
 
-      break;
-    }
-  }
 
-  if (targetDirectory == NO && count < 2) {
-    show_help(helpMessage);
-    return (1);
-  }
+			/* 1. Determine if dest is native */
 
-  if (targetDirectory == NO && count > 2) {
-    printf("Error: two or more sources requires target to be a directory.\n\n");
-    show_help(helpMessage);
-    return (1);
-  }
+			ec = _coco_open(&tmp_path, desttarget,
+					FAM_DIR | FAM_READ);
 
-  /* Now look for the source files  */
-  for (j = 1; j < i; j++) {
-    if (argv[j][0] == '-')
-      continue;
+//                      _coco_gs_pathtype(desttarget, &type);
 
-    if (argv[j] == NULL)
-      continue;
 
-    memset(df, 0, 256);
+			if (ec == 0)
+			{
+				targetDirectory = YES;
 
-    if (targetDirectory == YES) {
-      /* OK, we need to add the filename to the end of the directory path */
+				_coco_close(tmp_path);
+			}
+			else
+			{
+				targetDirectory = NO;
+			}
 
-      if ((p = strchr(desttarget, ',')) != NULL) {
-        if (*(p + 1) == ':') {
-          int len = p - desttarget + 1;
-          snprintf(df, sizeof(df), "%.*s%s%s", len, desttarget,
-                   GetFilename(argv[j]), p + 1);
-        } else {
-          snprintf(df, sizeof(df), "%s%s", desttarget, GetFilename(argv[j]));
-        }
-      }
-    } else {
-      snprintf(df, sizeof(df), "%s", desttarget);
-    }
+			break;
+		}
+	}
 
-    ec = CopyDECBFile(argv[j], df, eolTranslate, tokTranslate, binary_concat,
-                      rewrite, file_type, data_type);
+	if (targetDirectory == NO && count < 2)
+	{
+		show_help(helpMessage);
+		return (1);
+	}
 
-    if (ec != 0) {
-      fprintf(stderr, "%s: error %d\n", argv[0], ec);
-    }
-  }
+	if (targetDirectory == NO && count > 2)
+	{
+		printf("Error: two or more sources requires target to be a directory.\n\n");
+		show_help(helpMessage);
+		return (1);
+	}
 
-  return ec;
+	/* Now look for the source files  */
+	for (j = 1; j < i; j++)
+	{
+		if (argv[j][0] == '-')
+			continue;
+
+		if (argv[j] == NULL)
+			continue;
+
+		memset(df, 0, 256);
+
+
+		if (targetDirectory == YES)
+		{
+			/* OK, we need to add the filename to the end of the directory path */
+
+			if ((p = strchr(desttarget, ',')) != NULL)
+			{
+				if (*(p + 1) == ':')
+				{
+					strncpy(df, desttarget,
+						p - desttarget + 1);
+
+					strcat(df, GetFilename(argv[j]));
+
+					strcat(df, p + 1);
+				}
+				else
+				{
+					strcpy(df, desttarget);
+					strcat(df, GetFilename(argv[j]));
+				}
+			}
+			else
+			{
+				int length;
+
+				length = snprintf(df, sizeof(df), "%s%s%s", desttarget,
+						  desttarget[strlen(desttarget) - 1] == '/' ? "" : "/",
+						  GetFilename(argv[j]));
+				if (length < 0 || (size_t) length >= sizeof(df))
+				{
+					return EOS_BPNAM;
+				}
+			}
+		}
+		else
+		{
+			strcpy(df, desttarget);
+		}
+
+
+		if (_coco_refuse_disk_image_target(argv[0], df))
+		{
+			return EOS_FAE;
+		}
+
+		ec = CopyDECBFile(argv[j], df, eolTranslate, tokTranslate,
+				  binary_concat, rewrite, file_type,
+				  data_type);
+
+		if (ec != 0)
+		{
+			fprintf(stderr, "%s: error %d\n", argv[0], ec);
+		}
+	}
+
+
+	return ec;
 }
 
-static char *GetFilename(char *path) {
-  /* This works for both native file paths and os9 file paths */
 
-  char *a, *b;
+static char *GetFilename(char *path)
+{
+	/* This works for both native file paths and os9 file paths */
 
-  a = strchr(path, ',');
+	char *a, *b;
 
-  if (a == NULL) {
-    /* Native file */
-    a = strrchr(path, '/');
+	a = strchr(path, ',');
 
-    if (a == NULL) {
-      return path;
-    }
+	if (a == NULL)
+	{
+		/* Native file */
+		a = strrchr(path, '/');
 
-    return a + 1;
-  }
+		if (a == NULL)
+		{
+			return path;
+		}
 
-  b = strrchr(a, '/');
+		return a + 1;
+	}
 
-  if (b == NULL) {
-    return a + 1;
-  }
+	b = strrchr(a, '/');
 
-  return b + 1;
+	if (b == NULL)
+	{
+		return a + 1;
+	}
+
+	return b + 1;
 }
+
+
 
 static error_code CopyDECBFile(char *srcfile, char *dstfile, int eolTranslate,
-                               int tokTranslate, int binary_concat, int rewrite,
-                               int file_type, int data_type) {
-  error_code ec = 0;
-  coco_path_id path = NULL;
-  coco_path_id destpath = NULL;
-  int mode = FAM_NOCREATE | FAM_WRITE;
-  unsigned char *buffer = NULL;
-  char *translation_buffer = NULL;
-  u_int new_translation_size;
-  u_int buffer_size;
-  coco_file_stat fstat;
+			       int tokTranslate, int binary_concat,
+			       int rewrite, int file_type, int data_type)
+{
+	error_code ec = 0;
+	coco_path_id path;
+	coco_path_id destpath;
+	int mode = FAM_NOCREATE | FAM_WRITE;
+	unsigned char *buffer = NULL;
+	char *translation_buffer;
+	u_int buffer_capacity;
+	u_int bytes_read_total;
+	u_int new_translation_size;
+	u_int buffer_size;
+	coco_file_stat fstat;
 
-  /* 1. Set mode based on rewrite. */
 
-  if (rewrite == 1) {
-    mode &= ~FAM_NOCREATE;
-  }
+	/* 1. Set mode based on rewrite. */
 
-  /* 2. Open a path to the srcfile. */
+	if (rewrite == 1)
+	{
+		mode &= ~FAM_NOCREATE;
+	}
 
-  ec = _coco_open(&path, srcfile, FAM_READ);
 
-  if (ec != 0) {
-    return ec;
-  }
+	/* 2. Open a path to the srcfile. */
 
-  /* 3. Attempt to create the destfile. */
+	ec = _coco_open(&path, srcfile, FAM_READ);
 
-  fstat.perms = FAP_READ | FAP_WRITE | FAP_PREAD;
-  ec = _coco_create(&destpath, dstfile, mode, &fstat);
+	if (ec != 0)
+	{
+		return ec;
+	}
 
-  if (ec != 0) {
-    _coco_close(path);
+	/* 3. Attempt to create the destfile. */
 
-    return ec;
-  }
+	fstat.perms = FAP_READ | FAP_WRITE | FAP_PREAD;
+	ec = _coco_create(&destpath, dstfile, mode, &fstat);
 
-  ec = _coco_gs_size(path, &buffer_size);
+	if (ec != 0)
+	{
+		_coco_close(path);
 
-  if (buffer_size > 0) {
-    if (eolTranslate == 0 && tokTranslate == 0 && binary_concat == 0) {
-      /* No translation needed, use chunk-based copying for memory efficiency */
-      unsigned char chunk_buf[32768];
-      u_int total_read = 0;
+		return ec;
+	}
 
-      while (total_read < buffer_size) {
-        u_int bytes_to_read = sizeof(chunk_buf);
-        if (total_read + bytes_to_read > buffer_size) {
-          bytes_to_read = buffer_size - total_read;
-        }
+	const u_int CHUNK = 65536;
+	u_int chunk_read;
 
-        ec = _coco_read(path, (char *)chunk_buf, &bytes_to_read);
-        if (ec != 0)
-          break;
+	buffer_capacity = CHUNK;
+	buffer = malloc(buffer_capacity);
 
-        ec = _coco_write(destpath, (char *)chunk_buf, &bytes_to_read);
-        if (ec != 0)
-          break;
+	if (buffer == NULL)
+	{
+		_coco_close(path);
+		_coco_close(destpath);
+		return EOS_MF;
+	}
 
-        total_read += bytes_to_read;
-      }
-    } else {
-      /* Translation or concatenation needed, load the whole file */
-      buffer = malloc(buffer_size);
+	bytes_read_total = 0;
 
-      if (buffer == NULL) {
-        _coco_close(path);
-        _coco_close(destpath);
-        return -1;
-      };
+	while (1)
+	{
+		chunk_read = buffer_capacity - bytes_read_total;
+		ec = _coco_read(path, buffer + bytes_read_total, &chunk_read);
+		bytes_read_total += chunk_read;
 
-      ec = _coco_read(path, (char *)buffer, &buffer_size);
+		if (ec != 0)   /* EOS_EOF or real error */
+			break;
 
-      if (ec != 0) {
-        free(buffer);
-        _coco_close(path);
-        _coco_close(destpath);
-        return -1;
-      }
+		/* Grow buffer if we filled it and haven't hit EOF yet */
+		if (bytes_read_total == buffer_capacity)
+		{
+			buffer_capacity *= 2;
+			unsigned char *tmp = realloc(buffer, buffer_capacity);
+			if (tmp == NULL)
+			{
+				free(buffer);
+				_coco_close(path);
+				_coco_close(destpath);
+				return EOS_MF;
+			}
+			buffer = tmp;
+		}
+	}
 
-      if (binary_concat == 1) {
-        u_char *binconcat_buffer;
-        u_int binconcat_size;
+	if (ec != EOS_EOF)
+		return ec;
 
-        ec = _decb_binconcat(buffer, buffer_size, &binconcat_buffer,
-                             &binconcat_size);
+	ec = 0;
+	buffer_size = bytes_read_total;
 
-        if (ec == 0) {
-          free(buffer);
-          buffer = binconcat_buffer;
-          buffer_size = binconcat_size;
-        } else {
-          free(buffer);
-          _coco_close(path);
-          _coco_close(destpath);
-          return -1;
-        }
-      }
+	if (buffer_size > 0)
+	{
+		if (binary_concat == 1)
+		{
+			u_char *binconcat_buffer;
+			u_int binconcat_size;
 
-      if (tokTranslate == 1) {
-        if (buffer[0] == 0xff) {
-          u_char *detokenize_buffer = NULL;
-          u_int detokenize_size;
+			ec = _decb_binconcat(buffer, buffer_size,
+						 &binconcat_buffer,
+						 &binconcat_size);
 
-          /* File is already a tokenized BASIC file, de-tokenize it */
-          ec = _decb_detoken(buffer, buffer_size, (char **)&detokenize_buffer,
-                             &detokenize_size);
+			if (ec == 0)
+			{
+				free(buffer);
+				buffer = binconcat_buffer;
+				buffer_size = binconcat_size;
+			}
+			else
+				return -1;
+		}
 
-          if (ec == 0) {
-            free(buffer);
-            buffer = detokenize_buffer;
-            buffer_size = detokenize_size;
+		if (tokTranslate == 1)
+		{
+			if (buffer[0] == 0xff)
+			{
+				u_char *detokenize_buffer = NULL;
+				u_int detokenize_size;
 
-            file_type = 0;
-            data_type = 0xff;
-          } else {
-            if (detokenize_buffer != NULL)
-              free(detokenize_buffer);
-            free(buffer);
-            _coco_close(path);
-            _coco_close(destpath);
-            return -1;
-          }
-        } else {
-          unsigned char *entokenize_buffer = NULL;
-          u_int entokenize_size;
+				/* File is already a tokenized BASIC file, de-tokenize it */
+				ec = _decb_detoken(buffer, buffer_size,
+						   (char **)
+						   &detokenize_buffer,
+						   &detokenize_size);
 
-          /* Tokenized file */
-          ec = _decb_entoken(buffer, buffer_size, &entokenize_buffer,
-                             &entokenize_size, destpath->type == DECB);
+				if (ec == 0)
+				{
+					free(buffer);
+					buffer = detokenize_buffer;
+					buffer_size = detokenize_size;
 
-          if (ec == 0) {
-            free(buffer);
-            buffer = entokenize_buffer;
-            buffer_size = entokenize_size;
+					file_type = 0;
+					data_type = 0xff;
+				}
+				else
+				{
+					if (detokenize_buffer != NULL)
+						free(detokenize_buffer);
+					return -1;
+				}
+			}
+			else
+			{
+				unsigned char *entokenize_buffer = NULL;
+				u_int entokenize_size;
 
-            file_type = 0;
-            data_type = 0;
+				/* Tokenized file */
+				ec = _decb_entoken(buffer, buffer_size,
+						   &entokenize_buffer,
+						   &entokenize_size,
+						   destpath->type == DECB);
 
-            eolTranslate = 0;
+				if (ec == 0)
+				{
+					free(buffer);
+					buffer = entokenize_buffer;
+					buffer_size = entokenize_size;
 
-          } else {
-            if (entokenize_buffer != NULL)
-              free(entokenize_buffer);
-            free(buffer);
-            _coco_close(path);
-            _coco_close(destpath);
-            return -1;
-          }
-        }
-      }
+					file_type = 0;
+					data_type = 0;
 
-      if (eolTranslate == 1) {
-        if (path->type == NATIVE && destpath->type != NATIVE) {
-          /* source is native, destination is coco */
+					eolTranslate = 0;
 
-          NativeToDECB((char *)buffer, buffer_size, &translation_buffer,
-                       &new_translation_size);
+				}
+				else
+				{
+					if (entokenize_buffer != NULL)
+						free(entokenize_buffer);
+					return -1;
+				}
+			}
+		}
 
-          ec = _coco_write(destpath, translation_buffer, &new_translation_size);
+		/* Translate only when crossing between native and CoCo formats. */
+		if (eolTranslate == 1
+		    && ((path->type == NATIVE) != (destpath->type == NATIVE)))
+		{
+			if (path->type == NATIVE && destpath->type != NATIVE)
+			{
+				/* source is native, destination is coco */
 
-          free(translation_buffer);
-        } else if (path->type != NATIVE && destpath->type == NATIVE) {
-          /* source is coco, destination is native */
+				NativeToDECB((char *) buffer, buffer_size,
+						&translation_buffer,
+						&new_translation_size);
 
-          DECBToNative((char *)buffer, buffer_size, &translation_buffer,
-                       &new_translation_size);
-          ec = _coco_write(destpath, translation_buffer, &new_translation_size);
+				ec = _coco_write(destpath, translation_buffer,
+						&new_translation_size);
 
-          free(translation_buffer);
-        }
-      } else {
-        /* One-to-one writing of the data -- no translation needed. */
-        ec = _coco_write(destpath, (char *)buffer, &buffer_size);
-      }
-    }
+				free(translation_buffer);
+			}
+			else if (path->type != NATIVE
+				 && destpath->type == NATIVE)
+			{
+				/* source is coco, destination is native */
 
-    if (ec == EOS_DF) {
-      /* Delete file, and return disk full */
-      _coco_close(destpath);
+				DECBToNative((char *) buffer, buffer_size,
+						&translation_buffer,
+						&new_translation_size);
+				ec = _coco_write(destpath, translation_buffer,
+						&new_translation_size);
 
-      ec = _coco_delete(dstfile);
+				free(translation_buffer);
+			}
+		}
+		else
+		{
+			/* One-to-one writing of the data -- no translation needed. */
 
-      if (ec != 0) {
-        fprintf(stderr, "File write failed, then file delete failed.\n");
-      }
+			ec = _coco_write(destpath, buffer, &buffer_size);
+		}
 
-      if (buffer)
-        free(buffer);
-      _coco_close(path);
-      return EOS_DF;
-    }
+		if (ec == EOS_DF)
+		{
+			/* Delete file, and return disk full */
+			_coco_close(destpath);
 
-    if (ec != 0) {
-      if (buffer)
-        free(buffer);
-      _coco_close(path);
-      _coco_close(destpath);
-      return ec;
-    }
+			ec = _coco_delete(dstfile);
 
-    /* Copy meta data from file descriptor of source to destination */
+			if( ec != 0 )
+			{
+				fprintf(stderr, "File write failed, then file delete failed.\n");
+			}
 
-    {
-      coco_file_stat fd;
+			return EOS_DF;
+		}
 
-      _coco_gs_fd(path, &fd);
+		if (ec != 0)
+		{
+			return ec;
+		}
+	}
 
-      _coco_ss_fd(destpath, &fd);
-    }
 
-    /* Special -- if this is a DECB file we wrote to, set passed file type and
-     * data type. */
+	/* Copy metadata even when the source file is empty. */
 
-    {
-      _path_type t;
+	{
+		coco_file_stat fd;
 
-      _coco_gs_pathtype(destpath, &t);
 
-      if (t == DECB) {
-        decb_file_stat f;
+		_coco_gs_fd(path, &fd);
 
-        _decb_gs_fd(destpath->path.decb, &f);
+		_coco_ss_fd(destpath, &fd);
+	}
 
-        if (file_type >= 0) {
-          f.file_type = file_type;
-        }
 
-        if (data_type >= 0) {
-          f.data_type = data_type;
-        }
+	/* Special -- if this is a DECB file we wrote to, set passed file type and data type. */
 
-        _decb_ss_fd(destpath->path.decb, &f);
-      }
-    }
-  }
+	{
+		_path_type t;
 
-  // free whatever buffer ended up being
-  if (buffer)
-    free(buffer);
+		_coco_gs_pathtype(destpath, &t);
 
-  _coco_close(path);
-  _coco_close(destpath);
+		if (t == DECB)
+		{
+			decb_file_stat f;
 
-  return (ec);
+
+			_decb_gs_fd(destpath->path.decb, &f);
+
+			if (file_type >= 0)
+			{
+				f.file_type = file_type;
+			}
+
+			if (data_type >= 0)
+			{
+				f.data_type = data_type;
+			}
+
+			_decb_ss_fd(destpath->path.decb, &f);
+		}
+	}
+
+	// free whatever buffer ended up being
+	if (buffer)
+		free(buffer);
+
+	_coco_close(path);
+	_coco_close(destpath);
+
+	return (ec);
 }

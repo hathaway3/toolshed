@@ -23,8 +23,9 @@ extern "C" {
 #include "os9path.h"
 #include "decbpath.h"
 #include "cecbpath.h"
+#include "dragondospath.h"
 
-typedef enum { NATIVE, OS9, DECB, CECB } _path_type;
+typedef enum { NATIVE, OS9, DECB, CECB, DRAGONDOS } _path_type;
 
 
 /* ERROR CODES */
@@ -44,6 +45,7 @@ typedef enum { NATIVE, OS9, DECB, CECB } _path_type;
 #define EOS_SE		247
 #define EOS_DF		248
 #define EOS_WT		249
+#define EOS_TIMEOUT 1024
 
 /* file access modes */
 #define	FAM_READ	0x0001
@@ -51,6 +53,7 @@ typedef enum { NATIVE, OS9, DECB, CECB } _path_type;
 #define	FAM_EXEC	0x0004
 #define FAM_DIR		0x0080
 #define FAM_NOCREATE	0x0100
+#define FAM_RAW		0x0200
 
 /* file access permissions */
 #define FAP_READ	0x01
@@ -76,6 +79,7 @@ typedef struct _coco_path_id
 		struct _os9_path_id		*os9;
 		struct _decb_path_id	*decb;
 		struct _cecb_path_id	*cecb;
+		struct _dragondos_path_id	*dragondos;
 	} path;
 } *coco_path_id;
 
@@ -94,6 +98,7 @@ typedef struct coco_dir_entry
 		os9_dir_entry			os9;
 		decb_dir_entry			decb;
 		cecb_dir_entry			cecb;
+		dragondos_dir_entry		dragondos;
 	} dentry;
 } coco_dir_entry;
 
@@ -150,6 +155,19 @@ error_code _coco_ss_fd(coco_path_id, coco_file_stat *);
 error_code _coco_ss_size(coco_path_id path, int size);
 
 error_code _coco_identify_image(char *pathlist, _path_type *type);
+
+/* Filesystems a disk image could hold.  A disk can hold more than one. */
+#define COCO_FS_OS9		0x01
+#define COCO_FS_DECB		0x02
+#define COCO_FS_DRAGONDOS	0x04
+
+error_code _coco_detect_filesystems(const char *pathlist, u_int *filesystems);
+void _coco_filesystem_names(u_int filesystems, char *text, size_t size);
+void _coco_print_other_filesystems(const char *pathlist, u_int current);
+
+/* Say so and return 1 if a copy to this destination would replace a host file
+   that looks like a disk image.  Copy commands refuse these, even with -r. */
+int _coco_refuse_disk_image_target(const char *command, const char *destination);
 
 #ifdef __cplusplus
 }

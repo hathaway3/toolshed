@@ -5,14 +5,23 @@ include rules.mak
 PACKAGENAME_UNIX	= toolshed-unix64-$(VERSION).tgz
 PACKAGENAME_WIN		= toolshed-win64-$(VERSION).zip
 
-PREFIX		?= $(HOME)/.local
-INSTALLDIR	?= $(DESTDIR)$(PREFIX)/bin
-DOCDIR		?= $(DESTDIR)$(PREFIX)/share/doc/toolshed
+PREFIX      ?= $(HOME)/.local
+prefix      ?= $(PREFIX)
+bindir      ?= $(prefix)/bin
+docdir      ?= $(prefix)/share/doc/toolshed
 
-APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt
+ifneq ($(DESTDIR),)
+INSTALLDIR  ?= $(DESTDIR)$(bindir)
+DOCDIR      ?= $(DESTDIR)$(docdir)
+else
+INSTALLDIR  ?= $(bindir)
+DOCDIR      ?= $(docdir)
+endif
 
-DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys \
-		decb cecb os9 makewav tocgen lst2cmt \
+APPS 		= ar2 os9 cecb decb tocgen makewav dis68 lst2cmt dgndos
+
+DIRS		= libtoolshed libnative libcecb librbf libcoco libdecb libdiskimage libdragondos libmisc libsys \
+		decb cecb os9 makewav tocgen lst2cmt dgndos \
 		dis68 ar2 \
 		doc
 
@@ -23,9 +32,15 @@ else
 PACKAGENAME	= $(PACKAGENAME_UNIX)
 MAKEPACKAGE = tar czvf
 DIRS		:= $(DIRS) unittest
-ifneq ($(NO_FUSE),1)
+ifeq ($(NO_FUSE),1)
+NO_COCOFUSE = 1
+endif
+ifeq ($(NO_COCOFUSE),)
+HAS_FUSE := $(shell $(CC) -E -D_FILE_OFFSET_BITS=64 -I../../include -F/Library/Frameworks -I/usr/local/include/fuse -I/usr/local/include/fuse/fuse -I/usr/local/include/osxfuse/fuse -I/opt/homebrew/include/fuse -I/opt/homebrew/include/fuse/fuse ../../cocofuse/cocofuse.c >/dev/null 2>&1 && echo 1 || echo 0)
+ifeq ($(HAS_FUSE),1)
 DIRS		:= $(DIRS) cocofuse
 APPS		:= $(APPS) cocofuse
+endif
 endif
 endif
 
@@ -56,7 +71,7 @@ package: install
 
 cleandirs:
 	$(foreach dir, $(DIRS) cocofuse unittest, [ ! -d $(dir) ] || $(MAKE) -C $(dir) clean;)
-	
+
 clean:: cleandirs
 	$(RM) $(PACKAGENAME_WIN) $(PACKAGENAME_UNIX)
 
@@ -67,6 +82,4 @@ winpackage:
 	$(MAKE) -f ./Makefile cleandirs
 	$(MAKE) -f ./Makefile CC=x86_64-w64-mingw32-gcc WIN=1 package
 
-allpackages: clean unixpackage winpackage 
-
-
+allpackages: clean unixpackage winpackage

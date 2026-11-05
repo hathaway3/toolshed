@@ -32,7 +32,6 @@ int os9del(int, char **);
 int os9deldir(int, char **);
 int os9dir(int, char **);
 int os9dsave(int, char **);
-int os9dump(int, char **);
 int os9format(int, char **);
 int os9free(int, char **);
 int os9fstat(int, char **);
@@ -46,7 +45,14 @@ int os9padrom(int, char **);
 int os9rename(int, char **);
 
 int StrToInt(char *s);
-void show_help(char **helpMessage);
+void show_help(char const * const *helpMessage);
+
+struct personality
+{
+	int startlsn;
+};
+
+error_code get_boottrack_lsn(lsn0_sect LSN0, struct personality *hwtype, int *startlsn, int verbose);
 
 #ifdef __cplusplus
 }

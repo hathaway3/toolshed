@@ -21,14 +21,14 @@ static char const *const helpMessage[] = {
 	"cecb from Toolshed " TOOLSHED_VERSION "\n",
 	"Syntax: cecb {[<opts>]} <sub command> {[<opts>]}\n",
 	"Usage:  Cassette BASIC File Tools Executive\n",
-	"        Works with WAV, CAS cand C10 files\n",
+	"        Works with WAV, CAS and C10 files\n",
 	"Options:\n",
-	"     -t <%>    = Set threshold to remove background noise (for WAV files).\n",
-	"     -f <n>    = Set FSK delineation frequency (for WAV files).\n",
-	"     -p <e|o>  = Set even or odd WAV file parity (for WAV files).\n",
-	"     -s <n>    = Start at sample/bit n in WAV/CAS/C10 file.\n",
-	"     -z        = suggest MC10 mode.\n",
-	"                 MC10 type WAV files and use Microcolor BASIC tokens.\n",
+	"     -r<real> = Set WAV FSK aspect ratio for autodetection. Default: 1.85\n",
+	"     -t<%>    = Set WAV FSK aspect ratio threshold. Default: 0.3 (30%)\n",
+	"     -n<%>    = Set near-zero threshold for WAV samples. Default: 0.01 (1%)\n",
+	"     -s<n>    = Start at sample/bit <n> in the input file.\n",
+	"     -z       = Suggest MC-10 mode.\n",
+	"                 Use MC-10 WAV files and MicroColor BASIC tokens.\n",
 	"\n",
 	"     % is a decimal number between 0 and 1.\n",
 	NULL
@@ -39,18 +39,21 @@ struct cmdtbl
 {
 	int (*func)(int, char **);
 	char *keyword;
+	char *shortcode;
 	char *synopsis;
 };
 
 
 static struct cmdtbl table[] = {
-	{cecbdir, "dir"},
-	{cecbfstat, "fstat"},
-	{os9dump, "dump"},
-	{decblist, "list"},
-	{cecbbulkerase, "bulkerase"},
-	{cecbcopy, "copy"},
-	{NULL, NULL}
+	{cecbdir, "dir", "dr", "List the contents of a cassette image."},
+	{cecbfstat, "fstat", "fs", "Display detailed file information."},
+	{cocodump, "dump", "du", "Display a hexadecimal dump of a file."},
+	{cecbdumpblock, "dumpblock", "db", "Display a hexadecimal dump of cassette blocks."},
+	{decblist, "list", "li", "Display text or a tokenized BASIC program."},
+	{cecbbulkerase, "bulkerase", "be", "Create blank cassette images."},
+	{cecbcopy, "copy", "cp", "Copy files between images and native files."},
+	{cecbleader, "leader", "le", "Analyze leaders in a WAV cassette image."},
+	{NULL, NULL, NULL, NULL}
 };
 
 
@@ -75,6 +78,26 @@ int main(int argc, char *argv[])
 					return (0);
 					break;
 
+				case 'r':
+					p++;
+					if (*p == '=') p++;
+					if (*p == '\0')
+					{
+						if (i + 1 < argc && argv[i + 1][0] != '-')
+						{
+							i++;
+							p = argv[i];
+						}
+						else
+						{
+							fprintf(stderr, "%s: option -r requires an argument\n", argv[0]);
+							return 1;
+						}
+					}
+					cecb_ratio = strtod(p, NULL);
+					p += strlen(p) - 1;
+					break;
+
 				case 't':
 					p++;
 					if (*p == '=') p++;
@@ -95,7 +118,7 @@ int main(int argc, char *argv[])
 					p += strlen(p) - 1;
 					break;
 
-				case 'f':
+				case 'n':
 					p++;
 					if (*p == '=') p++;
 					if (*p == '\0')
@@ -107,11 +130,11 @@ int main(int argc, char *argv[])
 						}
 						else
 						{
-							fprintf(stderr, "%s: option -f requires an argument\n", argv[0]);
+							fprintf(stderr, "%s: option -n requires an argument\n", argv[0]);
 							return 1;
 						}
 					}
-					cecb_frequency = strtod(p, NULL);
+					cecb_zero_adjust = strtod(p, NULL);
 					p += strlen(p) - 1;
 					break;
 
@@ -132,29 +155,6 @@ int main(int argc, char *argv[])
 						}
 					}
 					cecb_start_sample = strtol(p, NULL, 0);
-					p += strlen(p) - 1;
-					break;
-
-				case 'p':
-					p++;
-					if (*p == '=') p++;
-					if (*p == '\0')
-					{
-						if (i + 1 < argc && argv[i + 1][0] != '-')
-						{
-							i++;
-							p = argv[i];
-						}
-						else
-						{
-							fprintf(stderr, "%s: option -p requires an argument\n", argv[0]);
-							return 1;
-						}
-					}
-					if (*p == 'e' || *p == 'E')
-						cecb_wave_parity = EVEN;
-					else
-						cecb_wave_parity = ODD;
 					p += strlen(p) - 1;
 					break;
 
@@ -203,7 +203,7 @@ static int do_command(int argc, char **argv)
 
 	while (x->func != NULL)
 	{
-		if (strcmp(argv[0], x->keyword) == 0)
+		if (strcmp(argv[0], x->keyword) == 0 || strcmp(argv[0], x->shortcode) == 0)
 		{
 			return (x->func(argc, argv));
 		}
@@ -233,7 +233,7 @@ static void show_cecb_help(char const *const *helpMessage)
 
 	while (ptr->keyword != NULL)
 	{
-		printf("     %s\n", ptr->keyword);
+		printf("     %-9s (%s)  %s\n", ptr->keyword, ptr->shortcode, ptr->synopsis);
 		ptr++;
 	}
 

@@ -1,10 +1,30 @@
-BINARY = os9
-OBJS = os9copy.o os9dsave.o os9gen.o os9modbust.o os9dcheck.o os9dump.o \
-       os9id.o os9padrom.o os9_main.o os9del.o os9format.o os9ident.o \
-       os9rename.o os9attr.o os9deldir.o os9free.o os9list.o os9cmp.o \
-       os9dir.o os9fstat.o os9makdir.o os9rdump.o
-
+# Makefile for os9
 include ../rules.mak
+
 vpath %.c ../../../os9
 
-all: $(BINARY)$(SUFEXE)
+CFLAGS	+= -I../../../include -Wall -MMD -MP
+
+SRCS = os9copy.c os9dsave.c os9gen.c os9modbust.c os9dcheck.c \
+	os9id.c os9padrom.c os9_main.c os9del.c os9format.c os9ident.c \
+	os9rename.c os9attr.c os9deldir.c os9free.c os9list.c os9cmp.c \
+	os9dir.c os9fstat.c os9makdir.c os9reveal.c
+OBJS = $(SRCS:.c=.o)
+DEPS = $(OBJS:.o=.d)
+
+LIBDEPS = ../libtoolshed/libtoolshed.a ../libcoco/libcoco.a ../libdragondos/libdragondos.a ../libdiskimage/libdiskimage.a ../libnative/libnative.a \
+	../libcecb/libcecb.a ../librbf/librbf.a ../libdecb/libdecb.a ../libmisc/libmisc.a \
+	../libsys/libsys.a
+
+# Derive -L flags from the directory part of each entry in LIBDEPS
+LDFLAGS += $(patsubst %,-L%,$(dir $(LIBDEPS))) \
+           $(patsubst ../lib%/lib%.a,-l%,$(LIBDEPS)) \
+           -lm
+
+os9$(SUFEXE): $(OBJS) $(LIBDEPS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+
+clean:
+	$(RM) *.o *.d os9 os9.exe
+
+-include $(DEPS)

@@ -16,8 +16,8 @@
 #include "debug.h"
 
 
-u_char DecrementLinkCount(os9_path_id path, int fd_lsn);
-static int _os9_freefile(char *filePath, u_char * bitmap);
+static error_code DecrementLinkCount(os9_path_id path, int fd_lsn, u_char *links);
+static int _os9_freefile(os9_path_id path, int fd_lsn);
 
 
 error_code _os9_delete_directory(char *pathlist)
@@ -241,17 +241,37 @@ error_code _os9_delete(char *pathlist)
 
 		if (!strcasecmp(fname, filename))
 		{
+			u_char links;
+
+			/* Clusters are released in the bitmap. */
+
+			if (parent_path->bitmap_ec != 0)
+			{
+				ec = parent_path->bitmap_ec;
+				break;
+			}
+
 			/* Decrement link count in file descriptor */
 
-			if (DecrementLinkCount(parent_path, int3(dentry.lsn))
-			    < 1)
+			ec = DecrementLinkCount(parent_path, int3(dentry.lsn), &links);
+
+			if (ec != 0)
+			{
+				break;
+			}
+
+			if (links < 1)
 			{
 				/* Only deallocate file if link count is zero */
 
 				/* Deallocate any bits used by the file */
 
-				ec = _os9_freefile(pathlist,
-						   parent_path->bitmap);
+				ec = _os9_freefile(parent_path, int3(dentry.lsn));
+
+				if (ec != 0)
+				{
+					break;
+				}
 
 				/* Deallocate the bit used for the file descriptor */
 
@@ -286,7 +306,20 @@ error_code _os9_delete(char *pathlist)
 		}
 	}
 
-	if (deleted == 0 && ec == 0)
+	free(filename);
+	filename = NULL;
+
+	{
+		error_code close_ec = _os9_close(parent_path);
+		parent_path = NULL;
+
+		if (ec == 0)
+		{
+			ec = close_ec;
+		}
+	}
+
+	if (ec == 0 && deleted == 0)
 	{
 		ec = EOS_PNNF;
 	}
@@ -300,52 +333,39 @@ clean:
 
 
 
-u_char DecrementLinkCount(os9_path_id path, int fd_lsn)
+static error_code DecrementLinkCount(os9_path_id path, int fd_lsn, u_char *links)
 {
 	fd_stats fdbuf;
-	u_char result;
+	error_code ec = _os9_lsn_get(path, fd_lsn, 0, &fdbuf, sizeof(fd_stats));
 
+	if (ec != 0)
+	{
+		return ec;
+	}
 
-	_os9_lsn_fseek(path, fd_lsn);
-	fread(&fdbuf, 1, sizeof(fd_stats), path->fd);
+	*links = fdbuf.fd_lnk = fdbuf.fd_lnk - 1;
 
-	result = fdbuf.fd_lnk = fdbuf.fd_lnk - 1;
-
-	_os9_lsn_fseek(path, fd_lsn);
-	fwrite(&fdbuf, 1, sizeof(fd_stats), path->fd);
-
-
-	return result;
+	return _os9_lsn_put(path, fd_lsn, 0, &fdbuf, sizeof(fd_stats));
 }
 
 
 
-static int _os9_freefile(char *filePath, u_char * bitmap)
+static int _os9_freefile(os9_path_id path, int fd_lsn)
 {
-	os9_path_id path = NULL;
 	fd_stats fdbuf;
 	Fd_seg seg;
-	unsigned int spc;
-	int fd_cluster;
+	unsigned int spc = path->spc;
+	int fd_cluster = fd_lsn / spc;
 	int i;
 	int ec = 0;
 
+	/* Read through the parent path; the target may not be readable. */
+	ec = _os9_lsn_get(path, fd_lsn, 0, &fdbuf, sizeof(fd_stats));
 
-	ec = _os9_open(&path, filePath, FAM_READ);
-	if (ec != 0) return ec;
-
-	ec = _os9_gs_fd(path, sizeof(fd_stats), &fdbuf);
 	if (ec != 0)
 	{
-		_os9_close(path);
 		return ec;
 	}
-
-	spc = path->spc;
-	fd_cluster = path->pl_fd_lsn / spc;
-
-	ec = _os9_close(path);
-	path = NULL;
 
 	seg = fdbuf.fd_seg;
 
@@ -359,6 +379,9 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 			break;
 		}
 
+		/* RBF starts a file's first segment in the file descriptor's
+		   cluster, so a segment can start and end anywhere in a cluster.
+		   Keep fd_cluster allocated until caller frees the FD itself. */
 		int start_cluster = seg_lsn / spc;
 		int end_cluster = (seg_lsn + seg_num - 1) / spc;
 
@@ -366,13 +389,13 @@ static int _os9_freefile(char *filePath, u_char * bitmap)
 		{
 			if (end_cluster > fd_cluster)
 			{
-				ec = _os9_delbit(bitmap, fd_cluster + 1,
+				ec = _os9_delbit(path->bitmap, fd_cluster + 1,
 						 end_cluster - fd_cluster);
 			}
 		}
 		else
 		{
-			ec = _os9_delbit(bitmap, start_cluster,
+			ec = _os9_delbit(path->bitmap, start_cluster,
 					 end_cluster - start_cluster + 1);
 		}
 

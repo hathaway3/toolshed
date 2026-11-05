@@ -7,10 +7,11 @@
 #ifndef _BORLAND
 #include <sys/stat.h>
 #endif
+#include <util.h>
 #include <cocopath.h>
 #include <cocotypes.h>
 #include <toolshed.h>
-#include <util.h>
+
 
 #define YES 1
 #define NO 0
@@ -18,155 +19,260 @@
 /* globals */
 static char *ExtractFilename(char *path);
 
+
 /* Help message */
 static char const *const helpMessage[] = {
-    "Syntax: copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}\n",
-    "Usage:  Copy one or more files to a target directory.\n",
-    "Options:\n",
-    "     -b=size    size of copy buffer in bytes or K-bytes\n",
-    "     -l         perform end of line translation\n",
-    "     -o=id      set file's owner as id\n",
-    "     -r         rewrite if file exists\n",
-    NULL};
+	"Syntax: copy {[<opts>]} <srcfile> {[<...>]} <target> {[<opts>]}\n",
+	"Usage:  Copy one or more files to a target directory.\n",
+	"Options:\n",
+	"     -b=size    size of copy buffer in bytes or K-bytes\n",
+	"     -l         perform end of line translation\n",
+	"     -o=id      set file's owner as id\n",
+	"     -a=attrs   set file attributes (same syntax as attr)\n",
+	"     -r         rewrite if file exists\n",
+	NULL
+};
 
-int os9copy(int argc, char *argv[]) {
-  error_code ec = 0;
-  error_code return_ec = 0;
-  char *p = NULL, *q, *desttarget = NULL;
-  int i, j;
-  int targetDirectory = NO;
-  int count = 0;
-  int eolTranslate = 0;
-  int rewrite = 0;
-  char df[256];
-  int owner = 0, owner_set = 0;
-  char *buffer = NULL;
-  u_int buffer_size = 32768;
 
-  /* 1. Walk command line for options. */
+int os9copy(int argc, char *argv[])
+{
+	error_code ec = 0;
+	error_code first_error = 0;
+	char *p = NULL, *q, *desttarget = NULL;
+	int i, j;
+	int targetDirectory = NO;
+	int count = 0;
+	int eolTranslate = 0;
+	int rewrite = 0;
+	char df[256];
+	int owner = 0, owner_set = 0;
+	char *buffer;
+	int attrSetMask = 0;
+	int attrResetMask = 0;
+	int attr_set = 0;
+	u_int buffer_size = 32768;
 
-  for (i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
-      for (p = &argv[i][1]; *p != '\0'; p++) {
-        switch (*p) {
-        case 'b':
-          p++;
-          if (*p == '=') {
-            p++;
-          }
-          if (*p == '\0') {
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-              p = argv[++i];
-            } else {
-              fprintf(stderr, "%s: option -b requires an argument\n", argv[0]);
-              return 1;
-            }
-          }
-          q = p + strlen(p) - 1;
-          if (toupper((unsigned char)*q) == 'K') {
-            *q = '\0';
-            buffer_size = atoi(p) * 1024;
-          } else {
-            buffer_size = atoi(p);
-          }
-          if (buffer_size <= 0) {
-            fprintf(stderr, "%s: invalid buffer size\n", argv[0]);
-            return 1;
-          }
-          p = q;
-          break;
 
-        case 'l':
-          eolTranslate = 1;
-          break;
 
-        case 'r':
-          rewrite = 1;
-          break;
+	/* 1. Walk command line for options. */
 
-        case 'o':
-          p++;
-          if (*p == '=') {
-            p++;
-          }
-          if (*p == '\0') {
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-              p = argv[++i];
-            } else {
-              fprintf(stderr, "%s: option -o requires an argument\n", argv[0]);
-              return 1;
-            }
-          }
-          q = p + strlen(p) - 1;
-          owner = atoi(p);
-          owner_set = 1;
-          p = q;
-          break;
+	for (i = 1; i < argc; i++)
+	{
+		if (argv[i][0] == '-')
+		{
+			for (p = &argv[i][1]; *p != '\0'; p++)
+			{
+				switch (*p)
+				{
+				case 'b':
+					if (*(++p) == '=')
+					{
+						p++;
+					}
+					q = p + strlen(p) - 1;
+					if (toupper((unsigned char)*q) == 'K')
+					{
+						*q = '\0';
+						buffer_size = atoi(p) * 1024;
+					}
+					else
+					{
+						buffer_size = atoi(p);
+					}
+					p = q;
+					break;
 
-        case 'h':
-        case '?':
-          show_help(helpMessage);
-          return (0);
+				case 'l':
+					eolTranslate = 1;
+					break;
 
-        default:
-          fprintf(stderr, "%s: unknown option '%c'\n", argv[0], *p);
-          return (1);
-        }
-      }
-    }
-  }
+				case 'r':
+					rewrite = 1;
+					break;
 
-  /* 2. Allocate memory for the copy buffer. */
+				case 'o':
+					if (*(++p) == '=')
+					{
+						p++;
+					}
 
-  buffer = (char *)malloc(buffer_size);
+					q = p + strlen(p) - 1;
+					{
+						owner = atoi(p);
+						owner_set = 1;
+					}
+					p = q;
+					break;
 
-  if (buffer == NULL) {
-    fprintf(stderr, "%s: cannot allocate %d byte of buffer memory\n", argv[0],
-            buffer_size);
+				case 'a':
+					if (*(++p) == '=')
+						p++;
 
-    return 1;
-  }
+					attr_set = 1;
 
-  /* 3. Count non option arguments. */
+					while (*p != '\0')
+					{
+						switch (*p)
+						{
+						case 'e':
+							attrSetMask |= FAP_EXEC;
+							break;
+						case 'w':
+							attrSetMask |= FAP_WRITE;
+							break;
+						case 'r':
+							attrSetMask |= FAP_READ;
+							break;
+						case 's':
+							attrSetMask |= FAP_SINGLE;
+							break;
+						case 'p':
+							switch (*(++p))
+							{
+							case 'e':
+								attrSetMask |= FAP_PEXEC;
+								break;
+							case 'w':
+								attrSetMask |= FAP_PWRITE;
+								break;
+							case 'r':
+								attrSetMask |= FAP_PREAD;
+								break;
+							}
+							break;
+						case 'n':
+							switch (*(++p))
+							{
+							case 'p':
+								switch (*(++p))
+								{
+								case 'e':
+									attrResetMask |= FAP_PEXEC;
+									break;
+								case 'w':
+									attrResetMask |= FAP_PWRITE;
+									break;
+								case 'r':
+									attrResetMask |= FAP_PREAD;
+									break;
+								}
+								break;
+							case 'e':
+								attrResetMask |= FAP_EXEC;
+								break;
+							case 'w':
+								attrResetMask |= FAP_WRITE;
+								break;
+							case 'r':
+								attrResetMask |= FAP_READ;
+								break;
+							case 's':
+								attrResetMask |= FAP_SINGLE;
+								break;
+							case 'd':
+								attrResetMask |= FAP_DIR;
+								break;
+							}
+							break;
+						}
+						p++;
+					}
+					p--;
+					break;
 
-  for (i = 1, count = 0; i < argc; i++) {
-    if (argv[i] == NULL) {
-      continue;
-    }
+				case 'h':
+				case '?':
+					show_help(helpMessage);
+					return (0);
 
-    if (argv[i][0] == '-') {
-      continue;
-    }
+				default:
+					fprintf(stderr,
+						"%s: unknown option '%c'\n",
+						argv[0], *p);
+					return (1);
+				}
+			}
+		}
+	}
 
-    count++;
-  }
 
-  if (count == 0) {
-    show_help(helpMessage);
-    ec = 1;
-    goto clean;
-  }
+	/* 2. Allocate memory for the copy buffer. */
 
-  /* 4. Walk backwards and get the destination first. */
+	if (buffer_size == 0)
+	{
+		fprintf(stderr, "%s: invalid buffer size\n", argv[0]);
+		return 1;
+	}
 
-  for (i = argc - 1; i > 0; i--) {
-    coco_path_id tmp_path = NULL;
+	buffer = (char *) malloc(buffer_size);
 
-    if (argv[i][0] != '-') {
-      desttarget = argv[i];
+	if (buffer == NULL)
+	{
+		fprintf(stderr,
+			"%s: cannot allocate %d byte of buffer memory\n",
+			argv[0], buffer_size);
 
-      /* 1. Determine if dest is native */
+		return 1;
+	}
 
-      ec = _coco_open(&tmp_path, desttarget, FAM_DIR | FAM_READ);
 
-      if (ec == 0) {
-        targetDirectory = YES;
+	/* 3. Count non option arguments. */
 
-        _coco_close(tmp_path);
-        tmp_path = NULL;
-      } else {
-        targetDirectory = NO;
-      }
+	for (i = 1, count = 0; i < argc; i++)
+	{
+		if (argv[i] == NULL)
+		{
+			continue;
+		}
+
+		if (argv[i][0] == '-')
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	if (count == 0)
+	{
+		show_help(helpMessage);
+		free(buffer);
+		buffer = NULL;
+		return 1;
+	}
+
+
+	/* 4. Walk backwards and get the destination first. */
+
+	for (i = argc - 1; i > 0; i--)
+	{
+		error_code ec;
+		coco_path_id tmp_path;
+
+
+		if (argv[i][0] != '-')
+		{
+			desttarget = argv[i];
+
+
+			/* 1. Determine if dest is native */
+
+			ec = _coco_open(&tmp_path, desttarget,
+					FAM_DIR | FAM_READ);
+
+//                      _coco_gs_pathtype(desttarget, &type);
+
+
+			if (ec == 0)
+			{
+				targetDirectory = YES;
+
+				_coco_close(tmp_path);
+			}
+			else
+			{
+				targetDirectory = NO;
+			}
 
 #if 0
 			if (type == NATIVE)
@@ -215,102 +321,133 @@ int os9copy(int argc, char *argv[]) {
 				_coco_close(destpath);
 			}
 #endif
-      break;
-    }
-  }
+			break;
+		}
+	}
 
-  if (targetDirectory == NO && count < 2) {
-    show_help(helpMessage);
-    ec = 1;
-    goto clean;
-  }
+	if (targetDirectory == NO && count < 2)
+	{
+		show_help(helpMessage);
+		free(buffer);
+		buffer = NULL;
+		return (1);
+	}
 
-  if (targetDirectory == NO && count > 2) {
-    printf("Error: two or more sources requires target to be a directory.\n\n");
-    show_help(helpMessage);
-    ec = 1;
-    goto clean;
-  }
+	if (targetDirectory == NO && count > 2)
+	{
+		printf("Error: two or more sources requires target to be a directory.\n\n");
+		show_help(helpMessage);
+		free(buffer);
+		buffer = NULL;
+		return (1);
+	}
 
-  /* Now look for the source files  */
-  for (j = 1; j < i; j++) {
-    if (argv[j][0] == '-')
-      continue;
+	/* Now look for the source files  */
+	for (j = 1; j < i; j++)
+	{
+		if (argv[j][0] == '-')
+			continue;
 
-    if (argv[j] == NULL)
-      continue;
+		if (argv[j] == NULL)
+			continue;
 
-    if (targetDirectory == YES) {
-      /* OK, we need to add the filename to the end of the directory path */
-      char *separator = "/";
+		strcpy(df, desttarget);
 
-      size_t dtlen = strlen(desttarget);
-      if (strchr(desttarget, ',') != NULL) {
-        /* OS-9 directory */
-        if (dtlen > 0 && (desttarget[dtlen - 1] == '/' ||
-            desttarget[dtlen - 1] == ',')) {
-          separator = "";
-        }
-      } else {
-        /* Native directory */
-        if (dtlen > 0 && desttarget[dtlen - 1] == '/') {
-          separator = "";
-        }
-      }
+		if (targetDirectory == YES)
+		{
+			/* OK, we need to add the filename to the end of the directory path */
 
-      if (snprintf(df, sizeof(df), "%s%s%s", desttarget, separator,
-                   ExtractFilename(argv[j])) >= sizeof(df)) {
-        fprintf(stderr, "%s: destination path too long: %s\n", argv[0], df);
-        return_ec = 1;
-        continue;
-      }
-    } else {
-      if (snprintf(df, sizeof(df), "%s", desttarget) >= sizeof(df)) {
-        fprintf(stderr, "%s: destination path too long: %s\n", argv[0], df);
-        return_ec = 1;
-        continue;
-      }
-    }
+			if (strchr(df, ',') != NULL)
+			{
+				/* OS-9 directory */
+				if (df[strlen(df) - 1] != '/')
+				{
+					if (df[strlen(df) - 1] != ',')
+						strcat(df, "/");
+				}
+			}
+			else
+			{
+				/* Native directory */
+				if (df[strlen(df) - 1] != '/')
+					strcat(df, "/");
+			}
 
-    ec = TSCopyFile(argv[j], df, eolTranslate, rewrite, owner, owner_set,
-                    buffer, buffer_size);
+			strcat(df, ExtractFilename(argv[j]));
+		}
 
-    if (ec != 0) {
-      return_ec = ec;
-      fprintf(stderr, "%s: error %d on file '%s' to '%s': %s\n", argv[0], ec,
-              argv[j], df, TSReportError(ec));
-    }
-  }
+		if (_coco_refuse_disk_image_target(argv[0], df))
+		{
+			if (first_error == 0)
+				first_error = EOS_FAE;
+			continue;
+		}
 
-clean:
-  if (buffer != NULL) {
-    free(buffer);
-    buffer = NULL;
-  }
-  return return_ec != 0 ? return_ec : ec;
+		ec = TSCopyFile(argv[j], df, eolTranslate, rewrite, owner,
+				owner_set, buffer, buffer_size);
+
+		if (ec == 0 && attr_set)
+		{
+			char attr;
+			char attrs[9];
+			error_code ec2;
+
+			ec2 = TSRBFAttrSet(df,
+					   attrSetMask,
+					   attrResetMask,
+					   &attr,
+					   attrs);
+
+			if (ec2 != 0)
+				fprintf(stderr,
+					"%s: warning: copied '%s' but could not set attributes: %s\n",
+					argv[0], df, TSReportError(ec2));
+		}
+
+		if (ec != 0)
+		{
+			/* Keep failures visible even if a later source copies successfully. */
+			if (first_error == 0)
+				first_error = ec;
+			fprintf(stderr,
+				"%s: error %d on file '%s' to '%s': %s\n",
+				argv[0], ec, argv[j], df, TSReportError(ec));
+		}
+	}
+
+	if (buffer != NULL)
+	{
+		free(buffer);
+		buffer = NULL;
+	}
+	return first_error;
 }
 
-static char *ExtractFilename(char *path) {
-  /* This works for both native file paths and os9 file paths */
 
-  char *a, *b;
 
-  a = strchr(path, ',');
+static char *ExtractFilename(char *path)
+{
+	/* This works for both native file paths and os9 file paths */
 
-  if (a == NULL) {
-    /* Native file */
-    a = strrchr(path, '/');
+	char *a, *b;
 
-    if (a == NULL)
-      return path;
+	a = strchr(path, ',');
 
-    return a + 1;
-  }
+	if (a == NULL)
+	{
+		/* Native file */
+		a = strrchr(path, '/');
 
-  b = strrchr(a, '/');
+		if (a == NULL)
+			return path;
 
-  if (b == NULL)
-    return a + 1;
+		return a + 1;
+	}
 
-  return b + 1;
+	b = strrchr(a, '/');
+
+	if (b == NULL)
+		return a + 1;
+
+	return b + 1;
 }
