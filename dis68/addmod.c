@@ -106,19 +106,11 @@ void rio(int reg) {
 /* reg is 3 bits only */
 void irio(int reg) {
   dat = getdat(1);
-  if (dat & 0x8000)
-    snprintf(str, sizeof(str), "a%1d%04x(a%1d,a%1d", reg, dat & 0xff, reg,
-             (dat & 0x7000) >> 12);
-  else
-    snprintf(str, sizeof(str), "a%1d%04x(a%1d,d%1d", reg, dat & 0xff, reg,
-             (dat & 0x7000) >> 12);
+  snprintf(str, sizeof(str), "a%1d%04x(a%1d,%c%1d.%c)", reg, dat & 0xff, reg,
+           (dat & 0x8000) ? 'a' : 'd', (dat & 0x7000) >> 12,
+           (dat & 0x0800) ? 'l' : 'w');
 
   add_reg_sym(reg, dat);
-
-  if (dat & 0x0800)
-    strncat(str, ".l)", sizeof(str) - strlen(str) - 1);
-  else
-    strncat(str, ".w)", sizeof(str) - strlen(str) - 1);
 
   strmne(str);
 }
@@ -160,17 +152,9 @@ void relio() {
   pcl = pcb = getdat(1);
   pcl = ppc + opwcnt * 2 - 2 + pcl;
   add_pc_sym(pcl);
-  if (dat & 0x8000)
-    snprintf(str, sizeof(str), "z%06x(pc,a%1d", pcl & 0xffffff,
-             (dat & 0x7000) >> 12);
-  else
-    snprintf(str, sizeof(str), "z%06x(pc,d%1d", pcl & 0xffffff,
-             (dat & 0x7000) >> 12);
-
-  if (dat & 0x0800)
-    strncat(str, ".l)", sizeof(str) - strlen(str) - 1);
-  else
-    strncat(str, ".w)", sizeof(str) - strlen(str) - 1);
+  snprintf(str, sizeof(str), "z%06x(pc,%c%1d.%c)", pcl & 0xffffff,
+           (dat & 0x8000) ? 'a' : 'd', (dat & 0x7000) >> 12,
+           (dat & 0x0800) ? 'l' : 'w');
 
   strmne(str);
 }
@@ -300,14 +284,26 @@ void eatdat(int n) {
  * output routines
  */
 
-void incomma() { strncat(mnebf, ",", sizeof(mnebf) - strlen(mnebf) - 1); }
+static void append_mnebf(const char *s) {
+  size_t dst_len = strlen(mnebf);
+  if (dst_len + 1 < sizeof(mnebf)) {
+    size_t avail = sizeof(mnebf) - dst_len - 1;
+    size_t src_len = strlen(s);
+    if (src_len > avail)
+      src_len = avail;
+    memcpy(mnebf + dst_len, s, src_len);
+    mnebf[dst_len + src_len] = '\0';
+  }
+}
+
+void incomma() { append_mnebf(","); }
 
 /* reg is 3 bits only */
 void inan(int reg) {
   char str_local[15];
 
   snprintf(str_local, sizeof(str_local), "a%1d", reg);
-  strncat(mnebf, str_local, sizeof(mnebf) - strlen(mnebf) - 1);
+  append_mnebf(str_local);
 }
 
 /* reg is 3 bits only */
@@ -315,10 +311,10 @@ void indn(int reg) {
   char str_local[15];
 
   snprintf(str_local, sizeof(str_local), "d%1d", reg);
-  strncat(mnebf, str_local, sizeof(mnebf) - strlen(mnebf) - 1);
+  append_mnebf(str_local);
 }
 
 void strmne(char *str_input) {
   if (pass == 2)
-    strncat(mnebf, str_input, sizeof(mnebf) - strlen(mnebf) - 1);
+    append_mnebf(str_input);
 }

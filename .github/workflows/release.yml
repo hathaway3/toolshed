@@ -6,7 +6,13 @@ on:
       - 'v*'            # Trigger on standard tags like v2.6.1
       - 'V*'            # Trigger on uppercase V tags like V2.6.1
       - '!DiskShed*'    # Explicitly ignore DiskShed tags
+  release:
+    types: [published]
   workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: true
 
 env:
   # Path to the solution file relative to the root of the project.
@@ -21,6 +27,7 @@ defaults:
 
 jobs:
   build:
+    if: "!startsWith(github.event.release.tag_name || github.ref_name, 'DiskShed')"
     runs-on: ubuntu-latest
 
     steps:
@@ -48,11 +55,12 @@ jobs:
           [ -f build/unix/toolshed-*.zip ] && ls build/unix/toolshed-*.zip | xargs -I {} bash -c 'echo; md5sum {}; ls -al --color=auto {}; unzip -l -v {}'
 
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
           generate_release_notes: true
           files: |
             doc/changelog.md
@@ -61,6 +69,7 @@ jobs:
 
   macos:
     name: macOS (${{ matrix.arch }})
+    if: "!startsWith(github.event.release.tag_name || github.ref_name, 'DiskShed')"
     strategy:
       fail-fast: false
       matrix:
@@ -100,9 +109,10 @@ jobs:
           done
 
       - name: Attach macOS Package to Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
           files: build/unix/toolshed-macos-*.zip

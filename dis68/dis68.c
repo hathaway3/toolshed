@@ -128,12 +128,17 @@ int main(int argc, char **argv) {
   }
 
   if (0 == parmfile) {
-    strncpy(str, fn, sizeof(str) - 1);
-    str[sizeof(str) - 1] = '\0';
-    strncat(str, ".prm", sizeof(str) - strlen(str) - 1);
+    size_t fn_len = strlen(fn);
+    if (fn_len > sizeof(str) - 5)
+      fn_len = sizeof(str) - 5;
+    memcpy(str, fn, fn_len);
+    memcpy(str + fn_len, ".prm", 5);
   } else {
-    strncpy(str, parmfile, sizeof(str) - 1);
-    str[sizeof(str) - 1] = '\0';
+    size_t pf_len = strlen(parmfile);
+    if (pf_len >= sizeof(str))
+      pf_len = sizeof(str) - 1;
+    memcpy(str, parmfile, pf_len);
+    str[pf_len] = '\0';
   }
 
   if ((pfp = fopen(str, "r")) == (FILE *)0)

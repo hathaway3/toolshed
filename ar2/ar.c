@@ -544,8 +544,11 @@ int get_names(int ac, char **av, int updating) {
     else {
       *(p = buf) = '\0';
       if ((q = strrchr((r = *av++), '/'))) {
-        strncpy(buf, r, 79); /* copy all to buffer			*/
-        buf[79] = '\0';
+        size_t copy_len = strlen(r);
+        if (copy_len >= sizeof(buf))
+          copy_len = sizeof(buf) - 1;
+        memcpy(buf, r, copy_len);
+        buf[copy_len] = '\0';
         *(r = strrchr(p, '/')) = '\0'; /* break in two			*/
         ++q;                           /* pointer to pattern			*/
       } else {
@@ -558,8 +561,12 @@ int get_names(int ac, char **av, int updating) {
         *r++ = '/'; /* set up for append			*/
 
       while ((dp = readdir(dirp))) {
-        strncpy(r, dp->d_name, (buf + 80) - r - 1);
-        r[(buf + 80) - r - 1] = '\0';
+        size_t avail = (size_t)((buf + sizeof(buf)) - r - 1);
+        size_t name_len = strlen(dp->d_name);
+        if (name_len > avail)
+          name_len = avail;
+        memcpy(r, dp->d_name, name_len);
+        r[name_len] = '\0';
         if (patmatch(q, r, TRUE))
           if (strucmp(r, archfile) && notdot(r))
             found += stash_name(p);
