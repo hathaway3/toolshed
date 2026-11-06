@@ -81,9 +81,9 @@ static void check_commands(const char *tool, int expected_count)
 			ASSERT("alias does not shadow a command", strcmp(names[i], aliases[count]) != 0);
 			ASSERT("command does not shadow an alias", strcmp(aliases[i], names[count]) != 0);
 		}
-		snprintf(arguments, sizeof(arguments), "%s -?", names[count]);
+		snprintf(arguments, sizeof(arguments), "%.31s -?", names[count]);
 		full_result = run_command(tool, arguments, full_output, sizeof(full_output));
-		snprintf(arguments, sizeof(arguments), "%s -?", aliases[count]);
+		snprintf(arguments, sizeof(arguments), "%.2s -?", aliases[count]);
 		short_result = run_command(tool, arguments, short_output, sizeof(short_output));
 		ASSERT_EQUALS(full_result, short_result);
 		ASSERT("subcommand help is not empty", full_output[0] != '\0');
