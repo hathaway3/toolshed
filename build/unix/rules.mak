@@ -27,7 +27,7 @@ CC			= $(CROSS)cc
 
 ifneq ($(WIN),)
 SUFEXE		= .exe
-CFLAGS		+= -D__USE_MINGW_ANSI_STDIO=1
+CFLAGS		+= -D__USE_MINGW_ANSI_STDIO=1 -Wno-format
 endif
 
 %.l: %.r
