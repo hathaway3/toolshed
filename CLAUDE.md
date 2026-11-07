@@ -6,24 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ToolShed is a suite of cross-development tools and firmware source for the Tandy Color Computer (CoCo) and Dragon microcomputers. Two very different kinds of code live side by side:
 
-- **Host-side C tools** (root-level dirs like `os9`, `decb`, `cecb`, `ar2`, `dis68`, `cocofuse`, and the `lib*` libraries): ordinary C99, built and run on Linux/macOS/Windows(MinGW/MSYS2/WSL).
+- **Host-side C tools** (root-level dirs like `os9`, `decb`, `dgndos`, `cecb`, `ar2`, `dis68`, `makewav`, `lst2cmt`, `tocgen`, `cocofuse`, and the `lib*` libraries, plus the optional wxWidgets desktop GUI under `gui/wx`): ordinary C99 (and C++17 for `gui/wx`), built and run on Linux/macOS/Windows(MinGW/MSYS2/WSL).
 - **Target firmware** (`hdbdos`, `dwdos`, `cocoroms`, `superdos`, `c3`, `casm`, `mamou`): 6809/6309 assembly (and a legacy C compiler toolchain under `c3`) that is cross-assembled to run on the actual CoCo/Dragon hardware or emulators.
 
 Don't assume conventions from one side apply to the other.
 
-User documentation lives under `doc/docs/` (MkDocs site, `tools/` subdirectory has per-tool pages). `BACKLOG.md` tracks known issues, performance opportunities, and memory-churn hotspots. `AGENT_RULES.md` has detailed conventions for AI agents working on this repo.
+User documentation lives under `doc/docs/` (MkDocs site, `tools/` subdirectory has per-tool pages) and `doc/archive/ToolShed.md` (single-page markdown manual). `BACKLOG.md` tracks known issues, performance opportunities, and memory-churn hotspots. `AGENT_RULES.md` has detailed conventions for AI agents working on this repo.
 
 ## Build commands
 
-Root `Makefile` delegates to `build/unix` (used even for Windows cross-builds via MinGW — `build/win32` is deprecated).
+Root `Makefile` delegates to `build/unix` (used even for Windows cross-builds via MinGW — `build/win32` is deprecated) and `./install.sh` for installation.
 
 ```bash
 make all              # build all host-side tools and libraries
 make test             # run full test suite (unit tests + CLI integration tests)
-make install          # compile, run test suite, and deploy to $HOME/.local (PREFIX=/usr/local for system install)
+make install          # runs ./install.sh (defaults PREFIX=/usr/local; pass PREFIX=$HOME/.local for user install)
+make -C build/unix install  # compile, run tests, and deploy to $HOME/.local (build/unix default)
 make clean            # clean host tools + firmware dirs (dwdos, cocoroms, hdbdos, superdos)
 make package          # build a release tarball
-./install.sh          # detects OS, installs deps (FUSE on Linux, macfuse on Mac), builds+tests+installs
+./install.sh          # detects OS, checks deps (FUSE on Linux, macFUSE/fuse-t on Mac), builds+tests+installs
 ```
 
 Building a single tool/library directly (each has its own `Makefile` under `build/unix/<name>`, using `rules.mak` for shared `CC`/`AR`/`CFLAGS`):
@@ -39,8 +40,8 @@ Built binaries land in `build/unix/<name>/<name>` (subdirectory named after the 
 ### Assemblers
 
 - **`lwasm`** (LWTOOLS): preferred assembler for 6809/6309 firmware. Not in this repo — install separately.
-- **`mamou`**: deprecated 6809 assembler shipped as part of ToolShed. Still works as a fallback (`AS="mamou -r -q"`) but `lwasm` is preferred.
-- **`casm`**: a separate C-based 6809/6309 cross-assembler included as part of the tool suite. Has its own build system.
+- **`mamou`**: deprecated 6809 assembler in this repo (not built by default in `build/unix/Makefile`; build manually via `make -C build/unix/mamou`). Still works as a fallback (`AS="mamou -r -q"`) but `lwasm` is preferred.
+- **`casm`**: a separate C-based 6809/6309 cross-assembler in `casm/src` (not built by default in `build/unix/Makefile`).
 
 ### Firmware
 
@@ -58,35 +59,44 @@ make -C superdos
 ```bash
 make test                                # run from root: builds everything, runs all unit + CLI integration tests
 cd build/unix && make test              # same, from build/unix
+cd build/unix && make test-asan         # build and run all unit tests with AddressSanitizer + UBSan
 cd build/unix/unittest && make test     # unit tests + CLI integration tests
-./librbftest                            # run a single suite directly (also libdecbtest, libcecbtest,
-                                         #   libtoolshedtest, os9commandtest, os9_tool_test)
+./librbftest                            # run a single suite directly (16 suites in build/unix/unittest:
+                                         #   librbftest, libdecbtest, libcecbtest, libtoolshedtest,
+                                         #   libnativetest, libmisctest, libsystest, libdiskimagetest,
+                                         #   libdragondostest, os9commandtest, decbcommandtest,
+                                         #   cecbcommandtest, dgndoscommandtest, infocommandtest,
+                                         #   commandaliastest, os9_tool_test)
 ```
 
-- Test framework is **tinytest** (`unittest/tinytest.h`, header-only + `tinytest.c`) — `ASSERT`, `ASSERT_EQUALS`, `RUN(test_fn)`, `TEST_REPORT()`.
+- Test framework is **tinytest** (`unittest/tinytest.h`, strictly header-only) — `ASSERT`, `ASSERT_EQUALS`, `RUN(test_fn)`, `TEST_REPORT()`.
 - `build/unix/unittest/Makefile` has a dual `vpath` for both `unittest/` and `tests/`, and adds `-I../../../unittest` so new tests placed in `tests/` can still `#include "tinytest.h"`.
 - Follow the pattern in `tests/os9_tool_test.c` / `unittest/librbftest.c`: clean slate (`remove("test.dsk")`) before and after, one `test_*` function per behavior, `RUN()` each in `main()`.
 
 ## Architecture: the path abstraction layer
 
-The core design is a filesystem abstraction that lets the same file operations (open/read/write/seek/dir/rename/delete/stat) work across four different image/filesystem types through one dispatching layer:
+The core design is a filesystem abstraction that lets the same file operations (open/read/write/seek/dir/rename/delete/stat) work across five different image/filesystem types through one dispatching layer:
 
 ```
-include/cocopath.h   -- coco_path_id: tagged union over the four backends below,
-                         _coco_* functions dispatch by _path_type (NATIVE, OS9, DECB, CECB)
-  include/nativepath.h -> libnative/  (plain host filesystem)
-  include/os9path.h    -> librbf/     (OS-9 RBF disk images: LSN0, bitmap, file descriptors/clusters)
-  include/decbpath.h   -> libdecb/    (RS-DOS/Disk BASIC images)
-  include/cecbpath.h   -> libcecb/    (Color BASIC / MC-10 cassette .cas/.wav)
+include/cocopath.h   -- coco_path_id: tagged union over the five backends below,
+                         _coco_* functions (libcoco/) dispatch by _path_type
+                         (NATIVE, OS9, DECB, CECB, DRAGONDOS)
+  include/nativepath.h    -> libnative/    (plain host filesystem)
+  include/os9path.h       -> librbf/       (OS-9 RBF disk images: LSN0, bitmap, file descriptors/clusters)
+  include/decbpath.h      -> libdecb/      (RS-DOS/Disk BASIC images)
+  include/dragondospath.h -> libdragondos/ (Dragon DOS disk images)
+  include/cecbpath.h      -> libcecb/      (Color BASIC / MC-10 cassette .cas/.wav/.c10)
+  include/diskimage.h     -> libdiskimage/ (sector container abstraction under librbf/libdecb/libdragondos:
+                                            raw, DMK, JVC, VDK, SDF)
 ```
 
-The CLI tools (`os9/`, `decb/`, `cecb/`) are thin command dispatchers: each has a `<tool>_main.c` with a `struct cmdtbl` mapping subcommand keywords (`attr`, `copy`, `dir`, `format`, `free`, ...) to a function implemented in a same-named file in that directory (e.g. `os9copy.c` implements `os9copy`). Each backend library (`libnative`, `librbf`, `libdecb`, `libcecb`) mirrors this: one file per operation, named `lib<backend><op>.c`.
+The CLI tools (`os9/`, `decb/`, `dgndos/`, `cecb/`) are thin command dispatchers: each has a `<tool>_main.c` with a `struct cmdtbl` mapping subcommand keywords (`attr`, `copy`, `dir`, `format`, `free`, ...) and two-letter shortcodes (`at`, `cp`, `dr`, `fo`, `fr`, ...) to a function implemented in a same-named file in that directory (e.g. `os9copy.c` implements `os9copy`). Each backend library (`libnative`, `librbf`, `libdecb`, `libdragondos`, `libcecb`) mirrors this: one file per operation, named `lib<backend><op>.c`.
 
-`libmisc` holds cross-cutting helpers (CoCo↔native text conversion, endian handling, a queue, `UnixToCoCoError()` for mapping host `errno` to CoCo error codes). `libcoco` holds hardware/BASIC-token-adjacent logic. `libsys` has low-level shared bits (CRC, path-string parsing).
+`libmisc` holds cross-cutting helpers (CoCo↔native text conversion, endian handling, queue, CRC, path-string parsing, `UnixToCoCoError()` for mapping host `errno` to CoCo error codes). `libcoco` implements the unified `_coco_*` path dispatch and filesystem auto-detection layer. `libsys` provides OS-level portability shims (`strcasecmp`, `strptime`, etc.).
 
-`libtoolshed/toolshed.c` (declared in `include/toolshed.h`, prefixed `TS*`) builds higher-level operations (copy, rename, pad ROM, attr get/set, free-space reporting) on top of `_coco_*`.
+`libtoolshed/toolshed.c` (declared in `include/toolshed.h`, prefixed `TS*`) and its companion modules (`cocodumpcommand.c`, `cocoinfo.c`, `tsdsave.c`) build higher-level operations (copy, rename, pad ROM, attr get/set, free-space reporting, shared `dump`/`info`/`dsave` implementations) on top of `_coco_*`.
 
-`cocofuse` mounts a CoCo disk image as a real FUSE filesystem using this same `_coco_*` layer, rather than duplicating filesystem logic.
+`cocofuse` mounts a CoCo/Dragon disk image (OS-9, Disk BASIC, or Dragon DOS) as a real FUSE filesystem using this same `_coco_*` layer, rather than duplicating filesystem logic.
 
 ## Memory-safety conventions (librbf / libnative / OS-9 path code)
 

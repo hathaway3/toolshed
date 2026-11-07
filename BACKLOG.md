@@ -4,7 +4,7 @@ Working list of known issues, performance opportunities, and memory-churn hotspo
 
 ## Known issues
 
-- [x] **`os9rdump` was not wired into the `os9` tool** — fixed, already in `struct cmdtbl` as of `4df1961`.
+- [x] **`os9rdump` was not wired into the `os9` tool** — wired in `4df1961`, though subsequently omitted from `os9_main.c` / `build/unix/os9/Makefile` when merging upstream v2.6.1 (`os9/os9rdump.c` remains in source with bounds/EOF fixes applied).
 - [x] **Four built tools have no user docs** — `dis68`, `lst2cmt`, `makewav`, `tocgen` pages were all added in `6c39116`.
 - [x] **`librbf/librbfwrite.c:190` — mtime on write** — fixed, `_os9_write()` now calls `UnixToOS9Time(time(NULL), ...)` on the FD sector before writing it back.
 - [x] **`libdecb/libdecbsrec.c:306` — S-record checksum** — fixed, checksum is now verified on S1 records with mismatch causing decode failure.

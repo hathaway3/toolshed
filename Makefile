@@ -11,7 +11,7 @@ test:
 	$(MAKE) -C build/unix test
 
 install:
-	./install.sh
+	./install.sh $(PREFIX)
 
 clean:
 	$(MAKE) -C build/unix clean

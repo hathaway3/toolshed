@@ -25,11 +25,14 @@ Over time, it grew. Support for the Hitachi 6309 was added, and soon, a whole su
 Here's a quick look at the key tools in your shed:
 
 - **`os9`**: Your Swiss Army knife for manipulating OS-9 formatted disk images.
-- **`decb`**: The go-to tool for handling RSDOS (Disk BASIC) disk images.
+- **`decb`**: The go-to tool for handling RS-DOS (Disk BASIC) disk images.
+- **`dgndos`**: Complete command-line tool for Dragon DOS disk images.
 - **`cecb`**: Perfect for managing Color BASIC and Micro Color BASIC cassette files.
-- **`mamou` & `casm`**: Classic 6809/6309 assemblers for development.
-- **`dis68`**: A specialized disassembler for 68000 modules.
+- **DiskShed (`gui/wx`)**: A native wxWidgets desktop application for browsing and editing OS-9 RBF and Disk BASIC images.
+- **`mamou` & `casm`**: Classic 6809/6309 assemblers (`mamou` is deprecated in favor of LWTOOLS' `lwasm`).
+- **`dis68`**: A specialized disassembler for 68000 (OS-9/68K) modules.
 - **`makewav`**: Effortlessly convert your code into audio WAV files for real hardware.
 - **`ar2`**: An efficient archiver utility originally by Carl Kreider.
 - **`lst2cmt`**: Convert LWASM listing files to MAME debugger comments.
-- **`cocofuse`**: A FUSE-based tool to mount CoCo disk images directly on your modern computer!
+- **`tocgen`**: Generate binary table-of-contents files for the CoCo SDC ROM launcher.
+- **`cocofuse`**: A FUSE-based tool to mount CoCo and Dragon disk images directly on your modern computer!

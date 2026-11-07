@@ -40,7 +40,7 @@ recommended for general use.
 
 ## 📚 Documentation
 
-Detailed documentation is available in the `doc/docs/` directory and `doc/ToolShed.md`. If you have MkDocs installed, you can build a local version of our documentation site.
+Detailed documentation is available in the `doc/docs/` directory and `doc/archive/ToolShed.md`. If you have MkDocs installed, you can build a local version of our documentation site.
 
 > [!TIP]
 > **New to ToolShed?** Start with our [Introduction](doc/docs/introduction.md) or see our [Getting Started guide](doc/docs/getting-started/tutorial.md).
@@ -84,7 +84,7 @@ $ make install
 ```
 
 > [!NOTE]
-> By default, `make install` deploys binaries to `$HOME/.local/bin` and HTML documentation to `$HOME/.local/share/doc/toolshed`. To install system-wide, provide `PREFIX=/usr/local` (e.g. `sudo make install PREFIX=/usr/local`).
+> `make install` invokes `./install.sh`, which defaults `PREFIX` to `/usr/local` (using `sudo` automatically if needed) and deploys binaries to `$PREFIX/bin` and HTML documentation to `$PREFIX/share/doc/toolshed`. For a user-local installation without root privileges, pass `PREFIX=$HOME/.local` (e.g. `make install PREFIX=$HOME/.local` or `make -C build/unix install`).
 
 ### Running Tests
 
@@ -92,6 +92,12 @@ To compile and run the full test suite (unit tests and CLI integration tests) wi
 
 ```bash
 $ make test
+```
+
+To run the unit test suites under AddressSanitizer (`-fsanitize=address,undefined`):
+
+```bash
+$ make -C build/unix test-asan
 ```
 
 ---

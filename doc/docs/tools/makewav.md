@@ -10,14 +10,20 @@ makewav [options] input-file
 
 ## Options
 
-- `-l<val>`: Length for the silent leader (default: 2 seconds).
-- `-s<val>`: Sample rate for the generated WAV file (default: 11250 Hz).
-- `-r`: Treat input file as raw binary (no S-Record headers).
-- `-c`: Input file contains a DECB header.
-- `-n<string>`: Specify the filename to encode in the WAV file's header.
-- `-[0-2]`: Set the file type (0 = BASIC, 1 = Data, 2 = ML).
-- `-[a|b]`: Set the data type to either ASCII (a) or Binary (b).
-- `-k`: Output in CAS format instead of WAV.
+- `-l<val>`: Length for the silent leader in seconds (default: `2`).
+- `-s<val>`: Sample rate for the generated WAV file (default: `11250` Hz).
+- `-r`: Treat input file as raw binary (default: Motorola S-Record file).
+- `-c`: Input file contains DECB binary headers.
+- `-n<string>`: Specify the filename to encode in the cassette header (default: input filename).
+- `-o<string>`: Output filename for the generated WAV/CAS file (default: `<input>.wav` or `<input>.cas`).
+- `-[0-2]`: Set the file type (`0` = BASIC program, `1` = BASIC data, `2` = Machine Language [default]).
+- `-[a|b]`: Set the data type (`a` = ASCII, `b` = Binary [default]).
+- `-d<val>`: Start/load address (default: `0`, or taken from S-Record/DECB header; accepts `0x` hex).
+- `-e<val>`: Execution address (default: `0`, or taken from S-Record/DECB header; accepts `0x` hex).
+- `-g<val>`: Group `<val>` data blocks together separated by a pause and new leader.
+- `-p<val>`: Pause length in seconds between block groups when using `-g` (supports decimals).
+- `-k`: Output in `.cas` format instead of `.wav`.
+- `-v`: Print verbose information about the conversion.
 
 ## Description
 

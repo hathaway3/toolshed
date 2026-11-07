@@ -51,6 +51,9 @@ os9 copy os9.dsk,DIR1/DIR2/test2 /
 
 Note: The comma is present in both arguments if both are disk image paths.
 
+> [!NOTE]
+> **Disk Image Overwrite Protection**: ToolShed protects existing OS-9, Disk BASIC, and Dragon DOS disk images from accidental host-level overwrite when a trailing comma is forgotten. For example, running `os9 copy file.txt os9.dsk` (without the trailing comma on `os9.dsk`) will refuse to overwrite `os9.dsk` as a plain host file if `os9.dsk` is detected as a valid disk image.
+
 ## Support for HDB-DOS
 
 ToolShed supports specialized path symbols for HDB-DOS hard disk images. The `:` (colon) allows you to select which disk image is active:
@@ -64,3 +67,6 @@ The `+` specifies an offset to share a hard disk with OS-9:
 ```bash
 decb list -t hd.img,NEW.BAS:3+1348276
 ```
+
+> [!IMPORTANT]
+> HDB-DOS multi-drive (`:N`) and byte-offset (`+offset`) addressing requires **raw** sector images (`.dsk` / `.img`) and is not supported on headered container formats (`.dmk`, `.jvc`, `.vdk`, `.sdf`).

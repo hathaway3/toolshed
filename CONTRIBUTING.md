@@ -4,11 +4,11 @@ Welcome! ToolShed is a suite of cross-development tools and firmware for the Tan
 
 ## Reporting Bugs
 
-Please [open a GitHub Issue](https://github.com/nitros9/toolshed/issues/new?template=bug_report.yml) using the bug report form. Include as much detail as possible about your OS, ToolShed version, and steps to reproduce.
+Please [open a GitHub Issue](https://github.com/nitros9project/toolshed/issues/new?template=bug_report.yml) using the bug report form. Include as much detail as possible about your OS, ToolShed version, and steps to reproduce.
 
 ## Feature Requests
 
-Use the [feature request form](https://github.com/nitros9/toolshed/issues/new?template=feature_request.yml) to suggest enhancements.
+Use the [feature request form](https://github.com/nitros9project/toolshed/issues/new?template=feature_request.yml) to suggest enhancements.
 
 ## Development Setup
 
@@ -33,7 +33,7 @@ Use the [feature request form](https://github.com/nitros9/toolshed/issues/new?te
 
 ## Coding Style
 
-- **Host-side tools** (root-level `os9`, `decb`, `cecb`, `ar2`, `lib*` directories, etc.): C99 with tabs for indentation (width 8).
+- **Host-side tools** (root-level `os9`, `decb`, `dgndos`, `cecb`, `ar2`, `lib*` directories, etc.): C99 with tabs for indentation (width 8).
 - **Firmware** (`hdbdos`, `dwdos`, `cocoroms`, `superdos`): 6809/6309 assembly. `lwasm` is the preferred assembler; the legacy `mamou` assembler works as a fallback.
 
 ### Memory Safety & Robust C Code

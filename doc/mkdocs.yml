@@ -34,6 +34,7 @@ nav:
     - Disk & Image Tools:
       - tools/os9.md
       - tools/decb.md
+      - tools/dgndos.md
       - tools/cecb.md
       - tools/cocofuse.md
       - tools/makewav.md

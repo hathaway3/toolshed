@@ -9,9 +9,9 @@ Welcome to the ToolShed documentation! This set of documents provides comprehens
 - **[Firmware & ROMs](firmware.md)**: Details on the CoCo and Dragon firmware and custom DOS projects.
 - **[C3 Compiler](c3_compiler.md)**: Documentation for the Microware C compiler cross-hosted project.
 
-## [Legacy Documentation](ToolShed.md)
+## [Single-File Documentation](archive/ToolShed.md)
 
-The original single-file documentation is still available for reference.
+The complete single-file Markdown manual is available in [`archive/ToolShed.md`](archive/ToolShed.md).
 
 ---
 

@@ -23,7 +23,9 @@ Choose the version:
 
 ## 2. Update Version (ALL LOCATIONS)
 
-### A. Build System (authoritative)
+You can use `./release.sh <version>` from the repository root to automate the version bump, test run, commit, tag, and push, or perform the steps below manually.
+
+### A. Build System (authoritative fallback)
 
 File:
 
@@ -31,28 +33,24 @@ File:
 build/unix/rules.mak
 ```
 
-Line 3:
+Line 4 (`VERSION` is derived automatically from the git tag when building in a git checkout; `FALLBACK_VERSION` is used for tarball builds):
 
 ```
-edit build/unix/rules.mak:0
-VERSION = 2.5
+FALLBACK_VERSION = 2.6.1
 ```
 
 ---
 
 ### B. Main Documentation
 
-File:
+Files:
 
 ```
-edit doc/ToolShed.md:0
+doc/archive/ToolShed.md
+doc/docs/index.md
 ```
 
-Line 1:
-
-```
-ToolShed 2.5
-```
+Update the version header in `doc/archive/ToolShed.md` (line 1) and `doc/docs/index.md`.
 
 ---
 
@@ -64,13 +62,12 @@ File:
 README.md
 ```
 
-Line 3:
+Line 5:
 
 Update version reference accordingly (example):
 
 ```
-edit README.md:3
-Current version: 2.5
+Version 2.6.1
 ```
 
 ---
@@ -94,8 +91,8 @@ edit doc/changelog.md:0
 ## 3. Commit Changes
 
 ```
-git add build/unix/rules.mak doc/ToolShed.md README.md
-git commit -m "Release 2.5"
+git add build/unix/rules.mak doc/archive/ToolShed.md doc/docs/index.md README.md doc/changelog.md
+git commit -m "Release 2.6.1"
 git push upstream main
 ```
 
@@ -206,11 +203,12 @@ Do not modify old tags.
 
 ## Quick Checklist
 
-- [ ] Update `build/unix/rules.mak` (line 3)
-- [ ] Update `doc/ToolShed.md` (line 1)
-- [ ] Update `README.md` (line 3)
-- [ ] Commit changes
-- [ ] Tag `vX.Y`
+- [ ] Update `build/unix/rules.mak` (`FALLBACK_VERSION`)
+- [ ] Update `doc/archive/ToolShed.md` (line 1) and `doc/docs/index.md`
+- [ ] Update `README.md` (line 5)
+- [ ] Update `doc/changelog.md`
+- [ ] Commit changes (or run `./release.sh <version>`)
+- [ ] Tag `vX.Y.Z`
 - [ ] Push tag
 - [ ] Create GitHub release
 - [ ] Update Homebrew formula

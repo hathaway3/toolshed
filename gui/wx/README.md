@@ -48,16 +48,17 @@ and pull request produces downloadable workflow artifacts for:
 
 The macOS and Windows builds link wxWidgets statically. The Linux AppImage
 bundles wxGTK and its non-system runtime dependencies. Pushing a tag beginning
-with `v` builds all four artifacts, verifies their SHA-256 checksum files, and
-attaches them to the corresponding GitHub release. For example:
+with `DiskShed-v` builds all four artifacts via `.github/workflows/diskshed-release.yml`,
+verifies their SHA-256 checksum files, and attaches them to the corresponding
+GitHub release. For example:
 
 ```sh
-git tag v0.1.0
-git push upstream v0.1.0
+git tag DiskShed-v0.9.0
+git push upstream DiskShed-v0.9.0
 ```
 
-Release tags should only be pushed after the version in this CMake project and
-the `DISKSHED_VERSION` workflow variable agree. The generated macOS and Windows
+Release tags should match the version in `gui/wx/CMakeLists.txt` (the workflow
+extracts `DISKSHED_VERSION` from the `DiskShed-v*` tag). The generated macOS and Windows
 packages are currently unsigned; code signing and macOS notarization can be
 added when the project has the required certificates and CI secrets.
 

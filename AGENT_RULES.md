@@ -31,7 +31,7 @@ Strictly follow the routing rules defined in `local-preference.md`:
 - **Input & Stream Bounds Checking**: Always bound loops reading bytes from files, disk images, or streams with buffer length limits and explicit `EOF` checks (`c != EOF`). Never assume files are well-formed or loop solely on `c != '\0'`.
 - **Defensive CLI Parsing**: Verify `argc` bounds before indexing `argv[i + 1]` or referencing option parameter substrings.
 - **Error Handling**: Use the `error_code` type consistently. Map system `errno` to CoCo errors using `UnixToCoCoError()`.
-- **Modularity**: Keep hardware-specific logic in `libcoco` or similar, and keep filesystem logic in `librbf`/`libdecb`.
+- **Modularity**: Keep unified path dispatch in `libcoco`, disk sector container handling in `libdiskimage`, and filesystem-specific logic in `librbf`/`libdecb`/`libdragondos`/`libcecb`/`libnative`.
 
 ### 2. 6809 Assembly Standards (Firmware)
 - **Assembler**: Target **LWTOOLS** (`lwasm`) exclusively. 
@@ -59,7 +59,7 @@ Any web-based components (e.g., DriveWire clients, status dashboards) MUST follo
 ### 1. Centralized Testing
 - New tests go in `tests/`. Legacy tests remain in `unittest/` until migrated.
 - The build system (`build/unix/unittest/Makefile`) uses dual `vpath` to find sources in both directories.
-- Test files must `#include "tinytest.h"` — the tinytest framework (header-only + one `.c` file) lives in `unittest/`.
+- Test files must `#include "tinytest.h"` — the tinytest framework (strictly header-only) lives in `unittest/`.
 - The Makefile adds `-I../../../unittest` so tests in `tests/` can resolve `tinytest.h`.
 
 ### 2. Test Structure Convention

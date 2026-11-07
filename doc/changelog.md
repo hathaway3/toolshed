@@ -1,5 +1,23 @@
 # ToolShed Changelog
 
+## [v2.6.1] - 2026-08-15
+
+### 🆕 New Features & Utilities
+
+* **`dgndos` Executive & `libdragondos`**: Added a complete Dragon DOS command-line utility (`dgndos`) and filesystem library (`libdragondos`) supporting `attr`, `copy`, `dir`, `dsave`, `dskinit`, `dump`, `free`, `fstat`, `info`, `kill`, `list`, `rename`, and `reveal`.
+* **`libdiskimage` Container Abstraction**: Added a unified disk image container layer (`libdiskimage`) supporting raw (`.dsk`), `.dmk`, `.jvc`, `.vdk`, and `.sdf` sector containers across `os9`, `decb`, `dgndos`, and `cocofuse`, including formatting in container formats (`os9 format -f<fmt>`, `decb dskini -f<fmt>`, `dgndos dskinit -f<fmt>`).
+* **Shared `info` Subcommand**: Added `info` (`in`) to `os9`, `decb`, and `dgndos` to report container format, geometry, filesystem metadata, and validation warnings (`libtoolshed/cocoinfo.c`).
+* **`decb reveal` & `dgndos reveal`**: Extended `reveal` (`rv`) to Disk BASIC and Dragon DOS images to explain sector/granule/LSN ownership, system areas, active files, and deleted remnants; added `-b` container byte-offset lookup across `os9`, `decb`, and `dgndos`.
+* **Two-Letter Subcommand Shortcodes**: Added two-letter command aliases (`#107`) across `os9`, `decb`, `dgndos`, and `cecb` (e.g., `dr` for `dir`, `cp` for `copy`, `in` for `info`, `rv` for `reveal`).
+
+### ⚡ Enhancements & Bug Fixes
+
+* **Shared Streaming `dump` & `dsave`**: Unified `dump` (`libtoolshed/cocodumpcommand.c`) and `dsave` (`libtoolshed/tsdsave.c`, adding `-x=path` execution target path) across `os9`, `decb`, and `dgndos`, with Dragon DOS binary header decoding in `dump -z`.
+* **Disk Image Overwrite Protection**: Added safeguards to prevent accidental host-level overwrite of existing OS-9, DECB, and Dragon DOS disk images when a trailing comma is omitted (`#96`).
+* **Hardening & Memory Safety**: Fixed cluster deallocation math on multi-sector clusters, 64K boundary handling in `decb binbust`, `_native_readln` and `_cecb_readln` line delimiters, and added AddressSanitizer test target (`make -C build/unix test-asan`).
+
+---
+
 ## [v2.6.0] - 2026-07-29
 
 ### 🆕 New Features & Utilities
