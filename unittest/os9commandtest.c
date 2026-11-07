@@ -1231,6 +1231,196 @@ void test_os9_command_gen(void)
 	remove("test_cli.dsk");
 }
 
+/*
+ * Regression guard for the os9gen bitmap leak: running `os9 gen` repeatedly
+ * overwrote the OS9Boot file and leaked allocation-bitmap bits, so free space
+ * shrank on every run. Repeated runs must leave free space unchanged.
+ */
+void test_os9_gen_no_bitmap_leak(void)
+{
+	char cmd[256];
+	int status;
+	FILE *fp;
+	char buffer[100];
+	char dname[64];
+	u_int month, day, year, bps, total_sectors, bytes_free;
+	u_int free_1, free_2;
+	u_int largest_free_block, sectors_per_cluster, largest_count, sector_count;
+	error_code ec;
+
+	remove("test_gen_leak.dsk");
+	snprintf(cmd, sizeof(cmd), "%s format -e -q -ss test_gen_leak.dsk > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	/* Create a small boot file to link */
+	fp = fopen("cli_boot.tmp", "wb");
+	ASSERT_TRUE(fp != NULL);
+	memset(buffer, 0xAA, sizeof(buffer));
+	fwrite(buffer, 1, sizeof(buffer), fp);
+	fclose(fp);
+
+	/* First gen run */
+	snprintf(cmd, sizeof(cmd), "%s gen -c test_gen_leak.dsk -b=cli_boot.tmp > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	ec = TSRBFFree("test_gen_leak.dsk", dname, &month, &day, &year, &bps,
+	                &total_sectors, &bytes_free, &free_1,
+	                &largest_free_block, &sectors_per_cluster,
+	                &largest_count, &sector_count);
+	ASSERT_EQUALS(0, ec);
+
+	/* Second gen run over the same OS9Boot must not leak more bits */
+	snprintf(cmd, sizeof(cmd), "%s gen -c test_gen_leak.dsk -b=cli_boot.tmp > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	ec = TSRBFFree("test_gen_leak.dsk", dname, &month, &day, &year, &bps,
+	                &total_sectors, &bytes_free, &free_2,
+	                &largest_free_block, &sectors_per_cluster,
+	                &largest_count, &sector_count);
+	ASSERT_EQUALS(0, ec);
+
+	ASSERT_EQUALS(free_1, free_2);
+
+	/* Disk must still be structurally intact */
+	snprintf(cmd, sizeof(cmd), "%s dcheck test_gen_leak.dsk > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	remove("cli_boot.tmp");
+	remove("test_gen_leak.dsk");
+}
+
+/*
+ * Proactive integrity-churn harness. For both spc=1 and spc=2: fresh format,
+ * then create small + large + fragmented (extended across close/reopen)
+ * files, verify dcheck and free-space accounting at each phase, then
+ * rename/delete churn, and finally confirm the exact baseline free sector
+ * count is restored (no cluster or bitmap leak).
+ */
+void test_os9_integrity_stress(void)
+{
+	char dname[64];
+	u_int month, day, year, bps, total_sectors, bytes_free;
+	u_int free_baseline, free_now;
+	u_int largest_free_block, sectors_per_cluster, largest_count, sector_count;
+	unsigned int totalSectors, totalBytes;
+	int clusterSize;
+	int spc;
+	os9_path_id p = NULL;
+	error_code ec;
+	char cmd[256];
+	int status;
+	char *data;
+	u_int size;
+
+	for (spc = 1; spc <= 2; spc++)
+	{
+		clusterSize = spc;
+		remove("test_stress.dsk");
+
+		ec = _os9_format("test_stress.dsk", 0, 80, 18, 18, 2, 256, &clusterSize,
+		                    "Stress", 8, 8, 1, 1, 0, 0, 3, &totalSectors, &totalBytes);
+		ASSERT_EQUALS(0, ec);
+
+		ec = TSRBFFree("test_stress.dsk", dname, &month, &day, &year, &bps,
+		                &total_sectors, &bytes_free, &free_baseline,
+		                &largest_free_block, &sectors_per_cluster,
+		                &largest_count, &sector_count);
+		ASSERT_EQUALS(0, ec);
+		ASSERT_EQUALS(spc, (int)sectors_per_cluster);
+
+		/* small file (1 cluster) */
+		data = malloc(100);
+		ASSERT("small buffer", data != NULL);
+		memset(data, 's', 100);
+		ec = _os9_create(&p, "test_stress.dsk,small.txt",
+		                 FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+		ASSERT_EQUALS(0, ec);
+		size = 100;
+		ec = _os9_write(p, data, &size);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_close(p);
+		ASSERT_EQUALS(0, ec);
+		p = NULL;
+		free(data);
+
+		/* large multi-cluster file */
+		size = 20000;
+		data = malloc(size);
+		ASSERT("large buffer", data != NULL);
+		memset(data, 'L', size);
+		ec = _os9_create(&p, "test_stress.dsk,large.bin",
+		                 FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_write(p, data, &size);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_close(p);
+		ASSERT_EQUALS(0, ec);
+		p = NULL;
+
+		/* fragmented file: extended across a close/reopen to exercise
+		 * segment growth rather than a single contiguous allocation */
+		ec = _os9_create(&p, "test_stress.dsk,frag.bin",
+		                 FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+		ASSERT_EQUALS(0, ec);
+		size = 2000;
+		ec = _os9_write(p, data, &size);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_close(p);
+		ASSERT_EQUALS(0, ec);
+		p = NULL;
+
+		ec = _os9_open(&p, "test_stress.dsk,frag.bin", FAM_READ | FAM_WRITE);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_seek(p, 0, SEEK_END);
+		ASSERT_EQUALS(0, ec);
+		size = 2000;
+		ec = _os9_write(p, data, &size);
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_close(p);
+		ASSERT_EQUALS(0, ec);
+		p = NULL;
+		free(data);
+
+		/* structure intact after writes */
+		snprintf(cmd, sizeof(cmd), "%s dcheck test_stress.dsk > /dev/null 2>&1", get_os9_bin());
+		status = system(cmd);
+		ASSERT_EQUALS(0, status);
+
+		/* rename churn */
+		ec = _os9_rename("test_stress.dsk,small.txt", "small2.txt");
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_rename("test_stress.dsk,small2.txt", "small.txt");
+		ASSERT_EQUALS(0, ec);
+
+		/* delete churn: remove everything we created */
+		ec = _os9_delete("test_stress.dsk,small.txt");
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_delete("test_stress.dsk,large.bin");
+		ASSERT_EQUALS(0, ec);
+		ec = _os9_delete("test_stress.dsk,frag.bin");
+		ASSERT_EQUALS(0, ec);
+
+		/* structure intact after deletes */
+		snprintf(cmd, sizeof(cmd), "%s dcheck test_stress.dsk > /dev/null 2>&1", get_os9_bin());
+		status = system(cmd);
+		ASSERT_EQUALS(0, status);
+
+		/* baseline free space fully restored (no leak) */
+		ec = TSRBFFree("test_stress.dsk", dname, &month, &day, &year, &bps,
+		                &total_sectors, &bytes_free, &free_now,
+		                &largest_free_block, &sectors_per_cluster,
+		                &largest_count, &sector_count);
+		ASSERT_EQUALS(0, ec);
+		ASSERT_EQUALS(free_baseline, free_now);
+
+		remove("test_stress.dsk");
+	}
+}
+
 /* ---------- 16. Ident ---------- */
 
 void test_os9_command_ident(void)
@@ -3282,6 +3472,8 @@ int main()
 	RUN(test_os9_command_dcheck);
 	RUN(test_os9_command_padrom);
 	RUN(test_os9_command_gen);
+	RUN(test_os9_gen_no_bitmap_leak);
+	RUN(test_os9_integrity_stress);
 	RUN(test_os9_command_ident);
 	RUN(test_os9_cluster_allocation_and_deletion);
 	cleanup_test_files();

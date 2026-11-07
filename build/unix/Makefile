@@ -46,7 +46,7 @@ endif
 
 APPS		:= $(foreach item,$(APPS),$(item)/$(item)$(SUFEXE))
 
-.PHONY: all test install package cleandirs clean unixpackage winpackage allpackages print-version
+.PHONY: all test test-asan install package cleandirs clean unixpackage winpackage allpackages print-version
 
 all:
 	@set -e; for dir in $(DIRS); do $(MAKE) -C $$dir; done
@@ -59,6 +59,18 @@ ifneq ($(WIN),)
 	@echo "Tests skipped for Windows target"
 else
 	$(MAKE) -C unittest test
+endif
+
+# Build every library and tool with AddressSanitizer, run the full unit + CLI
+# suite under it, then clean so a normal `make test` starts from a clean tree.
+test-asan:
+ifneq ($(WIN),)
+	@echo "test-asan skipped for Windows target"
+else
+	$(MAKE) clean
+	$(MAKE) all EXTRA_CFLAGS="-g -O1 -fsanitize=address -fno-omit-frame-pointer -Wno-deprecated-declarations" EXTRA_LDFLAGS="-fsanitize=address"
+	$(MAKE) -C unittest test EXTRA_CFLAGS="-g -O1 -fsanitize=address -fno-omit-frame-pointer -Wno-deprecated-declarations" EXTRA_LDFLAGS="-fsanitize=address"
+	$(MAKE) clean
 endif
 
 install: test

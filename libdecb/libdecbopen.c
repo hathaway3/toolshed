@@ -487,6 +487,14 @@ error_code _decb_close(decb_path_id path)
 	error_code ec = 0;
 
 
+	/* A NULL handle is a no-op (mirrors _os9_close). */
+
+	if (path == NULL)
+	{
+		return 0;
+	}
+
+
 	/* 1. Write out FAT sector if it changed, and close path. */
 
 	ec = _decb_close_image(path);

@@ -159,6 +159,10 @@ static int do_dir(char **argv, char *p)
 
 	if (ec == 0 && sector[0] != '\xFF')
 	{
+		/* _decb_gs_sector returns a raw disk sector, not a NUL-terminated
+		   string. Bound it before printing so a sector full of non-NUL
+		   bytes can't be read past the buffer. */
+		sector[255] = '\0';
 		printf("%s\n", sector);
 	}
 

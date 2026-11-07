@@ -639,6 +639,88 @@ void test_decb_open_and_read()
   ASSERT_EQUALS(0, ec);
 }
 
+/*
+ * _decb_close(NULL) must be a harmless no-op, not a NULL-deref crash.
+ * Mirrors the _os9_close(NULL) contract.
+ */
+void test_decb_close_null()
+{
+	error_code ec;
+	ec = _decb_close(NULL);
+	ASSERT_EQUALS(0, ec);
+}
+
+/*
+ * A failed _decb_open must leave the path pointer NULL so a later
+ * _decb_close(p) is safe and cannot double-free.
+ */
+void test_decb_open_fail_leaves_null()
+{
+	decb_path_id p = NULL;
+	error_code ec;
+
+	ec = _decb_open(&p, "test_disk_doesnt_exist.dsk,file_doesnt_exist", FAM_READ);
+	ASSERT_EQUALS(EOS_BPNAM, ec);
+	ASSERT_TRUE(p == NULL);
+
+	/* closing the NULL handle must be safe */
+	ec = _decb_close(p);
+	ASSERT_EQUALS(0, ec);
+}
+
+/*
+ * A well-formed S1+S9 block must decode to the expected segmented binary:
+ * PREAMBLE(00) len(00 01) addr(10 00) data(D5) POSTAMBLE(ff) 00 00 exec(10 00)
+ */
+void test_decb_srec_decode_valid()
+{
+	char in[] = "S1041000D516\nS9031000EC\n";
+	u_char *out = NULL;
+	u_int out_size = 0;
+	error_code ec;
+	u_char expected[11] = { 0x00, 0x00, 0x01, 0x10, 0x00,
+			     0xD5, 0xFF, 0x00, 0x00, 0x10, 0x00 };
+
+	ec = _decb_srec_decode((unsigned char *)in, (int)strlen(in), &out, &out_size);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_TRUE(out != NULL);
+	ASSERT_EQUALS(11, (int)out_size);
+	ASSERT_MEM_EQUALS(expected, out, 11);
+	free(out);
+}
+
+/*
+ * Corrupted S-records must be rejected (return -1, out_buffer == NULL),
+ * not silently accepted -- the fix that stops silent data corruption.
+ * Checked for both a bad S1 checksum and a bad S9 checksum.
+ */
+void test_decb_srec_decode_bad_checksum()
+{
+	u_char *out;
+	u_int out_size;
+	error_code ec;
+
+	/* Bad S1 checksum: data byte D5 but stored checksum 17 (correct is 16) */
+	{
+		char in[] = "S1041000D517\nS9031000EC\n";
+		out = (u_char *) 0x1;
+		out_size = 0;
+		ec = _decb_srec_decode((unsigned char *)in, (int)strlen(in), &out, &out_size);
+		ASSERT_EQUALS(-1, ec);
+		ASSERT_TRUE(out == NULL);
+	}
+
+	/* Valid S1, but bad S9 checksum (stored ED, correct is EC) */
+	{
+		char in[] = "S1041000D516\nS9031000ED\n";
+		out = (u_char *) 0x1;
+		out_size = 0;
+		ec = _decb_srec_decode((unsigned char *)in, (int)strlen(in), &out, &out_size);
+		ASSERT_EQUALS(-1, ec);
+		ASSERT_TRUE(out == NULL);
+	}
+}
+
 void test_decb_delete() {
   error_code ec;
 
@@ -1711,6 +1793,10 @@ int main()
   RUN(test_decb_write);
 	RUN(test_decb_overwrite);
   RUN(test_decb_open_and_read);
+  RUN(test_decb_close_null);
+  RUN(test_decb_open_fail_leaves_null);
+  RUN(test_decb_srec_decode_valid);
+  RUN(test_decb_srec_decode_bad_checksum);
   RUN(test_decb_delete);
   RUN(test_decb_rename);
 	RUN(test_decb_binconcat_last_address);

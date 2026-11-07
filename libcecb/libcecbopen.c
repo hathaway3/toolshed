@@ -403,6 +403,12 @@ error_code _cecb_close(cecb_path_id path)
 {
 	error_code ec = 0;
 
+	/* A NULL handle is a no-op (mirrors _os9_close). */
+	if (path == NULL)
+	{
+		return 0;
+	}
+
 	/* if data was written, write last data block and end block */
 	if ((path->mode & FAM_WRITE) == FAM_WRITE)
 	{

@@ -9,6 +9,8 @@
 #include "tinytest.h"
 #include <toolshed.h>
 #include "imagedamage.h"
+#include <unistd.h>
+#include <stdlib.h>
 
 
 #define OS9_DMK "test_os9.dmk"
@@ -55,6 +57,14 @@ static void os9_write_file(const char *pathlist, const u_char *data, u_int size,
 	*data_lsn = int3(fd.fd_seg[0].lsn);
 	ec = _os9_close(p);
 	ASSERT_EQUALS(0, ec);
+}
+
+/* Locate the built os9 binary so we can shell out to dcheck. */
+static const char *get_os9_bin(void)
+{
+	if (access("../os9/os9", X_OK) == 0) return "../os9/os9";
+	if (access("build/unix/os9/os9", X_OK) == 0) return "build/unix/os9/os9";
+	return "os9";
 }
 
 void test_os9_dmk_read_write()
@@ -652,6 +662,231 @@ void test_os9_delete_write_only_file()
 	}
 	ec = _os9_close(p);
 	ASSERT_EQUALS(0, ec);
+}
+
+/* Deletion at spc>1 must release every cluster it allocated. A single leaked
+   allocation bit is silent disk corruption that survives until the disk fills.
+   This is the spc=2 counterpart of test_os9_delete_write_only_file, which only
+   guards the spc=1 path. */
+void test_os9_delete_frees_clusters_spc2()
+{
+	os9_path_id p = NULL;
+	error_code ec;
+	fd_stats fd;
+	int fd_lsn, i, j;
+	unsigned int totalSectors, totalBytes;
+	int clusterSize = 2;
+	char dname[64];
+	u_int month, day, year, bps, total_sectors, bytes_free;
+	u_int free_before, free_after, largest_free_block, sectors_per_cluster, largest_count, sector_count;
+	char *data;
+	u_int size;
+
+	ec = _os9_format("test_spc2.dsk", 0, 80, 18, 18, 2, 256, &clusterSize,
+			 "SPC Two", 8, 8, 1, 1, 0, 0, 3, &totalSectors, &totalBytes);
+	ASSERT_EQUALS(0, ec);
+
+	ec = TSRBFFree("test_spc2.dsk", dname, &month, &day, &year, &bps,
+		       &total_sectors, &bytes_free, &free_before, &largest_free_block,
+		       &sectors_per_cluster, &largest_count, &sector_count);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(2, sectors_per_cluster);
+
+	/* Write enough data to span more than one spc=2 cluster.
+	   At spc=2 one cluster holds 1024 bytes, so 5000 bytes forces the
+	   file to occupy the FD cluster plus several data clusters. */
+	data = malloc(5000);
+	ASSERT("write buffer", data != NULL);
+	memset(data, 'S', 5000);
+
+	ec = _os9_create(&p, "test_spc2.dsk,spc2file.txt", FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+	ASSERT_EQUALS(0, ec);
+	size = 5000;
+	ec = _os9_write(p, data, &size);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+	free(data);
+
+	/* Capture the descriptor and the data clusters the file occupies. */
+	ec = _os9_open(&p, "test_spc2.dsk,spc2file.txt", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	fd_lsn = p->pl_fd_lsn;
+	ec = _os9_gs_fd(p, sizeof(fd), &fd);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* Deletion must release the descriptor and every data cluster. */
+	ec = _os9_delete("test_spc2.dsk,spc2file.txt");
+	ASSERT_EQUALS(0, ec);
+
+	ec = _os9_open(&p, "test_spc2.dsk,@", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(0, _os9_ckbit(p->bitmap, fd_lsn / p->spc));
+	for (i = 0; i < NUM_SEGS && int3(fd.fd_seg[i].lsn) != 0; i++)
+	{
+		for (j = 0; j < int2(fd.fd_seg[i].num); j += p->spc)
+		{
+			ASSERT_EQUALS(0, _os9_ckbit(p->bitmap,
+				(int3(fd.fd_seg[i].lsn) + j) / p->spc));
+		}
+	}
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* Free space must be fully restored, not merely shrunk by the file. */
+	ec = TSRBFFree("test_spc2.dsk", dname, &month, &day, &year, &bps,
+		       &total_sectors, &bytes_free, &free_after, &largest_free_block,
+		       &sectors_per_cluster, &largest_count, &sector_count);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(free_before, free_after);
+
+	remove("test_spc2.dsk");
+}
+
+/* Truncation (a shorter write on close) must release the clusters it sheds,
+   including at spc>1 where the segment bookkeeping historically underflowed.
+   dcheck is the independent referee that the on-disk structure stays valid. */
+void test_os9_truncate_frees_clusters_spc2()
+{
+	os9_path_id p = NULL;
+	error_code ec;
+	fd_stats big, small;
+	int last_data_lsn = 0;
+	unsigned int totalSectors, totalBytes;
+	int clusterSize = 2;
+	char cmd[256];
+	int status;
+	u_int size;
+	char *data;
+
+	ec = _os9_format("test_trunc.dsk", 0, 80, 18, 18, 2, 256, &clusterSize,
+			 "Trunc", 8, 8, 1, 1, 0, 0, 3, &totalSectors, &totalBytes);
+	ASSERT_EQUALS(0, ec);
+
+	/* Create a multi-cluster file at spc=2. */
+	data = malloc(1024);
+	ASSERT("write buffer", data != NULL);
+	memset(data, 'T', 1024);
+
+	ec = _os9_create(&p, "test_trunc.dsk,shrink.txt", FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+	ASSERT_EQUALS(0, ec);
+	size = 1024;
+	ec = _os9_write(p, data, &size);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+	free(data);
+
+	/* Remember where the last data sector lives before truncation. */
+	ec = _os9_open(&p, "test_trunc.dsk,shrink.txt", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_gs_fd(p, sizeof(big), &big);
+	ASSERT_EQUALS(0, ec);
+	{
+		int i;
+		for (i = 0; i < NUM_SEGS && int3(big.fd_seg[i].lsn) != 0; i++)
+		{
+			last_data_lsn = int3(big.fd_seg[i].lsn) + int2(big.fd_seg[i].num) - 1;
+		}
+	}
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* Reopen for write and shrink the file; close fires the truncation. */
+	ec = _os9_open(&p, "test_trunc.dsk,shrink.txt", FAM_READ | FAM_WRITE);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_ss_size(p, 512);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* The file is now the smaller size, and the structure is still valid. */
+	ec = _os9_open(&p, "test_trunc.dsk,shrink.txt", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_gs_fd(p, sizeof(small), &small);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(512, int4(small.fd_siz));
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* The sector that used to hold the tail must be released again. */
+	ec = _os9_open(&p, "test_trunc.dsk,@", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(0, _os9_ckbit(p->bitmap, last_data_lsn / p->spc));
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	/* dcheck must agree the disk is intact. */
+	snprintf(cmd, sizeof(cmd), "%s dcheck test_trunc.dsk > /dev/null 2>&1", get_os9_bin());
+	status = system(cmd);
+	ASSERT_EQUALS(0, status);
+
+	remove("test_trunc.dsk");
+}
+
+/* A write must refresh the file's modification time. A stale mtime misleads
+   backup and sync tools, so the write path has to stamp the descriptor.
+   SOURCE_DATE_EPOCH gives the timestamp a deterministic value. */
+void test_os9_write_updates_mtime()
+{
+	os9_path_id p = NULL;
+	error_code ec;
+	fd_stats fd;
+	unsigned int totalSectors, totalBytes;
+	int clusterSize = 0;
+	u_int size;
+	char data[16];
+
+	ec = _os9_format("test_mtime.dsk", 0, 40, 18, 18, 2, 256, &clusterSize,
+			 "MTime", 8, 8, 1, 1, 0, 0, 3, &totalSectors, &totalBytes);
+	ASSERT_EQUALS(0, ec);
+
+	/* Create, then make sure a subsequent write refreshes fd_dat. */
+	ec = _os9_create(&p, "test_mtime.dsk,stamp.txt", FAM_READ | FAM_WRITE, FAP_READ | FAP_WRITE);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	setenv("SOURCE_DATE_EPOCH", "946684800", 1);
+
+	memset(data, 'm', sizeof(data));
+	ec = _os9_open(&p, "test_mtime.dsk,stamp.txt", FAM_READ | FAM_WRITE);
+	ASSERT_EQUALS(0, ec);
+	size = sizeof(data);
+	ec = _os9_write(p, data, &size);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	unsetenv("SOURCE_DATE_EPOCH");
+
+	/* 946684800 is 2000-01-01 00:00:00 UTC. */
+	ec = _os9_open(&p, "test_mtime.dsk,stamp.txt", FAM_READ);
+	ASSERT_EQUALS(0, ec);
+	ec = _os9_gs_fd(p, sizeof(fd), &fd);
+	ASSERT_EQUALS(0, ec);
+	ASSERT_EQUALS(100, (int) fd.fd_dat[0]);
+	ASSERT_EQUALS(1, (int) fd.fd_dat[1]);
+	ASSERT_EQUALS(1, (int) fd.fd_dat[2]);
+	ASSERT_EQUALS(0, (int) fd.fd_dat[3]);
+	ASSERT_EQUALS(0, (int) fd.fd_dat[4]);
+	ec = _os9_close(p);
+	ASSERT_EQUALS(0, ec);
+	p = NULL;
+
+	remove("test_mtime.dsk");
 }
 
 void test_os9_makdir()
@@ -2770,6 +3005,9 @@ int main()
   RUN(test_os9_open_and_read);
   RUN(test_os9_delete);
 	RUN(test_os9_delete_write_only_file);
+	RUN(test_os9_delete_frees_clusters_spc2);
+	RUN(test_os9_truncate_frees_clusters_spc2);
+	RUN(test_os9_write_updates_mtime);
   RUN(test_os9_makdir);
   RUN(test_os9_delete_directory);
   RUN(test_os9_rename);

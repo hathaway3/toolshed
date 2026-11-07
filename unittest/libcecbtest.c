@@ -424,6 +424,35 @@ void test_cecb_token()
 	free(det_outbuf);
 }
 
+/*
+ * _cecb_close(NULL) must be a harmless no-op, not a NULL-deref crash.
+ * Mirrors the _os9_close(NULL) contract.
+ */
+void test_cecb_close_null()
+{
+	error_code ec;
+	ec = _cecb_close(NULL);
+	ASSERT_EQUALS(0, ec);
+}
+
+/*
+ * A failed _cecb_open must leave the path pointer NULL so a later
+ * _cecb_close(p) is safe and cannot double-free.
+ */
+void test_cecb_open_fail_leaves_null()
+{
+	cecb_path_id p = NULL;
+	error_code ec;
+
+	ec = _cecb_open(&p, "DoesNoteExit.wav,FILE", FAM_READ);
+	ASSERT_EQUALS(EOS_BPNAM, ec);
+	ASSERT_TRUE(p == NULL);
+
+	/* closing the NULL handle must be safe */
+	ec = _cecb_close(p);
+	ASSERT_EQUALS(0, ec);
+}
+
 int main()
 {
 	remove("test.c10");
@@ -441,6 +470,8 @@ int main()
 	RUN(test_cecb_rewind);
 	RUN(test_cecb_write_read_only);
 	RUN(test_cecb_token);
+	RUN(test_cecb_close_null);
+	RUN(test_cecb_open_fail_leaves_null);
 
 	return TEST_REPORT();
 }
